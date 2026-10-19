@@ -17,7 +17,7 @@ import { MissingCampaignPage } from './pages/MissingCampaignPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { WelcomePage } from './pages/WelcomePage'
 
-export const router = createBrowserRouter([
+export const appRoutes = [
   {
     element: <RootLayout />,
     children: [
@@ -46,4 +46,6 @@ export const router = createBrowserRouter([
       { path: '*', element: <NotFoundPage /> },
     ],
   },
-])
+]
+
+export const router = createBrowserRouter(appRoutes)

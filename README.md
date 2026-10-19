@@ -29,8 +29,13 @@ pnpm dev
 ```bash
 pnpm lint
 pnpm typecheck
+pnpm test
 pnpm build
+pnpm exec playwright install chromium
+pnpm test:e2e
 ```
+
+Install Chromium once per machine, before `pnpm test:e2e`.
 
 ## Toolchain
 
