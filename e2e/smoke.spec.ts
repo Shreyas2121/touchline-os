@@ -7,7 +7,7 @@ import {
   missingCampaignTitle,
   noRecords,
   notFoundTitle,
-  pitchPreview,
+  lineupsNotSaved,
   previewBanner,
 } from '../src/app/copy.ts'
 
@@ -77,7 +77,10 @@ test('persistent campaign shell smoke', async ({ page }) => {
   await expect(page.getByText(noRecords)).toHaveCount(0)
 
   await page.getByRole('link', { name: 'Tactics' }).click()
-  await expect(page.getByText(pitchPreview)).toBeVisible()
+  await expect(
+    page.getByRole('img', { name: 'Pitch', exact: true }),
+  ).toBeVisible()
+  await expect(page.getByText(lineupsNotSaved)).toBeVisible()
   await expect(page.getByText(previewBanner)).toBeVisible()
 
   await page.getByRole('link', { name: 'Constitution' }).click()

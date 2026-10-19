@@ -14,6 +14,9 @@ import {
   type Season,
 } from '../../domain/validation/schemas'
 import { SquadBrowser } from './SquadBrowser'
+import { CrestSvg } from '../../components/graphics/CrestSvg'
+import { crestSpec } from '../../domain/graphics/crest'
+import type { Club } from '../../domain/validation/schemas'
 type SquadState = {
   campaignId: string | undefined
   players?: Player[]
@@ -22,6 +25,7 @@ type SquadState = {
   failed?: boolean
   chooseClub?: string
   revision?: number
+  club?: Club
 }
 export function SquadPage() {
   const database = useDatabase()
@@ -66,6 +70,7 @@ export function SquadPage() {
             season,
             players: club ? players : [],
             revision: campaign.revision,
+            club,
           })
       } catch {
         if (active) setState({ campaignId, failed: true })
@@ -85,6 +90,15 @@ export function SquadPage() {
   return (
     <>
       <SectionPage sectionId="squad" />
+      {state.club && (
+        <div className="flex items-center gap-3">
+          <CrestSvg
+            {...crestSpec(state.club)}
+            title={`${state.club.name} crest`}
+          />
+          <h2>{state.club.name}</h2>
+        </div>
+      )}
       <SquadBrowser
         key={campaignId}
         players={state.players ?? []}

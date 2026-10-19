@@ -49,7 +49,10 @@ export const noRecords = 'This build does not store records.'
 
 export const previewValue = 'Preview'
 
-export const pitchPreview = 'The board is not interactive in this build.'
+export const loadingTactics = 'Loading tactics.'
+export const tacticsFailed =
+  'This tactics board could not be loaded. Reload and try again.'
+export const lineupsNotSaved = 'Lineups are not saved in this build.'
 
 export const settingsBody =
   'The appearance is the dark terminal theme. Motion follows the operating system. Preferences are not saved.'
