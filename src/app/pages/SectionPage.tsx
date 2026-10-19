@@ -1,3 +1,4 @@
+import { PageHeader } from '../../components/ui/PageHeader'
 import { workspaceSections, type WorkspaceSectionId } from '../routes'
 
 export function SectionPage({ sectionId }: { sectionId: WorkspaceSectionId }) {
@@ -7,5 +8,5 @@ export function SectionPage({ sectionId }: { sectionId: WorkspaceSectionId }) {
     throw new Error(`Unknown section: ${sectionId}`)
   }
 
-  return <h1>{section.label}</h1>
+  return <PageHeader title={section.label} />
 }

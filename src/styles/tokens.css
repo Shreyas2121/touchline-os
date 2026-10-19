@@ -1,0 +1,15 @@
+:root {
+  --surface-0: #121417;
+  --surface-1: #1c1f24;
+  --surface-2: #262b33;
+  --border: #3a404a;
+  --text: #e6e8eb;
+  --text-muted: #9aa3ad;
+  --amber: #e0a84a;
+  --teal: #3dbeb6;
+  --block: #d4534b;
+  --focus: #e0a84a;
+  --nav-width: 260px;
+  --font-sans:
+    system-ui, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}

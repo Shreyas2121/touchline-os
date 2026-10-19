@@ -1,0 +1,55 @@
+@import 'tailwindcss';
+@import './tokens.css';
+
+@theme inline {
+  --color-surface-0: var(--surface-0);
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--border);
+  --color-ink: var(--text);
+  --color-ink-muted: var(--text-muted);
+  --color-amber: var(--amber);
+  --color-teal: var(--teal);
+  --color-block: var(--block);
+  --color-focus: var(--focus);
+}
+
+body {
+  margin: 0;
+  background: var(--surface-0);
+  color: var(--text);
+  font-family: var(--font-sans);
+}
+
+.nav-rail {
+  width: var(--nav-width);
+  background: var(--surface-1);
+  border-right: 1px solid var(--border);
+  transition: width 150ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-rail {
+    transition: none;
+  }
+}
+
+.skip-link {
+  position: absolute;
+  top: 0.5rem;
+  left: -999px;
+}
+
+.skip-link:focus-visible {
+  left: 0.5rem;
+  z-index: 20;
+  padding: 0.25rem 0.5rem;
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.skip-link:focus-visible,
+.touchline-focus:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}

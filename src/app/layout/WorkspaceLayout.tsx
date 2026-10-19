@@ -1,28 +1,12 @@
-import { Link, Outlet, useParams } from 'react-router'
-import { workspaceSectionPath, workspaceSections } from '../routes'
+import { Outlet, useParams } from 'react-router'
+import { AppShell } from '../../components/ui/AppShell'
 
 export function WorkspaceLayout() {
   const { campaignId } = useParams()
 
   return (
-    <>
-      <a href="#main">Skip to content</a>
-      {campaignId ? (
-        <nav>
-          <ul>
-            {workspaceSections.map((section) => (
-              <li key={section.id}>
-                <Link to={workspaceSectionPath(campaignId, section.id)}>
-                  {section.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
-      ) : null}
-      <main id="main">
-        <Outlet />
-      </main>
-    </>
+    <AppShell campaignId={campaignId}>
+      <Outlet />
+    </AppShell>
   )
 }

@@ -1,3 +1,5 @@
+import { PageHeader } from '../../components/ui/PageHeader'
+
 export function MissingCampaignPage() {
-  return <h1>Campaign not found</h1>
+  return <PageHeader title="Campaign not found" />
 }

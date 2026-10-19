@@ -1,3 +1,5 @@
+import { PageHeader } from '../../components/ui/PageHeader'
+
 export function SettingsPage() {
-  return <h1>Settings</h1>
+  return <PageHeader title="Settings" />
 }

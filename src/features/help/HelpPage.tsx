@@ -1,3 +1,5 @@
+import { PageHeader } from '../../components/ui/PageHeader'
+
 export function HelpPage() {
-  return <h1>Help</h1>
+  return <PageHeader title="Help" />
 }

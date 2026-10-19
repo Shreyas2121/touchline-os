@@ -1,3 +1,5 @@
+import { PageHeader } from '../../components/ui/PageHeader'
+
 export function NotFoundPage() {
-  return <h1>Page not found</h1>
+  return <PageHeader title="Page not found" />
 }
