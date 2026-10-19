@@ -2,7 +2,7 @@
 
 > **Derived from:** `MASTER_PLAN.md` version `1.0.0` (2026-10-19)  
 > **Phase IDs:** `P02-G01` … `P02-G05`  
-> **Status:** Execution plan. This file authorizes `plans/phase2/guide1.md` through `guide5.md`. It does not authorize application code until those guides exist, and it does not authorize work outside Phase 2.  
+> **Status:** Complete. The five guide commits are recorded in §10. This file does not authorize work outside Phase 2.  
 > **Baseline:** Phase 1 is complete. The implementation tip is `bbdabe871502ac71d044196aa4ce82396c9fbc81` (`docs: record phase 1 guide commits`). `src/domain/` and `src/data/` do not exist. The running app is a static shell.
 
 ---
@@ -608,13 +608,13 @@ User data created by these tests lives in the fake IndexedDB and is deleted in `
 
 Phase 2 is complete when all of the following are true:
 
-- [ ] Commits exist, in order, with the five subjects in §1.
-- [ ] The commands in §8 pass on the phase tip.
-- [ ] Acceptance criteria in §7 are true.
-- [ ] `schemaV1` matches §5 and the database class declares version 1 only.
-- [ ] README states that the screens do not open the database.
-- [ ] The Phase 1 preview copy is unchanged.
-- [ ] Assumptions in §5 are still accurate, or this file was edited before the code diverged.
+- [x] Commits exist, in order, with the five subjects in §1.
+- [x] The commands in §8 pass on the phase tip.
+- [x] Acceptance criteria in §7 are true.
+- [x] `schemaV1` matches §5 and the database class declares version 1 only.
+- [x] README states that the screens do not open the database.
+- [x] The Phase 1 preview copy is unchanged.
+- [x] Assumptions in §5 are still accurate, or this file was edited before the code diverged.
 
 ### Progress log
 
@@ -623,10 +623,10 @@ Record each guide commit here when it lands. Do not rewrite the subjects.
 | Guide | Commit | Checks |
 | --- | --- | --- |
 | `P02-G01` | `0af78a8b90c2b88dd408975632838f0df5039109` | lint, typecheck, test, build |
-| `P02-G02` | | lint, typecheck, test, build |
-| `P02-G03` | | lint, typecheck, test, build |
-| `P02-G04` | | lint, typecheck, test, build |
-| `P02-G05` | | lint, typecheck, test, build, test:e2e |
+| `P02-G02` | `4337d647987964cd9cbbeebe2bddd8ee683b71f9` | lint, typecheck, test, build |
+| `P02-G03` | `4c04741a774d7061899fa955f16cb14de62c33bf` | lint, typecheck, test, build |
+| `P02-G04` | `efbd64ee4c61a810b0a6b5733da18a18d09c754e` | lint, typecheck, test, build |
+| `P02-G05` | `cb5b3a5301d833c2deb339e99bac94c638936fb1` | lint, typecheck, test, build, test:e2e |
 
 ### Handoff to Phase 3
 
@@ -640,5 +640,3 @@ Phase 3 may call:
 Phase 3 must treat `CONFLICT` as a stale save, not as permission to write anyway. It must keep using `add` for inserts. It may narrow the ESLint fence so features can import command modules and repository reads. It must not import `src/data/db.ts` from a component, must not edit `schemaV1` in place, and must not remove the preview banner until the screen it is on is actually reading a save.
 
 Phase 3 must not add the rule engine, the PWA plugin, or transfer commands. Seeding writes through the Phase 2 commands and repositories rather than a second writer.
-
-Next planning step, before any Phase 2 code: write `plans/phase2/guide1.md` through `guide5.md` from this file and `MASTER_PLAN.md`.
