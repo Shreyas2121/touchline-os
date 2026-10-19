@@ -1,4 +1,4 @@
-import { Outlet, useParams } from 'react-router'
+import { Outlet, useLocation, useParams } from 'react-router'
 import { useEffect, useState } from 'react'
 import { disclaimer, loadingCampaign, previewBanner, saveFailed } from '../copy'
 import { AppShell } from '../../components/ui/AppShell'
@@ -9,6 +9,7 @@ import { MissingCampaignPage } from '../pages/MissingCampaignPage'
 
 export function WorkspaceLayout() {
   const { campaignId } = useParams()
+  const { pathname } = useLocation()
   const database = useDatabase()
   const [state, setState] = useState<{
     id: string | undefined
@@ -38,7 +39,7 @@ export function WorkspaceLayout() {
 
   return (
     <AppShell
-      banner={previewBanner}
+      banner={pathname.endsWith('/command-center') ? undefined : previewBanner}
       campaignId={campaignId}
       campaignName={state.campaign.name}
     >

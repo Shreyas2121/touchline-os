@@ -1,28 +1,95 @@
-import { noRecords, previewValue } from '../../app/copy'
+import { useEffect, useState } from 'react'
+import { useParams } from 'react-router'
+import { loadingCampaign } from '../../app/copy'
 import { SectionPage } from '../../app/pages/SectionPage'
-import { EmptyState } from '../../components/ui/EmptyState'
+import { useDatabase } from '../../app/providers/database'
 import { KpiRibbon } from '../../components/ui/KpiRibbon'
-import { StatusPill } from '../../components/ui/StatusPill'
+import { getCampaign } from '../../data/repositories/campaigns'
+import { getClub } from '../../data/repositories/clubs'
+import { listPlayersByClub } from '../../data/repositories/players'
+import { listAuditEvents } from '../../data/repositories/audit-events'
+import { entityIdSchema } from '../../domain/validation/schemas'
+import { activityLines, squadAgeSummary, squadCount } from './campaign-summary'
 
-const previewItems = [
-  { label: 'Transfer capacity', value: previewValue },
-  { label: 'Weekly wages', value: previewValue },
-  { label: 'Squad', value: previewValue },
-  { label: 'Registration', value: previewValue },
-]
+type Summary = {
+  campaignId: string | undefined
+  clubName?: string
+  count?: number
+  ages?: readonly (number | null)[]
+  activity?: readonly { id: string; summary: string }[]
+  missing?: boolean
+  failed?: boolean
+}
 
 export function CommandCenterPage() {
+  const database = useDatabase()
+  const { campaignId } = useParams()
+  const [summary, setSummary] = useState<Summary | null>(null)
+  useEffect(() => {
+    let active = true
+    async function load() {
+      const id = entityIdSchema.safeParse(campaignId)
+      if (!id.success) return
+      try {
+        const campaign = await getCampaign(database, id.data)
+        if (!campaign) {
+          if (active) setSummary({ campaignId, missing: true })
+          return
+        }
+        const [club, players, audits] = await Promise.all([
+          getClub(database, campaign.id, campaign.managedClubId),
+          listPlayersByClub(database, campaign.id, campaign.managedClubId),
+          listAuditEvents(database, campaign.id),
+        ])
+        if (active)
+          setSummary({
+            campaignId,
+            clubName: club?.name ?? 'Unknown',
+            count: club ? players.length : 0,
+            ages: club ? players.map((player) => player.reportedAge) : [],
+            activity: audits,
+          })
+      } catch {
+        if (active) setSummary({ campaignId, failed: true })
+      }
+    }
+    void load()
+    return () => {
+      active = false
+    }
+  }, [database, campaignId])
+
+  if (!entityIdSchema.safeParse(campaignId).success) return null
+  if (!summary || summary.campaignId !== campaignId)
+    return <p>{loadingCampaign}</p>
+  if (summary.missing) return null
+  if (summary.failed)
+    return (
+      <p role="alert">
+        This campaign could not be loaded. Reload and try again.
+      </p>
+    )
+  const activity = summary.activity ?? []
   return (
     <>
       <SectionPage sectionId="command-center" />
-      <KpiRibbon items={previewItems} />
-      <EmptyState title="Activity" description={noRecords} />
-      <div className="flex flex-wrap gap-3">
-        <StatusPill tone="blocked" />
-        <StatusPill tone="warning" />
-        <StatusPill tone="informational" />
-        <StatusPill tone="passed" />
-      </div>
+      <h2>{summary.clubName}</h2>
+      <KpiRibbon
+        items={[
+          { label: 'Squad', value: squadCount(summary.count ?? 0) },
+          { label: 'Squad age', value: squadAgeSummary(summary.ages ?? []) },
+          { label: 'Transfer capacity', value: 'Unknown' },
+          { label: 'Weekly wages', value: 'Unknown' },
+          { label: 'Registration', value: 'Unknown' },
+        ]}
+      />
+      <ul aria-label="Activity">
+        {activityLines(activity.map((audit) => audit.summary)).map(
+          (line, index) => (
+            <li key={activity[index].id}>{line}</li>
+          ),
+        )}
+      </ul>
     </>
   )
 }

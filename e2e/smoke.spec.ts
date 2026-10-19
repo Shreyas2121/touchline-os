@@ -9,7 +9,6 @@ import {
   notFoundTitle,
   pitchPreview,
   previewBanner,
-  previewValue,
 } from '../src/app/copy.ts'
 
 declare const document: {
@@ -43,10 +42,14 @@ test('persistent campaign shell smoke', async ({ page }) => {
 
   await page.getByRole('button', { name: 'Try fictional demo' }).click()
   await expect(page).toHaveURL(/\/app\/demo\/command-center$/)
-  await expect(page.getByText(previewBanner)).toBeVisible()
-  await expect(page.getByText(previewValue, { exact: true })).toHaveCount(4)
+  await expect(
+    page.getByRole('heading', { name: 'Ashbridge', level: 2 }),
+  ).toBeVisible()
+  await expect(page.getByText(previewBanner)).toHaveCount(0)
+  await expect(page.getByText('Unknown', { exact: true })).toHaveCount(3)
+  await expect(page.getByText('Preview', { exact: true })).toHaveCount(0)
   for (const word of ['Blocked', 'Warning', 'Informational', 'Passed']) {
-    await expect(page.getByText(word)).toBeVisible()
+    await expect(page.getByText(word)).toHaveCount(0)
   }
 
   await page.goto('/')
@@ -63,6 +66,7 @@ test('persistent campaign shell smoke', async ({ page }) => {
   await page.getByRole('button', { name: 'Try fictional demo' }).click()
   await page.getByRole('link', { name: 'Squad' }).click()
   await expect(page).toHaveURL(/\/squad$/)
+  await expect(page.getByText(previewBanner)).toBeVisible()
   await expect(page.getByRole('columnheader', { name: 'Name' })).toBeVisible()
   await expect(page.getByText(noRecords)).toBeVisible()
 

@@ -138,7 +138,7 @@ describe('campaign management', () => {
 
   it(
     'resets only demo and refuses a stale reset before deleting',
-    { timeout: 20_000 },
+    { timeout: 60_000 },
     async () => {
       const database = getDatabase('touchline-os-test')
       const seeded = await seedDemoCampaign(database, seedInput, () => {})

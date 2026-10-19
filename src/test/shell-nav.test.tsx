@@ -18,8 +18,8 @@ describe('shell nav', () => {
       ...harborInput,
       campaignId: 'demo',
     })
-    renderAt('/app/demo/command-center')
-    await screen.findByRole('heading', { name: 'Command Center' })
+    renderAt('/app/demo/squad')
+    await screen.findByRole('heading', { name: 'Squad' })
 
     for (const section of workspaceSections) {
       expect(
