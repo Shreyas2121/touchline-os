@@ -48,7 +48,7 @@ describe('command center', () => {
   })
 
   it(
-    'shows club 01 and its squad from the featured world while Squad stays a preview',
+    'shows club 01 and its squad from the featured world while Finance stays a preview',
     { timeout: 20_000 },
     async () => {
       const seeded = await seedDemoCampaign(
@@ -89,7 +89,7 @@ describe('command center', () => {
       expect(screen.getAllByText('Unknown', { exact: true })).toHaveLength(3)
       expect(container.textContent).not.toMatch(/€|Preview|Static preview/)
       unmount()
-      renderAt('/app/demo/squad')
+      renderAt('/app/demo/finance')
       expect(await screen.findByText(previewBanner)).toBeInTheDocument()
     },
   )

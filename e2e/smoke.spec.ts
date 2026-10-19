@@ -71,15 +71,18 @@ test('persistent campaign shell smoke', async ({ page }) => {
   await page.goto(workspaceUrl)
   await page.getByRole('link', { name: 'Squad' }).click()
   await expect(page).toHaveURL(/\/squad$/)
-  await expect(page.getByText(previewBanner)).toBeVisible()
+  await expect(page.getByText(previewBanner)).toHaveCount(0)
   await expect(page.getByRole('columnheader', { name: 'Name' })).toBeVisible()
-  await expect(page.getByText(noRecords)).toBeVisible()
+  await expect(page.getByText('No players at this club.')).toBeVisible()
+  await expect(page.getByText(noRecords)).toHaveCount(0)
 
   await page.getByRole('link', { name: 'Tactics' }).click()
   await expect(page.getByText(pitchPreview)).toBeVisible()
+  await expect(page.getByText(previewBanner)).toBeVisible()
 
   await page.getByRole('link', { name: 'Constitution' }).click()
   await expect(page.getByText(constitutionNote)).toBeVisible()
+  await expect(page.getByText(previewBanner)).toBeVisible()
   await expect(page.getByText('SELL_TO_BUY')).toBeVisible()
 
   await page.evaluate(() => {

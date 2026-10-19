@@ -41,7 +41,8 @@ export function WorkspaceLayout() {
     <AppShell
       banner={
         pathname.endsWith('/command-center') ||
-        pathname.endsWith('/choose-club')
+        pathname.endsWith('/choose-club') ||
+        pathname.endsWith('/squad')
           ? undefined
           : previewBanner
       }

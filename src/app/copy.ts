@@ -11,6 +11,9 @@ export const missingCampaignTitle = 'Campaign not found'
 export const notFoundTitle = 'Page not found'
 
 export const loadingCampaign = 'Loading campaign.'
+export const loadingSquad = 'Loading squad.'
+export const squadFailed =
+  'This squad could not be loaded. Reload and try again.'
 export const databaseUnavailable = 'This browser cannot open a local database.'
 export const seedReady = 'Fictional world ready.'
 export const seedFailed =
