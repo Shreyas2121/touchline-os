@@ -48,6 +48,11 @@ export default defineConfig(
               name: 'dexie',
               message: 'domain modules stay free of React and Dexie.',
             },
+            {
+              name: 'fake-indexeddb',
+              message:
+                'domain modules stay free of the test IndexedDB polyfill.',
+            },
           ],
           patterns: [
             {
@@ -63,6 +68,11 @@ export default defineConfig(
               ],
               message:
                 'domain modules cannot import the app shell, features, components, or the data layer.',
+            },
+            {
+              group: ['fake-indexeddb', 'fake-indexeddb/**'],
+              message:
+                'domain modules stay free of the test IndexedDB polyfill.',
             },
           ],
         },
@@ -88,6 +98,99 @@ export default defineConfig(
         },
       ],
       'react-refresh/only-export-components': 'off',
+    },
+  },
+  {
+    files: ['src/data/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: 'react',
+              message:
+                'data modules stay free of React and the test IndexedDB polyfill.',
+            },
+            {
+              name: 'react-dom',
+              message:
+                'data modules stay free of React and the test IndexedDB polyfill.',
+            },
+            {
+              name: 'react-router',
+              message:
+                'data modules stay free of React and the test IndexedDB polyfill.',
+            },
+            {
+              name: 'fake-indexeddb',
+              message:
+                'data modules stay free of React and the test IndexedDB polyfill.',
+            },
+          ],
+          patterns: [
+            {
+              group: ['fake-indexeddb', 'fake-indexeddb/**'],
+              message:
+                'data modules stay free of React and the test IndexedDB polyfill.',
+            },
+          ],
+        },
+      ],
+      'react-refresh/only-export-components': 'off',
+    },
+  },
+  {
+    files: [
+      'src/main.tsx',
+      'src/app/**/*.{ts,tsx}',
+      'src/features/**/*.{ts,tsx}',
+      'src/components/**/*.{ts,tsx}',
+    ],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: 'dexie',
+              message:
+                'the shell cannot import Dexie, the data layer, or the domain during Phase 2.',
+            },
+            {
+              name: 'fake-indexeddb',
+              message:
+                'the shell cannot import Dexie, the data layer, or the domain during Phase 2.',
+            },
+          ],
+          patterns: [
+            {
+              group: [
+                './data',
+                './data/**',
+                './domain',
+                './domain/**',
+                '../data',
+                '../data/**',
+                '../domain',
+                '../domain/**',
+                '../../data',
+                '../../data/**',
+                '../../domain',
+                '../../domain/**',
+                '../../../data',
+                '../../../data/**',
+                '../../../domain',
+                '../../../domain/**',
+                'fake-indexeddb',
+                'fake-indexeddb/**',
+              ],
+              message:
+                'the shell cannot import Dexie, the data layer, or the domain during Phase 2.',
+            },
+          ],
+        },
+      ],
     },
   },
   eslintConfigPrettier,
