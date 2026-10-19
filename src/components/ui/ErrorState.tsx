@@ -7,7 +7,7 @@ export function ErrorState({
 }) {
   return (
     <div className="border border-[var(--block)] p-4">
-      <p>{title}</p>
+      <h1>{title}</h1>
       <p className="text-[var(--text-muted)]">{description}</p>
     </div>
   )

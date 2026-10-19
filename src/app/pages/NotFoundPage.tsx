@@ -1,5 +1,14 @@
-import { PageHeader } from '../../components/ui/PageHeader'
+import { Link } from 'react-router'
+import { backToWelcome, notFoundBody, notFoundTitle } from '../copy'
+import { ErrorState } from '../../components/ui/ErrorState'
 
 export function NotFoundPage() {
-  return <PageHeader title="Page not found" />
+  return (
+    <>
+      <ErrorState title={notFoundTitle} description={notFoundBody} />
+      <Link className="touchline-focus" to="/">
+        {backToWelcome}
+      </Link>
+    </>
+  )
 }
