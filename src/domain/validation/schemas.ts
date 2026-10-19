@@ -472,6 +472,7 @@ export const auditEventSchema = z.strictObject({
     'lineup.delete',
     'ledger.post',
     'ledger.reverse',
+    'constitution.save',
     'campaign.seed',
     'campaign.archive',
     'campaign.restore',

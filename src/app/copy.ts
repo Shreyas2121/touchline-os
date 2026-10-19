@@ -43,7 +43,12 @@ export const searchPanel = 'Search is not available in this build.'
 
 export const backupPanel = 'Backup is not available in this build.'
 
-export const constitutionNote = 'Rules are not active in this build.'
+export const loadingConstitution = 'Loading constitution.'
+export const constitutionFailed =
+  'This constitution could not be loaded. Reload and try again.'
+export const loadingFinance = 'Loading finance.'
+export const financeFailed =
+  'This finance page could not be loaded. Reload and try again.'
 
 export const noRecords = 'This build does not store records.'
 

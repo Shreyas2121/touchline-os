@@ -8,6 +8,15 @@ import { getCampaign } from '../../data/repositories/campaigns'
 import { getClub } from '../../data/repositories/clubs'
 import { listPlayersByClub } from '../../data/repositories/players'
 import { listAuditEvents } from '../../data/repositories/audit-events'
+import { getActiveConstitution } from '../../data/repositories/constitutions'
+import { listContractsByClub } from '../../data/repositories/contracts'
+import { listLedgerEntries } from '../../data/repositories/ledger-entries'
+import { getActiveSeason } from '../../data/repositories/seasons'
+import { formatCapacity, transferCapacity } from '../../domain/finance/capacity'
+import {
+  formatWageCommitment,
+  wageCommitment,
+} from '../../domain/finance/wages'
 import { entityIdSchema } from '../../domain/validation/schemas'
 import { activityLines, squadAgeSummary, squadCount } from './campaign-summary'
 
@@ -17,6 +26,8 @@ type Summary = {
   count?: number
   ages?: readonly (number | null)[]
   activity?: readonly { id: string; summary: string }[]
+  capacity?: string
+  wages?: string
   missing?: boolean
   failed?: boolean
   chooseClub?: string
@@ -45,10 +56,32 @@ export function CommandCenterPage() {
           if (active) setSummary({ campaignId, chooseClub: campaign.id })
           return
         }
-        const [club, players] = await Promise.all([
-          getClub(database, campaign.id, campaign.managedClubId),
-          listPlayersByClub(database, campaign.id, campaign.managedClubId),
-        ])
+        const season = await getActiveSeason(database, campaign.id)
+        const [club, players, constitution, contracts, entries] =
+          await Promise.all([
+            getClub(database, campaign.id, campaign.managedClubId),
+            listPlayersByClub(database, campaign.id, campaign.managedClubId),
+            getActiveConstitution(database, campaign.id),
+            listContractsByClub(database, campaign.id, campaign.managedClubId),
+            season
+              ? listLedgerEntries(
+                  database,
+                  campaign.id,
+                  season.id,
+                  campaign.managedClubId,
+                )
+              : Promise.resolve([]),
+          ])
+        const rule = constitution?.rules.find(
+          (item) => item.id === 'SELL_TO_BUY',
+        )
+        const capacity =
+          constitution && season
+            ? transferCapacity(entries, season.id, campaign.managedClubId, {
+                salesReinvestmentPct: rule?.salesReinvestmentPct ?? 0,
+                prizeReinvestmentPct: rule?.prizeReinvestmentPct ?? 0,
+              }).remainingCents
+            : null
         if (active)
           setSummary({
             campaignId,
@@ -56,6 +89,12 @@ export function CommandCenterPage() {
             count: club ? players.length : 0,
             ages: club ? players.map((player) => player.reportedAge) : [],
             activity: audits,
+            capacity: formatCapacity(capacity),
+            wages: constitution
+              ? formatWageCommitment(
+                  wageCommitment(contracts, campaign.managedClubId),
+                )
+              : 'Unknown',
           })
       } catch {
         if (active) setSummary({ campaignId, failed: true })
@@ -88,8 +127,8 @@ export function CommandCenterPage() {
         items={[
           { label: 'Squad', value: squadCount(summary.count ?? 0) },
           { label: 'Squad age', value: squadAgeSummary(summary.ages ?? []) },
-          { label: 'Transfer capacity', value: 'Unknown' },
-          { label: 'Weekly wages', value: 'Unknown' },
+          { label: 'Transfer capacity', value: summary.capacity ?? 'Unknown' },
+          { label: 'Weekly wages', value: summary.wages ?? 'Unknown' },
           { label: 'Registration', value: 'Unknown' },
         ]}
       />

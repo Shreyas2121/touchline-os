@@ -18,8 +18,8 @@ describe('shell nav', () => {
       ...harborInput,
       campaignId: 'demo',
     })
-    renderAt('/app/demo/finance')
-    await screen.findByRole('heading', { name: 'Finance' })
+    renderAt('/app/demo/transfers')
+    await screen.findByRole('heading', { name: 'Transfers' })
 
     for (const section of workspaceSections) {
       expect(

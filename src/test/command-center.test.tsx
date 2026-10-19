@@ -48,7 +48,7 @@ describe('command center', () => {
   })
 
   it(
-    'shows club 01 and its squad from the featured world while Finance stays a preview',
+    'keeps unadopted demo figures unknown while Finance reads the empty ledger',
     { timeout: 20_000 },
     async () => {
       const seeded = await seedDemoCampaign(
@@ -90,9 +90,30 @@ describe('command center', () => {
       expect(container.textContent).not.toMatch(/€|Preview|Static preview/)
       unmount()
       renderAt('/app/demo/finance')
-      expect(await screen.findByText(previewBanner)).toBeInTheDocument()
+      expect(
+        await screen.findByText('No ledger entries for this season.'),
+      ).toBeInTheDocument()
+      expect(screen.queryByText(previewBanner)).toBeNull()
     },
   )
+
+  it('shows saved Balanced capacity and empty known wages without rule verdicts', async () => {
+    await createCampaign(getDatabase(databaseName), {
+      ...harborInput,
+      preset: 'balanced',
+      constitutionId: 'constitution-a',
+      constitutionActionId: 'constitution-action-a',
+      ledgerEntryId: 'opening-a',
+    })
+    const { container } = renderAt('/app/campaign-a/command-center')
+    await screen.findByRole('heading', { level: 2, name: 'Harbor Athletic' })
+    expect(kpi('Transfer capacity')).toBe('€5,000,000.00')
+    expect(kpi('Weekly wages')).toBe('€0.00')
+    expect(kpi('Registration')).toBe('Unknown')
+    expect(container.textContent).not.toMatch(
+      /Blocked|Warning|Informational|Passed/,
+    )
+  })
 
   it('counts only managed-club players and limits activity to the newest 20 summaries', async () => {
     const database = getDatabase(databaseName)

@@ -22,6 +22,7 @@ import {
   GENERATOR_VERSION,
 } from '../../domain/seed/generate-world'
 import { entityIdSchema, type Campaign } from '../../domain/validation/schemas'
+import type { ConstitutionPresetName } from '../../domain/rules/presets'
 
 type Panel =
   | { kind: 'create' }
@@ -45,6 +46,7 @@ export function CampaignManager() {
   const [name, setName] = useState('')
   const [clubName, setClubName] = useState('')
   const [shortName, setShortName] = useState('')
+  const [preset, setPreset] = useState<ConstitutionPresetName>('balanced')
   const [confirmation, setConfirmation] = useState('')
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
@@ -77,6 +79,7 @@ export function CampaignManager() {
     setName(next.kind === 'create' ? '' : next.campaign.name)
     setClubName('')
     setShortName('')
+    setPreset('balanced')
     setConfirmation('')
     setMessage('')
     setPanel(next)
@@ -188,6 +191,10 @@ export function CampaignManager() {
             seasonId: createEntityId(),
             auditEventId: createEntityId(),
             actionId: createEntityId(),
+            preset,
+            constitutionId: createEntityId(),
+            constitutionActionId: createEntityId(),
+            ledgerEntryId: createEntityId(),
             name: name.trim(),
             clubName: clubName.trim(),
             shortName: shortName.trim(),
@@ -437,6 +444,22 @@ export function CampaignManager() {
                     disabled={busy}
                     onChange={(event) => setShortName(event.target.value)}
                   />
+                </div>
+                <div>
+                  <label htmlFor="constitution-preset">Constitution</label>
+                  <select
+                    id="constitution-preset"
+                    className="touchline-focus"
+                    disabled={busy}
+                    value={preset}
+                    onChange={(event) =>
+                      setPreset(event.target.value as ConstitutionPresetName)
+                    }
+                  >
+                    <option value="balanced">Balanced</option>
+                    <option value="strict">Strict Moneyball</option>
+                    <option value="custom">Custom</option>
+                  </select>
                 </div>
               </>
             ) : null}

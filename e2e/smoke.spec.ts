@@ -1,7 +1,6 @@
 import { expect, test } from '@playwright/test'
 import {
   backToWelcome,
-  constitutionNote,
   disclaimer,
   importPanel,
   missingCampaignTitle,
@@ -50,7 +49,8 @@ test('persistent campaign shell smoke', async ({ page }) => {
     page.getByRole('heading', { name: 'Harbor Athletic', level: 2 }),
   ).toBeVisible()
   await expect(page.getByText(previewBanner)).toHaveCount(0)
-  await expect(page.getByText('Unknown', { exact: true })).toHaveCount(4)
+  await expect(page.getByText('Unknown', { exact: true })).toHaveCount(2)
+  await expect(page.getByText('€5,000,000.00', { exact: true })).toBeVisible()
   await expect(page.getByText('Preview', { exact: true })).toHaveCount(0)
   for (const word of ['Blocked', 'Warning', 'Informational', 'Passed']) {
     await expect(page.getByText(word)).toHaveCount(0)
@@ -88,9 +88,11 @@ test('persistent campaign shell smoke', async ({ page }) => {
   await expect(page.getByText(previewBanner)).toHaveCount(0)
 
   await page.getByRole('link', { name: 'Constitution' }).click()
-  await expect(page.getByText(constitutionNote)).toBeVisible()
-  await expect(page.getByText(previewBanner)).toBeVisible()
+  await expect(page.getByText('Version 1', { exact: true })).toBeVisible()
+  await expect(page.getByText(previewBanner)).toHaveCount(0)
   await expect(page.getByText('SELL_TO_BUY')).toBeVisible()
+  await page.getByRole('link', { name: 'Transfers', exact: true }).click()
+  await expect(page.getByText(previewBanner)).toBeVisible()
 
   await page.evaluate(() => {
     document.body.setAttribute('tabindex', '-1')

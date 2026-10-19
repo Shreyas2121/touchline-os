@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { constitutionNote, disclaimer, previewBanner } from '../src/app/copy.ts'
+import { disclaimer, previewBanner } from '../src/app/copy.ts'
 
 function kpi(page: Page, label: string) {
   return page
@@ -99,6 +99,10 @@ test('demo choice, refresh, campaign switching and reset preserve campaign isola
     page.getByRole('heading', { level: 2, name: 'Ashbridge' }),
   ).toBeVisible()
   await page.getByRole('link', { name: 'Constitution', exact: true }).click()
-  await expect(page.getByText(constitutionNote)).toBeVisible()
+  await expect(
+    page.getByRole('heading', { name: 'Choose a constitution', exact: true }),
+  ).toBeVisible()
+  await expect(page.getByText(previewBanner)).toHaveCount(0)
+  await page.getByRole('link', { name: 'Transfers', exact: true }).click()
   await expect(page.getByText(previewBanner)).toBeVisible()
 })

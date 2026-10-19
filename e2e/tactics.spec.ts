@@ -1,9 +1,5 @@
 import { expect, test, type Locator } from '@playwright/test'
-import {
-  constitutionNote,
-  missingCampaignTitle,
-  previewBanner,
-} from '../src/app/copy.ts'
+import { missingCampaignTitle, previewBanner } from '../src/app/copy.ts'
 
 async function expectPlayer(slot: Locator, name: string) {
   await expect.poll(() => slot.getAttribute('aria-label')).toContain(name)
@@ -173,9 +169,16 @@ test('keyboard lineups persist, switch and delete within their campaign', async 
   ).toBeVisible()
   await expect(slots.getByRole('button', { name: /, empty$/ })).toHaveCount(11)
   await page.getByRole('link', { name: 'Finance', exact: true }).click()
-  await expect(page.getByText(previewBanner)).toBeVisible()
+  await expect(
+    page.getByText('No active contracts are recorded.'),
+  ).toBeVisible()
+  await expect(page.getByText(previewBanner)).toHaveCount(0)
   await page.getByRole('link', { name: 'Constitution', exact: true }).click()
-  await expect(page.getByText(constitutionNote)).toBeVisible()
+  await expect(
+    page.getByRole('heading', { name: 'Choose a constitution', exact: true }),
+  ).toBeVisible()
+  await expect(page.getByText(previewBanner)).toHaveCount(0)
+  await page.getByRole('link', { name: 'Transfers', exact: true }).click()
   await expect(page.getByText(previewBanner)).toBeVisible()
   await page.getByRole('link', { name: 'Command Center', exact: true }).click()
   await expect(
