@@ -100,7 +100,7 @@ describe('squad page', () => {
     expect(wind).toHaveAttribute('aria-pressed', 'false')
     expect(
       within(screen.getByRole('region', { name: 'Selected player' })).getByText(
-        'This build does not edit players yet.',
+        'Contracts are not recorded in this build.',
       ),
     ).toBeInTheDocument()
     expect(screen.queryByText(previewBanner)).toBeNull()

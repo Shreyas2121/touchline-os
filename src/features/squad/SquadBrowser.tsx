@@ -20,13 +20,18 @@ import {
   type SquadSortKey,
 } from '../../domain/player/squad-view'
 import type { Player, Season } from '../../domain/validation/schemas'
+import { PlayerProfile } from './PlayerProfile'
 const features = tableFeatures({})
 export function SquadBrowser({
   players,
   season,
+  revision,
+  onSaved,
 }: {
   players: readonly Player[]
-  season?: Pick<Season, 'startDate' | 'ordinal'>
+  season?: Season
+  revision: number
+  onSaved: (revision: number) => void
 }) {
   const [query, setQuery] = useState('')
   const [group, setGroup] = useState<'all' | PositionGroup>('all')
@@ -205,11 +210,13 @@ export function SquadBrowser({
         </tbody>
       </table>
       {selected && (
-        <section aria-label="Selected player">
-          <h2>{selected.name}</h2>
-          <p>{selected.positions[0]}</p>
-          <p>This build does not edit players yet.</p>
-        </section>
+        <PlayerProfile
+          key={selected.id}
+          player={selected}
+          season={season}
+          revision={revision}
+          onSaved={onSaved}
+        />
       )}
     </>
   )

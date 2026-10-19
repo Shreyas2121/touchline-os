@@ -21,11 +21,21 @@ type SquadState = {
   missing?: boolean
   failed?: boolean
   chooseClub?: string
+  revision?: number
 }
 export function SquadPage() {
   const database = useDatabase()
   const { campaignId } = useParams()
   const [state, setState] = useState<SquadState | null>(null)
+  const [reload, setReload] = useState(0)
+  function onSaved(revision: number) {
+    setState((current) =>
+      current && current.campaignId === campaignId
+        ? { ...current, revision }
+        : current,
+    )
+    setReload((current) => current + 1)
+  }
   useEffect(() => {
     let active = true
     async function load() {
@@ -51,7 +61,12 @@ export function SquadPage() {
           listPlayersByClub(database, campaign.id, campaign.managedClubId),
         ])
         if (active)
-          setState({ campaignId, season, players: club ? players : [] })
+          setState({
+            campaignId,
+            season,
+            players: club ? players : [],
+            revision: campaign.revision,
+          })
       } catch {
         if (active) setState({ campaignId, failed: true })
       }
@@ -60,7 +75,7 @@ export function SquadPage() {
     return () => {
       active = false
     }
-  }, [database, campaignId])
+  }, [database, campaignId, reload])
   if (!entityIdSchema.safeParse(campaignId).success) return null
   if (!state || state.campaignId !== campaignId) return <p>{loadingSquad}</p>
   if (state.missing) return null
@@ -74,6 +89,8 @@ export function SquadPage() {
         key={campaignId}
         players={state.players ?? []}
         season={state.season}
+        revision={state.revision ?? 0}
+        onSaved={onSaved}
       />
     </>
   )

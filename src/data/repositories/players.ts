@@ -28,6 +28,23 @@ export async function listPlayers(
   return rows.map((row) => parseStored(playerSchema, row))
 }
 
+export async function updateStoredPlayer(
+  database: TouchlineDatabase,
+  campaignId: EntityId,
+  player: Player,
+): Promise<void> {
+  const stored = await database.players.get(player.id)
+  if (
+    !stored ||
+    stored.campaignId !== campaignId ||
+    player.campaignId !== campaignId
+  )
+    throw new PersistenceError('SCOPE', 'Player is not in this campaign.')
+  parseStored(playerSchema, stored)
+  const { id, ...changes } = player
+  await database.players.update(id, changes)
+}
+
 export async function listPlayersByClub(
   database: TouchlineDatabase,
   campaignId: EntityId,

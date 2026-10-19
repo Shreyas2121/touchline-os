@@ -23,6 +23,13 @@ class CommandFailure extends Error {
   }
 }
 
+export function rejectCommand(
+  code: 'NOT_FOUND' | 'CONFLICT',
+  message: string,
+): never {
+  throw new CommandFailure(code, message)
+}
+
 function causeOf(error: unknown): unknown {
   if (error instanceof Dexie.AbortError && error.inner !== undefined) {
     return error.inner
