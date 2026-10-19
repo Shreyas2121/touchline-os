@@ -52,8 +52,19 @@ export const previewValue = 'Preview'
 export const loadingTactics = 'Loading tactics.'
 export const tacticsFailed =
   'This tactics board could not be loaded. Reload and try again.'
-export const lineupOnScreenOnly =
-  'This lineup is on this screen only. It is not saved yet.'
+export const lineupDiscardWarning =
+  'Choosing another lineup discards unsaved changes.'
+export const lineupRosterMismatch =
+  'This lineup does not match the current roster.'
+export const loadingLineups = 'Loading saved lineups.'
+export const lineupsFailed =
+  'Saved lineups could not be loaded. Reload and try again.'
+export function lineupSaved(name: string): string {
+  return `Saved lineup ${name}.`
+}
+export function lineupDeleted(name: string): string {
+  return `Deleted lineup ${name}.`
+}
 
 export const settingsBody =
   'The appearance is the dark terminal theme. Motion follows the operating system. Preferences are not saved.'

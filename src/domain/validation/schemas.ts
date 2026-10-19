@@ -468,6 +468,8 @@ export const auditEventSchema = z.strictObject({
     'player.add',
     'player.update',
     'player.note',
+    'lineup.save',
+    'lineup.delete',
     'campaign.seed',
     'campaign.archive',
     'campaign.restore',

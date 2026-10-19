@@ -4,13 +4,22 @@
   render,
   screen,
   within,
+  waitFor,
 } from '@testing-library/react'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createCampaign } from '../data/commands/create-campaign'
 import { addPlayer } from '../data/commands/add-player'
 import { deleteDatabaseForTests, getDatabase } from '../data/db'
-import { entityIdSchema, playerSchema } from '../domain/validation/schemas'
-import { lineupOnScreenOnly, previewBanner } from '../app/copy'
+import {
+  entityIdSchema,
+  playerSchema,
+  lineupSchema,
+} from '../domain/validation/schemas'
+import { lineupDiscardWarning, previewBanner } from '../app/copy'
+import { DatabaseProvider } from '../app/providers/database'
+import * as saveCommand from '../data/commands/save-lineup'
+import * as deleteCommand from '../data/commands/delete-lineup'
+import { staleSave, lineupRosterMismatch } from '../app/copy'
 import { TacticsBoard } from '../features/tactics/TacticsBoard'
 import { harborInput } from './fixtures/campaign'
 import { renderAt } from './render'
@@ -18,6 +27,7 @@ import { renderAt } from './render'
 const databaseName = 'touchline-os-test'
 afterEach(async () => {
   cleanup()
+  vi.restoreAllMocks()
   await deleteDatabaseForTests(databaseName)
 })
 async function setup() {
@@ -80,9 +90,10 @@ describe('tactical planning board', () => {
         .map((button) => button.textContent),
     ).toEqual(['Ada Keeper', 'Zara Forward'])
     expect(screen.getByLabelText('Formation')).toHaveValue('4-3-3')
-    expect(screen.getByText(lineupOnScreenOnly)).toBeInTheDocument()
-    expect(screen.getByText(previewBanner)).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /save|delete/i })).toBeNull()
+    expect(screen.getByText(lineupDiscardWarning)).toBeInTheDocument()
+    expect(screen.queryByText(previewBanner)).toBeNull()
+    expect(screen.getByRole('button', { name: 'Save lineup' })).toBeDisabled()
+    expect(screen.queryByRole('button', { name: 'Delete lineup' })).toBeNull()
     hold('Ada Keeper')
     expect(screen.getByText('Holding Ada Keeper')).toHaveAttribute(
       'aria-live',
@@ -175,7 +186,7 @@ describe('tactical planning board', () => {
     ).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Send to bench' })).toBeDisabled()
   })
-  it('refuses a thirteenth bench player and exposes unknown position fit', () => {
+  it('refuses a thirteenth bench player and exposes unknown position fit', async () => {
     const players = Array.from({ length: 13 }, (_, index) =>
       playerSchema.parse({
         id: `player-${index}`,
@@ -196,7 +207,16 @@ describe('tactical planning board', () => {
         isNewgen: false,
       }),
     )
-    render(<TacticsBoard players={players} />)
+    render(
+      <DatabaseProvider name={databaseName}>
+        <TacticsBoard
+          players={players}
+          campaignId={entityIdSchema.parse('campaign-a')}
+          initialRevision={0}
+        />
+      </DatabaseProvider>,
+    )
+    await screen.findByRole('list', { name: 'Roster' })
     hold('Player 13')
     clickSlot('GK')
     expect(
@@ -273,5 +293,180 @@ describe('tactical planning board', () => {
       11,
     )
     expect(await database.lineups.toArray()).toEqual([])
+  })
+})
+
+describe('saved lineup controls', () => {
+  function setName(name: string) {
+    fireEvent.change(screen.getByLabelText('Lineup name'), {
+      target: { value: name },
+    })
+  }
+  async function saveNamed(name: string) {
+    setName(name)
+    fireEvent.click(screen.getByRole('button', { name: 'Save lineup' }))
+    await screen.findByText(`Saved lineup ${name}.`)
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Save lineup' })).toBeEnabled(),
+    )
+  }
+  function chooseSaved(name: string) {
+    const option = screen.getByRole('option', { name }) as HTMLOptionElement
+    fireEvent.change(screen.getByLabelText('Saved lineups'), {
+      target: { value: option.value },
+    })
+  }
+  it('persists two lineups, discards changes on switching, and deletes only the confirmed lineup', async () => {
+    const database = await setup()
+    const { unmount } = renderAt('/app/campaign-a/tactics')
+    await screen.findByRole('list', { name: 'Roster' })
+    hold('Ada Keeper')
+    clickSlot('GK')
+    await saveNamed('League XI')
+    fireEvent.click(screen.getByRole('button', { name: 'New lineup' }))
+    expect(slots().getAllByRole('button', { name: /, empty$/ })).toHaveLength(
+      11,
+    )
+    expect(screen.queryByRole('button', { name: 'Delete lineup' })).toBeNull()
+    hold('Zara Forward')
+    clickSlot('ST')
+    await saveNamed('Cup Rotation')
+    expect(await database.lineups.count()).toBe(2)
+    setName('Unsaved name')
+    fireEvent.change(screen.getByLabelText('Formation'), {
+      target: { value: '4-4-2' },
+    })
+    chooseSaved('League XI')
+    expect(screen.getByLabelText('Lineup name')).toHaveValue('League XI')
+    expect(screen.getByLabelText('Formation')).toHaveValue('4-3-3')
+    expect(
+      slots().getByRole('button', { name: 'GK, Ada Keeper, Position fit' }),
+    ).toBeInTheDocument()
+    chooseSaved('Cup Rotation')
+    expect(
+      slots().getByRole('button', { name: 'ST, Zara Forward, Position fit' }),
+    ).toBeInTheDocument()
+    const deletion = vi.spyOn(deleteCommand, 'deleteLineup')
+    fireEvent.click(screen.getByRole('button', { name: 'Delete lineup' }))
+    expect(
+      screen.getByRole('region', { name: 'Delete lineup' }),
+    ).toBeInTheDocument()
+    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(screen.queryByRole('region', { name: 'Delete lineup' })).toBeNull()
+    expect(deletion).not.toHaveBeenCalled()
+    expect(await database.lineups.count()).toBe(2)
+    fireEvent.click(screen.getByRole('button', { name: 'Delete lineup' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Delete Cup Rotation' }))
+    await screen.findByText('Deleted lineup Cup Rotation.')
+    expect(screen.queryByRole('option', { name: 'Cup Rotation' })).toBeNull()
+    expect(screen.getByLabelText('Lineup name')).toHaveValue('League XI')
+    expect(await database.lineups.count()).toBe(1)
+    unmount()
+    renderAt('/app/campaign-a/tactics')
+    await screen.findByRole('list', { name: 'Roster' })
+    expect(screen.getByLabelText('Lineup name')).toHaveValue('League XI')
+    expect(
+      slots().getByRole('button', { name: 'GK, Ada Keeper, Position fit' }),
+    ).toBeInTheDocument()
+  })
+  it('loads the newest lineup and disables saving an invalid stored roster', async () => {
+    const database = await setup()
+    await database.lineups.add(
+      lineupSchema.parse({
+        id: 'invalid',
+        campaignId: 'campaign-a',
+        seasonId: 'season-a',
+        name: 'Invalid stored lineup',
+        formation: '4-3-3',
+        starters: [
+          { playerId: 'player-0', slot: 'gk', role: null },
+          { playerId: 'player-0', slot: 'st', role: null },
+        ],
+        benchPlayerIds: [],
+        updatedAt: harborInput.now,
+      }),
+    )
+    renderAt('/app/campaign-a/tactics')
+    await screen.findByRole('list', { name: 'Roster' })
+    expect(screen.getByLabelText('Lineup name')).toHaveValue(
+      'Invalid stored lineup',
+    )
+    expect(screen.getByRole('alert')).toHaveTextContent(lineupRosterMismatch)
+    expect(screen.getByRole('button', { name: 'Save lineup' })).toBeDisabled()
+    fireEvent.change(screen.getByLabelText('Formation'), {
+      target: { value: '4-4-2' },
+    })
+    await saveNamed('Corrected XI')
+    expect(await database.lineups.count()).toBe(1)
+    expect(
+      await database.lineups.get(entityIdSchema.parse('invalid')),
+    ).toMatchObject({ name: 'Corrected XI', starters: [] })
+  })
+  it('disables controls during save and reuses the same new id after a failed attempt', async () => {
+    const database = await setup()
+    renderAt('/app/campaign-a/tactics')
+    await screen.findByRole('list', { name: 'Roster' })
+    let release!: () => void
+    const save = vi.spyOn(saveCommand, 'saveLineup').mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          release = () =>
+            resolve({
+              ok: false,
+              code: 'ABORTED',
+              message: 'Command did not finish.',
+            })
+        }),
+    )
+    setName('League XI')
+    fireEvent.click(screen.getByRole('button', { name: 'Save lineup' }))
+    expect(screen.getByRole('button', { name: 'Save lineup' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'New lineup' })).toBeDisabled()
+    release()
+    await screen.findByRole('alert')
+    expect(save).toHaveBeenCalledTimes(1)
+    expect(await database.lineups.count()).toBe(0)
+    await saveNamed('League XI')
+    expect(save).toHaveBeenCalledTimes(2)
+    const firstInput = save.mock.calls[0][1] as { lineupId: string }
+    const nextInput = save.mock.calls[1][1] as { lineupId: string }
+    expect(nextInput.lineupId).toBe(firstInput.lineupId)
+    expect(await database.lineups.count()).toBe(1)
+  })
+  it('shows stale-save failures for save and delete without retrying either command', async () => {
+    const database = await setup()
+    await database.lineups.add(
+      lineupSchema.parse({
+        id: 'saved',
+        campaignId: 'campaign-a',
+        seasonId: 'season-a',
+        name: 'League XI',
+        formation: '4-3-3',
+        starters: [],
+        benchPlayerIds: [],
+        updatedAt: harborInput.now,
+      }),
+    )
+    renderAt('/app/campaign-a/tactics')
+    await screen.findByRole('list', { name: 'Roster' })
+    await database.campaigns.update(entityIdSchema.parse('campaign-a'), {
+      revision: 4,
+    })
+    const save = vi.spyOn(saveCommand, 'saveLineup')
+    const deletion = vi.spyOn(deleteCommand, 'deleteLineup')
+    setName('Stale change')
+    fireEvent.click(screen.getByRole('button', { name: 'Save lineup' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent(staleSave)
+    expect(save).toHaveBeenCalledTimes(1)
+    fireEvent.click(screen.getByRole('button', { name: 'Delete lineup' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Delete League XI' }))
+    await waitFor(() => expect(deletion).toHaveBeenCalledTimes(1))
+    await waitFor(() =>
+      expect(screen.getByRole('alert')).toHaveTextContent(staleSave),
+    )
+    expect(
+      await database.lineups.get(entityIdSchema.parse('saved')),
+    ).toMatchObject({ name: 'League XI' })
+    expect(await database.lineups.count()).toBe(1)
   })
 })

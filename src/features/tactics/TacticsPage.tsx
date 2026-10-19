@@ -23,6 +23,7 @@ type TacticsState = {
   club?: Club
   players?: Player[]
   season?: Season
+  revision?: number
   missing?: boolean
   failed?: boolean
   chooseClub?: string
@@ -57,7 +58,13 @@ export function TacticsPage() {
           listPlayersByClub(database, campaign.id, campaign.managedClubId),
         ])
         if (active)
-          setState({ campaignId, club, season, players: club ? players : [] })
+          setState({
+            campaignId,
+            club,
+            season,
+            players: club ? players : [],
+            revision: campaign.revision,
+          })
       } catch {
         if (active) setState({ campaignId, failed: true })
       }
@@ -86,7 +93,9 @@ export function TacticsPage() {
         </div>
       )}
       <TacticsBoard
-        key={`${campaignId}:${state.club?.id ?? 'missing'}`}
+        key={`${campaignId}:${state.club?.id ?? 'missing'}:${state.season?.id ?? 'missing'}`}
+        campaignId={entityIdSchema.parse(campaignId)}
+        initialRevision={state.revision ?? 0}
         players={state.players ?? []}
         season={state.season}
       />

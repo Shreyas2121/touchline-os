@@ -42,7 +42,8 @@ export function WorkspaceLayout() {
       banner={
         pathname.endsWith('/command-center') ||
         pathname.endsWith('/choose-club') ||
-        pathname.endsWith('/squad')
+        pathname.endsWith('/squad') ||
+        pathname.endsWith('/tactics')
           ? undefined
           : previewBanner
       }

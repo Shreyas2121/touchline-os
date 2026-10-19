@@ -15,7 +15,7 @@ import { deleteDatabaseForTests, getDatabase } from '../data/db'
 import * as clubs from '../data/repositories/clubs'
 import { entityIdSchema } from '../domain/validation/schemas'
 import {
-  lineupOnScreenOnly,
+  lineupDiscardWarning,
   loadingTactics,
   previewBanner,
   tacticsFailed,
@@ -209,9 +209,11 @@ describe('club graphics on campaign pages', () => {
       name: 'Harbor Athletic crest',
     })
     expect(tacticsCrest.outerHTML).toBe(crestMarkup)
-    expect(screen.getByRole('img', { name: 'Pitch' })).toBeInTheDocument()
-    expect(screen.getByText(lineupOnScreenOnly)).toBeInTheDocument()
-    expect(screen.getByText(previewBanner)).toBeInTheDocument()
+    expect(
+      await screen.findByRole('img', { name: 'Pitch' }),
+    ).toBeInTheDocument()
+    expect(screen.getByText(lineupDiscardWarning)).toBeInTheDocument()
+    expect(screen.queryByText(previewBanner)).toBeNull()
     expect(screen.getByRole('combobox', { name: 'Formation' })).toHaveValue(
       '4-3-3',
     )
