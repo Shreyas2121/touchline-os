@@ -5,10 +5,12 @@ import { TopBar } from './TopBar'
 
 export function AppShell({
   campaignId,
+  campaignName,
   banner,
   children,
 }: {
   campaignId?: string
+  campaignName?: string
   banner?: ReactNode
   children: ReactNode
 }) {
@@ -20,7 +22,7 @@ export function AppShell({
       <div className="grid min-h-screen grid-cols-[auto_1fr]">
         {campaignId ? <NavRail campaignId={campaignId} /> : null}
         <div>
-          <TopBar campaignId={campaignId} />
+          <TopBar campaignId={campaignId} campaignName={campaignName} />
           {banner ? <Banner>{banner}</Banner> : null}
           <main id="main" tabIndex={-1} className="grid grid-cols-12 gap-4 p-4">
             <div className="col-span-12">{children}</div>

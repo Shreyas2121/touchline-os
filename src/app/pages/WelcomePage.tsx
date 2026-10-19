@@ -1,38 +1,26 @@
 import { useState } from 'react'
-import { Link } from 'react-router'
-import { createPanel, disclaimer, importPanel, pitch } from '../copy'
+import { disclaimer, importPanel, pitch } from '../copy'
+import { CampaignManager } from '../../features/campaigns/CampaignManager'
 import { Button } from '../../components/ui/Button'
 import { PageHeader } from '../../components/ui/PageHeader'
 
 export function WelcomePage() {
-  const [panel, setPanel] = useState<'create' | 'import' | null>(null)
+  const [panel, setPanel] = useState(false)
 
   return (
     <>
       <PageHeader title="Touchline OS" />
       <p>{pitch}</p>
       <p>{disclaimer}</p>
-      <p>
-        <Link className="touchline-focus" to="/app/demo/command-center">
-          Try fictional demo
-        </Link>
-      </p>
+      <CampaignManager />
       <Button
-        aria-expanded={panel === 'create'}
-        aria-controls="create-panel"
-        onClick={() => setPanel(panel === 'create' ? null : 'create')}
-      >
-        Create new campaign
-      </Button>
-      <Button
-        aria-expanded={panel === 'import'}
+        aria-expanded={panel}
         aria-controls="import-panel"
-        onClick={() => setPanel(panel === 'import' ? null : 'import')}
+        onClick={() => setPanel(!panel)}
       >
         Import backup
       </Button>
-      {panel === 'create' ? <p id="create-panel">{createPanel}</p> : null}
-      {panel === 'import' ? <p id="import-panel">{importPanel}</p> : null}
+      {panel ? <p id="import-panel">{importPanel}</p> : null}
     </>
   )
 }

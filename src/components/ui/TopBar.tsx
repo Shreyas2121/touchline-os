@@ -3,12 +3,22 @@ import { Link } from 'react-router'
 import { backupPanel, searchPanel } from '../../app/copy'
 import { Button } from './Button'
 
-export function TopBar({ campaignId }: { campaignId?: string }) {
+export function TopBar({
+  campaignId,
+  campaignName,
+}: {
+  campaignId?: string
+  campaignName?: string
+}) {
   const [panel, setPanel] = useState<'search' | 'backup' | null>(null)
 
   return (
     <header className="flex flex-wrap items-center gap-4 border-b border-[var(--border)] bg-[var(--surface-1)] px-4 py-2">
+      {campaignName ? <p>{campaignName}</p> : null}
       {campaignId ? <p>{campaignId}</p> : null}
+      <Link className="touchline-focus" to="/">
+        Saved campaigns
+      </Link>
       <Button
         aria-expanded={panel === 'search'}
         aria-controls="search-panel"

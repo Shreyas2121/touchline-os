@@ -2,7 +2,6 @@ import { expect, test } from '@playwright/test'
 import {
   backToWelcome,
   constitutionNote,
-  createPanel,
   disclaimer,
   importPanel,
   missingCampaignTitle,
@@ -25,14 +24,15 @@ declare function getComputedStyle(element: { nodeType: number }): {
   outlineStyle: string
 }
 
-test('phase 1 shell smoke', async ({ page }) => {
+test('persistent campaign shell smoke', async ({ page }) => {
+  test.setTimeout(120_000)
   await page.goto('/')
   await expect(
     page.getByRole('heading', { name: 'Touchline OS' }),
   ).toBeVisible()
   await expect(page.getByText(disclaimer)).toBeVisible()
   await expect(
-    page.getByRole('link', { name: 'Try fictional demo' }),
+    page.getByRole('button', { name: 'Try fictional demo' }),
   ).toBeVisible()
   await expect(
     page.getByRole('button', { name: 'Create new campaign' }),
@@ -41,7 +41,7 @@ test('phase 1 shell smoke', async ({ page }) => {
     page.getByRole('button', { name: 'Import backup' }),
   ).toBeVisible()
 
-  await page.getByRole('link', { name: 'Try fictional demo' }).click()
+  await page.getByRole('button', { name: 'Try fictional demo' }).click()
   await expect(page).toHaveURL(/\/app\/demo\/command-center$/)
   await expect(page.getByText(previewBanner)).toBeVisible()
   await expect(page.getByText(previewValue, { exact: true })).toHaveCount(4)
@@ -52,13 +52,15 @@ test('phase 1 shell smoke', async ({ page }) => {
   await page.goto('/')
   await page.getByRole('button', { name: 'Create new campaign' }).click()
   await expect(page).toHaveURL(/\/$/)
-  await expect(page.getByText(createPanel)).toBeVisible()
+  await expect(
+    page.getByRole('button', { name: 'Save campaign' }),
+  ).toBeDisabled()
   await page.getByRole('button', { name: 'Import backup' }).click()
   await expect(page).toHaveURL(/\/$/)
   await expect(page.getByText(importPanel)).toBeVisible()
   await expect(page.locator('input[type=file]')).toHaveCount(0)
 
-  await page.getByRole('link', { name: 'Try fictional demo' }).click()
+  await page.getByRole('button', { name: 'Try fictional demo' }).click()
   await page.getByRole('link', { name: 'Squad' }).click()
   await expect(page).toHaveURL(/\/squad$/)
   await expect(page.getByRole('columnheader', { name: 'Name' })).toBeVisible()

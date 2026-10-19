@@ -85,6 +85,7 @@ export function createCampaign(
         createdAt: parsed.now,
         updatedAt: parsed.now,
         revision,
+        status: 'active',
       })
       const audit = auditEventSchema.parse({
         id: parsed.auditEventId,

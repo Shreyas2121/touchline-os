@@ -178,6 +178,7 @@ export const campaignSchema = z.strictObject({
   createdAt: timestampUtcSchema,
   updatedAt: timestampUtcSchema,
   revision: z.number().int().nonnegative(),
+  status: z.enum(['active', 'archived']),
 })
 
 export type Campaign = z.infer<typeof campaignSchema>
@@ -466,6 +467,9 @@ export const auditEventSchema = z.strictObject({
     'campaign.rename',
     'player.add',
     'campaign.seed',
+    'campaign.archive',
+    'campaign.restore',
+    'campaign.delete',
   ]),
   createdAt: timestampUtcSchema,
   summary: boundedText(limits.noteMax),

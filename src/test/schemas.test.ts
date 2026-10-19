@@ -40,6 +40,7 @@ const campaign = {
   createdAt: timestamp,
   updatedAt: timestamp,
   revision: 0,
+  status: 'active',
 }
 
 const season = {

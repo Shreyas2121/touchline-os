@@ -7,6 +7,25 @@ import {
 const timestamp = '2026-10-19T00:00:00.000Z'
 const date = '2026-10-19'
 
+export const harborInput = {
+  campaignId: 'campaign-a',
+  clubId: 'club-a',
+  seasonId: 'season-a',
+  auditEventId: 'audit-a',
+  actionId: 'action-a',
+  name: 'Harbor',
+  kind: 'fictional',
+  seed: null,
+  generatorVersion: null,
+  now: timestamp,
+  clubName: 'Harbor Athletic',
+  shortName: 'HAR',
+  colors: { primary: '#1F2933', secondary: '#C4A35A' },
+  prestige: 50,
+  academyTier: 3,
+  scoutingRegion: null,
+}
+
 export const campaignA = campaignSchema.parse({
   id: 'campaign-a',
   name: 'Riverside',
@@ -19,6 +38,7 @@ export const campaignA = campaignSchema.parse({
   createdAt: timestamp,
   updatedAt: timestamp,
   revision: 0,
+  status: 'active',
 })
 
 export const campaignB = campaignSchema.parse({
@@ -33,6 +53,7 @@ export const campaignB = campaignSchema.parse({
   createdAt: timestamp,
   updatedAt: timestamp,
   revision: 0,
+  status: 'active',
 })
 
 export const clubA = clubSchema.parse({

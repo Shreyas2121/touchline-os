@@ -188,6 +188,7 @@ export async function seedDemoCampaign(
                 createdAt: now,
                 updatedAt: now,
                 revision,
+                status: 'active',
               },
         )
         if (stored) await updateCampaign(database, updated)

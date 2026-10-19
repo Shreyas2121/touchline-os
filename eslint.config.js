@@ -176,12 +176,7 @@ export default defineConfig(
     },
   },
   {
-    files: [
-      'src/main.tsx',
-      'src/app/**/*.{ts,tsx}',
-      'src/features/**/*.{ts,tsx}',
-      'src/components/**/*.{ts,tsx}',
-    ],
+    files: ['src/main.tsx', 'src/components/**/*.{ts,tsx}'],
     rules: {
       'no-restricted-imports': [
         'error',
@@ -190,12 +185,12 @@ export default defineConfig(
             {
               name: 'dexie',
               message:
-                'the shell cannot import Dexie, the data layer, or the domain during Phase 2.',
+                'components and the entry point cannot import Dexie, the data layer, or the domain.',
             },
             {
               name: 'fake-indexeddb',
               message:
-                'the shell cannot import Dexie, the data layer, or the domain during Phase 2.',
+                'components and the entry point cannot import Dexie, the data layer, or the domain.',
             },
           ],
           patterns: [
@@ -221,11 +216,47 @@ export default defineConfig(
                 'fake-indexeddb/**',
               ],
               message:
-                'the shell cannot import Dexie, the data layer, or the domain during Phase 2.',
+                'components and the entry point cannot import Dexie, the data layer, or the domain.',
             },
           ],
         },
       ],
+    },
+  },
+  {
+    files: ['src/app/**/*.{ts,tsx}', 'src/features/**/*.{ts,tsx}'],
+    ignores: ['src/app/providers/database.tsx'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: ['dexie', 'fake-indexeddb'],
+          patterns: [
+            {
+              group: ['dexie/**', 'fake-indexeddb/**'],
+              message: 'UI modules use commands and repositories.',
+            },
+            {
+              regex: '(^|/)data/(db(\\.[^/]+)?$|migrations(/|$))',
+              message:
+                'Only the database provider may import the database. UI modules cannot import migrations.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ['src/app/providers/database.tsx'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: ['dexie', 'fake-indexeddb'],
+          patterns: ['dexie/**', 'fake-indexeddb/**'],
+        },
+      ],
+      'react-refresh/only-export-components': 'off',
     },
   },
   eslintConfigPrettier,

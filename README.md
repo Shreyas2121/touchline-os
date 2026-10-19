@@ -44,4 +44,4 @@ Install Chromium once per machine, before `pnpm test:e2e`.
 
 ## Local database
 
-Later phases store campaigns in IndexedDB. The screens in this build do not open that database, and the welcome screen still cannot save a campaign.
+Campaigns are stored in an IndexedDB database named touchline-os on this device. Creating a campaign, opening the fictional demo, and renaming, archiving, or deleting a save all write to that database. Import, backup, and the other workspace sections are still previews.

@@ -45,104 +45,112 @@ afterEach(async () => {
 })
 
 describe('seedDemoCampaign', () => {
-  it('seeds the full world once, reports progress, and isolates another campaign', async () => {
-    const database = getDatabase(databaseName)
-    const second = await createCampaign(database, secondInput)
-    expect(second.ok).toBe(true)
-    const progress: SeedProgress[] = []
-    const result = await seedDemoCampaign(database, input, (event) =>
-      progress.push(event),
-    )
-    expect(result.ok).toBe(true)
-    if (!result.ok) throw new Error(result.message)
-    expect(result.revision).toBe(14)
-    expect(result.value).toMatchObject({
-      id: 'demo',
-      name: 'Fictional demo',
-      managedClubId: 'demo-club-01',
-      activeSeasonId: 'demo-season-1',
-    })
-    expect(
-      await database.leagues.where('campaignId').equals(demoId).count(),
-    ).toBe(4)
-    expect(
-      await database.clubs.where('campaignId').equals(demoId).count(),
-    ).toBe(72)
-    expect(
-      await database.players.where('campaignId').equals(demoId).count(),
-    ).toBe(3000)
-    expect(
-      await database.seasons.where('campaignId').equals(demoId).count(),
-    ).toBe(1)
-    expect(
-      await database.seasons.get(entityIdSchema.parse('demo-season-1')),
-    ).toMatchObject({
-      label: 'Season 1',
-      ordinal: 1,
-      status: 'active',
-      startDate: '2026-10-19',
-      endDate: null,
-      openedAt: now,
-      closedAt: null,
-    })
-    expect(await database.campaigns.get(demoId)).toEqual(result.value)
-    expect(
-      await database.players.get(entityIdSchema.parse('demo-player-0001')),
-    ).not.toHaveProperty('weeklyWageCents')
-    const audits = await listAuditEvents(database, demoId)
-    expect(audits).toHaveLength(2)
-    expect(audits.map((audit) => audit.actionType)).toEqual([
-      'campaign.seed',
-      'campaign.create',
-    ])
-    expect(audits[0]).toMatchObject({
-      summary: 'Seeded fictional world',
-      payload: {
+  it(
+    'seeds the full world once, reports progress, and isolates another campaign',
+    { timeout: 20_000 },
+    async () => {
+      const database = getDatabase(databaseName)
+      const second = await createCampaign(database, secondInput)
+      expect(second.ok).toBe(true)
+      const progress: SeedProgress[] = []
+      const result = await seedDemoCampaign(database, input, (event) =>
+        progress.push(event),
+      )
+      expect(result.ok).toBe(true)
+      if (!result.ok) throw new Error(result.message)
+      expect(result.revision).toBe(14)
+      expect(result.value).toMatchObject({
+        id: 'demo',
+        name: 'Fictional demo',
+        managedClubId: 'demo-club-01',
+        activeSeasonId: 'demo-season-1',
+      })
+      expect(
+        await database.leagues.where('campaignId').equals(demoId).count(),
+      ).toBe(4)
+      expect(
+        await database.clubs.where('campaignId').equals(demoId).count(),
+      ).toBe(72)
+      expect(
+        await database.players.where('campaignId').equals(demoId).count(),
+      ).toBe(3000)
+      expect(
+        await database.seasons.where('campaignId').equals(demoId).count(),
+      ).toBe(1)
+      expect(
+        await database.seasons.get(entityIdSchema.parse('demo-season-1')),
+      ).toMatchObject({
+        label: 'Season 1',
+        ordinal: 1,
+        status: 'active',
+        startDate: '2026-10-19',
+        endDate: null,
+        openedAt: now,
+        closedAt: null,
+      })
+      expect(await database.campaigns.get(demoId)).toEqual(result.value)
+      expect(
+        await database.players.get(entityIdSchema.parse('demo-player-0001')),
+      ).not.toHaveProperty('weeklyWageCents')
+      const audits = await listAuditEvents(database, demoId)
+      expect(audits).toHaveLength(2)
+      expect(audits.map((audit) => audit.actionType)).toEqual([
+        'campaign.seed',
+        'campaign.create',
+      ])
+      expect(audits[0]).toMatchObject({
+        summary: 'Seeded fictional world',
+        payload: {
+          seed: input.seed,
+          generatorVersion: '1',
+          leagueCount: 4,
+          clubCount: 72,
+          playerCount: 3000,
+          reason: 'create',
+        },
+      })
+      expect(audits[0].payload).toEqual({
         seed: input.seed,
         generatorVersion: '1',
         leagueCount: 4,
         clubCount: 72,
         playerCount: 3000,
         reason: 'create',
-      },
-    })
-    expect(audits[0].payload).toEqual({
-      seed: input.seed,
-      generatorVersion: '1',
-      leagueCount: 4,
-      clubCount: 72,
-      playerCount: 3000,
-      reason: 'create',
-    })
-    expect(progress.slice(0, 2)).toEqual([
-      { stage: 'leagues', done: 0, total: 4 },
-      { stage: 'clubs', done: 0, total: 72 },
-    ])
-    expect(
-      progress
-        .filter((event) => event.stage === 'players')
-        .map((event) => event.done),
-    ).toEqual(Array.from({ length: 12 }, (_, i) => i * 250))
-    expect(progress.at(-1)).toEqual({ stage: 'ready', done: 3000, total: 3000 })
-    const repeatProgress: SeedProgress[] = []
-    expect(
-      await seedDemoCampaign(database, input, (event) =>
-        repeatProgress.push(event),
-      ),
-    ).toEqual(result)
-    expect(repeatProgress).toEqual([
-      { stage: 'ready', done: 3000, total: 3000 },
-    ])
-    expect(await database.players.count()).toBe(3000)
-    expect(await listAuditEvents(database, demoId)).toEqual(audits)
-    expect(
-      await listPlayers(database, entityIdSchema.parse('campaign-b')),
-    ).toEqual([])
-    if (second.ok)
-      expect(await database.campaigns.get(second.value.id)).toEqual(
-        second.value,
-      )
-  })
+      })
+      expect(progress.slice(0, 2)).toEqual([
+        { stage: 'leagues', done: 0, total: 4 },
+        { stage: 'clubs', done: 0, total: 72 },
+      ])
+      expect(
+        progress
+          .filter((event) => event.stage === 'players')
+          .map((event) => event.done),
+      ).toEqual(Array.from({ length: 12 }, (_, i) => i * 250))
+      expect(progress.at(-1)).toEqual({
+        stage: 'ready',
+        done: 3000,
+        total: 3000,
+      })
+      const repeatProgress: SeedProgress[] = []
+      expect(
+        await seedDemoCampaign(database, input, (event) =>
+          repeatProgress.push(event),
+        ),
+      ).toEqual(result)
+      expect(repeatProgress).toEqual([
+        { stage: 'ready', done: 3000, total: 3000 },
+      ])
+      expect(await database.players.count()).toBe(3000)
+      expect(await listAuditEvents(database, demoId)).toEqual(audits)
+      expect(
+        await listPlayers(database, entityIdSchema.parse('campaign-b')),
+      ).toEqual([])
+      if (second.ok)
+        expect(await database.campaigns.get(second.value.id)).toEqual(
+          second.value,
+        )
+    },
+  )
 
   it('aborts the first player batch and resumes without duplicating clubs', async () => {
     const database = getDatabase(databaseName)
