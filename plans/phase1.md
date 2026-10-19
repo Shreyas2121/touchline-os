@@ -521,10 +521,10 @@ Record each guide commit here when it lands.
 | Guide | Commit | Checks |
 | --- | --- | --- |
 | `P01-G01` | `360b54477e984156d0c76ea29d66cbc7023a24b0` | lint, typecheck, build |
-| `P01-G02` |  | lint, typecheck, build |
-| `P01-G03` |  | lint, typecheck, build |
-| `P01-G04` |  | lint, typecheck, build |
-| `P01-G05` |  | lint, typecheck, test, build, test:e2e |
+| `P01-G02` | `f8cbb2db83668b501c9ce1a2ac33a04d8f23c92f` | lint, typecheck, build |
+| `P01-G03` | `a406f22113944e9bb5ff8965a0f3e9f6458e65be` | lint, typecheck, build |
+| `P01-G04` | `e12589a71b4be5503e1769ec50f0ea6da779e4a2` | lint, typecheck, build |
+| `P01-G05` | `1a42719692a114fdec134aab2d682ef18d863870` | lint, typecheck, test, build, test:e2e |
 
 ### Handoff to Phase 2
 
