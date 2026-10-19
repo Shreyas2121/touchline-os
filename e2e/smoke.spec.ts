@@ -40,13 +40,18 @@ test('persistent campaign shell smoke', async ({ page }) => {
     page.getByRole('button', { name: 'Import backup' }),
   ).toBeVisible()
 
-  await page.getByRole('button', { name: 'Try fictional demo' }).click()
-  await expect(page).toHaveURL(/\/app\/demo\/command-center$/)
+  await page.getByRole('button', { name: 'Create new campaign' }).click()
+  await page.getByLabel('Campaign name', { exact: true }).fill('Harbor')
+  await page.getByLabel('Club name', { exact: true }).fill('Harbor Athletic')
+  await page.getByLabel('Short name', { exact: true }).fill('HAR')
+  await page.getByRole('button', { name: 'Save campaign', exact: true }).click()
+  await expect(page).toHaveURL(/\/app\/[A-Za-z0-9-]+\/command-center$/)
+  const workspaceUrl = page.url()
   await expect(
-    page.getByRole('heading', { name: 'Ashbridge', level: 2 }),
+    page.getByRole('heading', { name: 'Harbor Athletic', level: 2 }),
   ).toBeVisible()
   await expect(page.getByText(previewBanner)).toHaveCount(0)
-  await expect(page.getByText('Unknown', { exact: true })).toHaveCount(3)
+  await expect(page.getByText('Unknown', { exact: true })).toHaveCount(4)
   await expect(page.getByText('Preview', { exact: true })).toHaveCount(0)
   for (const word of ['Blocked', 'Warning', 'Informational', 'Passed']) {
     await expect(page.getByText(word)).toHaveCount(0)
@@ -63,7 +68,7 @@ test('persistent campaign shell smoke', async ({ page }) => {
   await expect(page.getByText(importPanel)).toBeVisible()
   await expect(page.locator('input[type=file]')).toHaveCount(0)
 
-  await page.getByRole('button', { name: 'Try fictional demo' }).click()
+  await page.goto(workspaceUrl)
   await page.getByRole('link', { name: 'Squad' }).click()
   await expect(page).toHaveURL(/\/squad$/)
   await expect(page.getByText(previewBanner)).toBeVisible()
@@ -114,7 +119,7 @@ test('persistent campaign shell smoke', async ({ page }) => {
   await page.getByRole('link', { name: backToWelcome }).click()
   await expect(page).toHaveURL(/\/$/)
 
-  await page.goto('/app/demo/not-a-section')
+  await page.goto(workspaceUrl.replace(/command-center$/, 'not-a-section'))
   await expect(page.getByRole('heading', { name: notFoundTitle })).toBeVisible()
   await expect(page.getByText(previewBanner)).toBeVisible()
 

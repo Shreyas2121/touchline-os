@@ -45,3 +45,5 @@ Install Chromium once per machine, before `pnpm test:e2e`.
 ## Local database
 
 Campaigns are stored in an IndexedDB database named touchline-os on this device. Creating a campaign, opening the fictional demo, and renaming, archiving, or deleting a save all write to that database. Import, backup, and the other workspace sections are still previews.
+
+The fictional demo asks for a club once, and reset replaces only that demo.

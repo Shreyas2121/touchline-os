@@ -2,6 +2,7 @@ import { cleanup, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 import { createCampaign } from '../data/commands/create-campaign'
 import { seedDemoCampaign } from '../data/commands/seed-demo'
+import { selectManagedClub } from '../data/commands/select-managed-club'
 import { deleteDatabaseForTests, getDatabase } from '../data/db'
 import {
   auditEventSchema,
@@ -66,6 +67,19 @@ describe('command center', () => {
         () => {},
       )
       expect(seeded.ok).toBe(true)
+      if (!seeded.ok) throw new Error(seeded.message)
+      expect(
+        (
+          await selectManagedClub(getDatabase(databaseName), {
+            campaignId: 'demo',
+            clubId: 'demo-club-01',
+            expectedRevision: seeded.revision,
+            now: harborInput.now,
+            auditEventId: 'audit-select',
+            actionId: 'action-select',
+          })
+        ).ok,
+      ).toBe(true)
       const { container, unmount } = renderAt('/app/demo/command-center')
       expect(
         await screen.findByRole('heading', { level: 2, name: 'Ashbridge' }),

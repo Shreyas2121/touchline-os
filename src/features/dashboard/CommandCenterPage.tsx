@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router'
+import { Navigate, useParams } from 'react-router'
 import { loadingCampaign } from '../../app/copy'
 import { SectionPage } from '../../app/pages/SectionPage'
 import { useDatabase } from '../../app/providers/database'
@@ -19,6 +19,7 @@ type Summary = {
   activity?: readonly { id: string; summary: string }[]
   missing?: boolean
   failed?: boolean
+  chooseClub?: string
 }
 
 export function CommandCenterPage() {
@@ -36,10 +37,17 @@ export function CommandCenterPage() {
           if (active) setSummary({ campaignId, missing: true })
           return
         }
-        const [club, players, audits] = await Promise.all([
+        const audits = await listAuditEvents(database, campaign.id)
+        if (
+          campaign.seed !== null &&
+          !audits.some((audit) => audit.actionType === 'campaign.select-club')
+        ) {
+          if (active) setSummary({ campaignId, chooseClub: campaign.id })
+          return
+        }
+        const [club, players] = await Promise.all([
           getClub(database, campaign.id, campaign.managedClubId),
           listPlayersByClub(database, campaign.id, campaign.managedClubId),
-          listAuditEvents(database, campaign.id),
         ])
         if (active)
           setSummary({
@@ -63,6 +71,8 @@ export function CommandCenterPage() {
   if (!summary || summary.campaignId !== campaignId)
     return <p>{loadingCampaign}</p>
   if (summary.missing) return null
+  if (summary.chooseClub)
+    return <Navigate to={`/app/${summary.chooseClub}/choose-club`} replace />
   if (summary.failed)
     return (
       <p role="alert">

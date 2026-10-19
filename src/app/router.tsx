@@ -16,6 +16,7 @@ import { WorkspaceLayout } from './layout/WorkspaceLayout'
 import { MissingCampaignPage } from './pages/MissingCampaignPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { WelcomePage } from './pages/WelcomePage'
+import { ChooseClubPage } from '../features/campaigns/ChooseClubPage'
 
 export const appRoutes = [
   {
@@ -31,6 +32,7 @@ export const appRoutes = [
         children: [
           { index: true, element: <Navigate to="command-center" replace /> },
           { path: 'command-center', element: <CommandCenterPage /> },
+          { path: 'choose-club', element: <ChooseClubPage /> },
           { path: 'squad', element: <SquadPage /> },
           { path: 'tactics', element: <TacticsPage /> },
           { path: 'transfers', element: <TransfersPage /> },

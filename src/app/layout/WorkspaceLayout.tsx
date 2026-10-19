@@ -39,7 +39,12 @@ export function WorkspaceLayout() {
 
   return (
     <AppShell
-      banner={pathname.endsWith('/command-center') ? undefined : previewBanner}
+      banner={
+        pathname.endsWith('/command-center') ||
+        pathname.endsWith('/choose-club')
+          ? undefined
+          : previewBanner
+      }
       campaignId={campaignId}
       campaignName={state.campaign.name}
     >
