@@ -142,6 +142,41 @@ export default defineConfig(
   },
   {
     files: [
+      'src/data/repositories/**/*.ts',
+      'src/data/commands/**/*.ts',
+      'src/data/transactions/**/*.ts',
+    ],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector:
+            "CallExpression[callee.object.name='Date'][callee.property.name='now']",
+          message:
+            'repositories, commands, and transactions take a clock and ids from their caller.',
+        },
+        {
+          selector: "NewExpression[callee.name='Date']",
+          message:
+            'repositories, commands, and transactions take a clock and ids from their caller.',
+        },
+        {
+          selector:
+            "CallExpression[callee.object.name='Math'][callee.property.name='random']",
+          message:
+            'repositories, commands, and transactions take a clock and ids from their caller.',
+        },
+        {
+          selector:
+            "CallExpression[callee.object.name='crypto'][callee.property.name='randomUUID']",
+          message:
+            'repositories, commands, and transactions take a clock and ids from their caller.',
+        },
+      ],
+    },
+  },
+  {
+    files: [
       'src/main.tsx',
       'src/app/**/*.{ts,tsx}',
       'src/features/**/*.{ts,tsx}',
