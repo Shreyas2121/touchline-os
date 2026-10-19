@@ -15,7 +15,7 @@ import { deleteDatabaseForTests, getDatabase } from '../data/db'
 import * as clubs from '../data/repositories/clubs'
 import { entityIdSchema } from '../domain/validation/schemas'
 import {
-  lineupsNotSaved,
+  lineupOnScreenOnly,
   loadingTactics,
   previewBanner,
   tacticsFailed,
@@ -210,10 +210,16 @@ describe('club graphics on campaign pages', () => {
     })
     expect(tacticsCrest.outerHTML).toBe(crestMarkup)
     expect(screen.getByRole('img', { name: 'Pitch' })).toBeInTheDocument()
-    expect(screen.getByText(lineupsNotSaved)).toBeInTheDocument()
+    expect(screen.getByText(lineupOnScreenOnly)).toBeInTheDocument()
     expect(screen.getByText(previewBanner)).toBeInTheDocument()
-    expect(screen.queryByRole('combobox')).toBeNull()
-    expect(screen.queryByRole('button', { name: /slot/i })).toBeNull()
+    expect(screen.getByRole('combobox', { name: 'Formation' })).toHaveValue(
+      '4-3-3',
+    )
+    expect(
+      screen
+        .getByRole('group', { name: 'Pitch slots' })
+        .querySelectorAll('button'),
+    ).toHaveLength(11)
     expect(await database.lineups.count()).toBe(0)
   })
   it('omits the crest when the managed club is missing', async () => {

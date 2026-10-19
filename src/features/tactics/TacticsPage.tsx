@@ -1,20 +1,28 @@
 ﻿import { useEffect, useState } from 'react'
 import { Navigate, useParams } from 'react-router'
-import { lineupsNotSaved, loadingTactics, tacticsFailed } from '../../app/copy'
+import { loadingTactics, tacticsFailed } from '../../app/copy'
 import { SectionPage } from '../../app/pages/SectionPage'
 import { useDatabase } from '../../app/providers/database'
 import { CrestSvg } from '../../components/graphics/CrestSvg'
-import { PitchSvg } from '../../components/graphics/PitchSvg'
 import { getCampaign } from '../../data/repositories/campaigns'
 import { getClub } from '../../data/repositories/clubs'
 import { listAuditEvents } from '../../data/repositories/audit-events'
 import { crestSpec } from '../../domain/graphics/crest'
-import { pitchLinePaths } from '../../domain/graphics/pitch'
-import { entityIdSchema, type Club } from '../../domain/validation/schemas'
+import { listPlayersByClub } from '../../data/repositories/players'
+import { getActiveSeason } from '../../data/repositories/seasons'
+import {
+  entityIdSchema,
+  type Club,
+  type Player,
+  type Season,
+} from '../../domain/validation/schemas'
+import { TacticsBoard } from './TacticsBoard'
 
 type TacticsState = {
   campaignId: string | undefined
   club?: Club
+  players?: Player[]
+  season?: Season
   missing?: boolean
   failed?: boolean
   chooseClub?: string
@@ -43,12 +51,13 @@ export function TacticsPage() {
           if (active) setState({ campaignId, chooseClub: campaign.id })
           return
         }
-        const club = await getClub(
-          database,
-          campaign.id,
-          campaign.managedClubId,
-        )
-        if (active) setState({ campaignId, club })
+        const [club, season, players] = await Promise.all([
+          getClub(database, campaign.id, campaign.managedClubId),
+          getActiveSeason(database, campaign.id),
+          listPlayersByClub(database, campaign.id, campaign.managedClubId),
+        ])
+        if (active)
+          setState({ campaignId, club, season, players: club ? players : [] })
       } catch {
         if (active) setState({ campaignId, failed: true })
       }
@@ -76,8 +85,11 @@ export function TacticsPage() {
           <h2>{state.club.name}</h2>
         </div>
       )}
-      <p>{lineupsNotSaved}</p>
-      <PitchSvg paths={pitchLinePaths()} />
+      <TacticsBoard
+        key={`${campaignId}:${state.club?.id ?? 'missing'}`}
+        players={state.players ?? []}
+        season={state.season}
+      />
     </>
   )
 }
