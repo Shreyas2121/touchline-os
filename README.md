@@ -41,3 +41,7 @@ Install Chromium once per machine, before `pnpm test:e2e`.
 
 - Node.js 22 (see `.nvmrc`)
 - pnpm 12.9.1 (`packageManager` in `package.json`)
+
+## Local database
+
+Later phases store campaigns in IndexedDB. The screens in this build do not open that database, and the welcome screen still cannot save a campaign.

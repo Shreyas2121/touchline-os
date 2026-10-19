@@ -73,6 +73,21 @@ export async function deleteDatabaseForTests(name: string): Promise<void> {
   await Dexie.delete(name)
 }
 
+export function closeDatabaseForTests(name: string): void {
+  const cached = databases.get(name)
+  if (!cached) return
+  cached.close()
+  databases.delete(name)
+}
+
+export function assertStorageAvailable(
+  indexedDB: IDBFactory | undefined,
+): void {
+  if (indexedDB === undefined) {
+    throw new PersistenceError('UNAVAILABLE', 'IndexedDB is not available.')
+  }
+}
+
 export function parseStored<T>(schema: ZodType<T>, value: unknown): T {
   const parsed = schema.safeParse(value)
   if (!parsed.success) {
