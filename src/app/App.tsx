@@ -1,3 +1,6 @@
+import { RouterProvider } from 'react-router'
+import { router } from './router'
+
 export function App() {
-  return <h1>Touchline OS</h1>
+  return <RouterProvider router={router} />
 }
