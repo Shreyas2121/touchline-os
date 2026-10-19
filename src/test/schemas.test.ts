@@ -390,6 +390,16 @@ describe('entity schemas', () => {
 
   it('parses an audit event', () => {
     expect(auditEventSchema.safeParse(auditEvent).success).toBe(true)
+    expect(
+      auditEventSchema.safeParse({ ...auditEvent, actionType: 'campaign.seed' })
+        .success,
+    ).toBe(true)
+    expect(
+      auditEventSchema.safeParse({
+        ...auditEvent,
+        actionType: 'campaign.unknown',
+      }).success,
+    ).toBe(false)
   })
 
   it('parses an import receipt', () => {

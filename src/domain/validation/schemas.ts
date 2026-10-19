@@ -461,7 +461,12 @@ export const auditEventSchema = z.strictObject({
   campaignId: entityIdSchema,
   seasonId: nullableId,
   actionId: entityIdSchema,
-  actionType: z.enum(['campaign.create', 'campaign.rename', 'player.add']),
+  actionType: z.enum([
+    'campaign.create',
+    'campaign.rename',
+    'player.add',
+    'campaign.seed',
+  ]),
   createdAt: timestampUtcSchema,
   summary: boundedText(limits.noteMax),
   payload: auditPayloadSchema,
