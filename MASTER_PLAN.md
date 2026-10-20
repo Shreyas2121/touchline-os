@@ -1,65 +1,63 @@
 # TOUCHLINE OS — MASTER IMPLEMENTATION PLAN
 
-> **Document type:** Final, authoritative product and engineering plan  
-> **Product:** Touchline OS (working name)  
-> **Product choice:** **Option B — Companion Sporting Director OS**  
-> **Target:** Local-first, offline-capable, installable web app (PWA)  
-> **Status:** Implementation baseline / source of truth  
-> **Plan version:** `1.0.0`  
-> **Last defined:** 2026-10-19  
-> **Execution chain:** `MASTER_PLAN.md` → `phase<number>.md` → `guide<number>.md` → one reviewed Git commit per guide
-
----
+> **Document type:** Authoritative product and engineering plan
+> **Product:** Touchline OS (working name)
+> **Product choice:** **Standalone Sporting Director Sim**
+> **Target:** Local-first, offline-capable, installable web app (PWA)
+> **Status:** Standalone pivot approved for planning; implementation remains at P07-G01
+> **Plan version:** `2.0.0` (product release target remains v1)
+> **Last revised:** 2026-10-20
+> **Execution chain:** `MASTER_PLAN.md` → `plans/phase<number>.md` → `plans/phase<number>/guide<number>.md` → one reviewed Git commit per guide
 
 ## 0. HOW AN AI CODING AGENT MUST USE THIS FILE
 
-This document is the **single source of truth** for product scope, technical decisions, data semantics, invariants, milestone order, and definition of done. It is **not** a brainstorming document. An implementation agent must not quietly replace decisions with easier or more fashionable alternatives.
+This is the single source of truth for current scope, data semantics, invariants, execution order and definition of done. Plan version `2.0.0` replaces the companion product contract; it does not claim the simulator has been implemented.
 
 ### Document hierarchy and precedence
 
-1. `MASTER_PLAN.md` — product contract, architecture, canonical terminology, phase sequence, non-negotiable constraints.
-2. `plans/phase<number>.md` — detailed execution plan for exactly one phase, derived from this master plan.
-3. `plans/phase<number>/guide<number>.md` — executable, commit-sized implementation instruction, derived from its parent phase.
-4. Source code and tests — must implement the contracts above. Existing code is not permission to redefine product behavior.
+1. `MASTER_PLAN.md` — current product contract and architecture.
+2. `plans/phase<number>.md` — active phase contract.
+3. `plans/phase<number>/guide<number>.md` — executable, commit-sized instruction.
+4. Source and tests — implement the contracts above.
 
-Precedence on conflict: **master → phase → guide → implementation**. If a proposed change breaks a higher-level contract, stop that particular change, describe the conflict, and explicitly amend the higher-level plan before implementation. Do not silently diverge.
+Precedence: master → phase → guide → implementation. Amend the higher-level contract before implementing a conflicting requirement.
+
+### Pivot checkpoint and historical documents
+
+- Phases 1–6 and `P07-G01` were completed under plan `1.0.0`. Preserve their commits, implementation evidence and guide subjects. Their companion-only restrictions describe historical work; they do not prohibit the new standalone work.
+- `P07-G01` is commit `b5332a73353d5fd83d1258776984d79c1ed586b6`; `e77d9a6` records its progress. Do not reset to Phase 6 or regenerate Phase 1.
+- Resume at **`plans/phase7/guide2.md`**, after reviewing the amended Phase 7 plan and `DECISIONS.md`.
+- Pending Phase 7 guides are replaced. Their originals and the previous Phase 7 plan are preserved under `plans/archive/companion-v1/` for reference only. Archived instructions are not executable.
+- Former future Phases 8/9/10 become Phases 11/12/13. The roadmap below is authoritative; those future phase plans are not yet generated.
+- Existing manual campaigns remain usable as `legacy` saves. New gameplay uses `standalone` saves. Maintaining legacy data is a compatibility obligation, not a second product roadmap.
 
 ### Rules for agents
 
-- Read the master plan before generating any phase or guide. Read the active phase before executing a guide.
-- Work **one phase at a time**, in numeric order. Do not implement features from a future phase unless needed as a narrow, documented foundation.
-- Generate **all of a phase's guides before implementing the phase**. Each guide must have an independently verifiable outcome and a proposed commit message.
-- Complete guides in order; **one guide = one logical commit**. A guide may touch multiple files but must not conceal unrelated work.
-- Do not commit if mandatory checks or acceptance tests fail. Fix within the same guide before committing.
-- Prefer pure TypeScript domain functions; keep React components free of business-rule logic and database writes.
-- Never invent external data, validated football facts, licensing permissions, browser capabilities, benchmark results, or completed tests.
-- Use package versions verified as stable when Phase 1 begins; commit the lockfile. Do not perform surprise major dependency upgrades in later phases.
-- Each phase ends with a working app, passing checks, updated documentation, and a clear handoff to the next phase.
-- When requirements are underspecified, choose the smallest implementation consistent with this plan, record the assumption in the active phase, and preserve backward compatibility.
+- Read the master and active phase before executing a guide. Generate every pending guide in the active phase before starting implementation.
+- Work one phase at a time, in order. Each guide is one logical, verifiable commit. Document a split before coding it.
+- Keep domain logic pure TypeScript. Components do not write Dexie; commands perform validated transactional writes.
+- Preserve installed packages and lockfile; do not add infrastructure or dependencies because a later phase mentions them.
+- A planned deliverable is not a completed feature. Record actual commands and results, never invented tests, benchmarks, datasets or football facts.
+- Preserve unrelated user changes. Do not stage later guides or untracked plans as part of an implementation guide.
+- Never wipe user saves to avoid a migration. Preserve `schemaV1` and generator v1; version additions explicitly.
+- Run the active guide's required checks and fix failures before committing.
+- Routine unspecified details use the smallest compatible assumption, documented in the active phase.
 
 ### Required planning-file paths
 
 ```text
 MASTER_PLAN.md
+DECISIONS.md
 plans/
-  phase1.md
-  phase1/
-    guide1.md
-    guide2.md
-    ...
-  phase2.md
-  phase2/
-    guide1.md
-    guide2.md
-    ...
-  ...
-  phase10.md
-  phase10/
-    guide1.md
-    ...
+  phase1.md ... phase13.md
+  phase1/guide1.md ...
+  phase7.md
+  phase7/guide1.md        # completed historical guide, unchanged
+  phase7/guide2.md ...    # current standalone execution
+  archive/companion-v1/   # superseded reference only
 ```
 
-`guide<number>.md` numbering **restarts at 1 for each phase**. Commit identifier is globally unambiguous by combining both numbers: `P01-G01`, `P05-G03`, etc. Never use an unqualified `guide3.md` without its phase directory.
+Guide numbering restarts at 1 per phase. Use qualified IDs such as `P07-G02` and `P13-G01`. Future phase files are generated only when their phase is ready.
 
 ---
 
@@ -67,75 +65,84 @@ plans/
 
 ### 1.1 One-line pitch
 
-**Touchline OS is an offline-first sporting-director workspace for players managing a football career in another game: track a club, enforce self-imposed rules, plan squads and transfers, analyze finances, and document each season — without simulating matches.**
+**Touchline OS is an offline-first standalone sporting director game: build a squad, negotiate transfers, satisfy board philosophies, simulate a fictional football world, and grow a club across seasons.**
 
 ### 1.2 Primary user and setting
 
-- A football career-mode player on console or PC, using Touchline OS in another browser window, laptop, or tablet.
-- A portfolio reviewer who opens the public demo URL, selects a **fictional pre-seeded club**, and immediately explores believable workflows without an account or external dataset.
-- A tinkerer who imports an appropriately licensed or personally held CSV/JSON dataset on their own device to replace or augment fictional data.
+- A player seeking short sessions of squad building, recruitment and financial decisions, with instant match results.
+- A reviewer opening a fictional playable demo without accounts, uploads or external services.
+- A tinkerer importing a personal or appropriately licensed dataset locally, with explicit simulation assumptions for missing inputs.
 
-### 1.3 Core loop (this is the product)
+### 1.3 Core loop
 
-1. **Create/open a campaign** and choose the managed club.
-2. **Review the club**: budget, wage structure, roster health, rule violations, deadlines, unresolved tasks.
-3. **Plan**: starting XI, bench, roles, youth pathways, shortlist, target comparisons, contracts and transfer scenarios.
-4. **Validate**: preview a transfer, contract, registration, or season action against the club's constitution before making it real.
-5. **Record actions actually taken in the external game**: bids, transfers, contract changes, fixtures/results, player appearances, prizes and notes.
-6. **Reconcile**: ledger, squad, reports, warnings, season summary; consciously advance to the next season.
-7. Repeat. **Touchline OS never claims to have executed anything in the external game.**
+1. Create a seeded world, select a club and choose a Challenge preset or Sandbox.
+2. Review board expectations, available transfer funds, wages, squad availability and upcoming events.
+3. Scout, shortlist and negotiate with AI clubs and players; validate decisions against board policies.
+4. Register players and prepare a legal XI, bench and tactical roles.
+5. Click **Continue** to reach the next decision or **Sim Matchday** to calculate instant results for all four leagues.
+6. Review the score, xG, timeline, ratings, minutes, fatigue, injuries, standings and resulting offers.
+7. Complete the season, settle prizes/objectives once, develop players and begin the next season with an explicit budget.
+
+No external football game is required. AI clubs are deterministic local algorithms; no LLM or hosted AI service is involved.
 
 ### 1.4 Success criteria
 
-- A first-time visitor can open an interactive fictional demo without authentication or uploads.
-- The product provides value **without** AI, internet connectivity after installation, or third-party APIs.
-- A user can manage at least one complete manual season, including planning, transactions, match entries, rule checks, and rollover.
-- A hard rule cannot be bypassed through the app's normal write commands; previews and commits use the same policy engine.
-- The app never loses a confirmed operation halfway through a multi-record local write.
-- A saved campaign survives reload, can be exported, and can be restored on a different browser/device.
-- Portfolio demo visibly communicates unique rule-engine behavior rather than merely looking like a database dashboard.
+- A visitor starts a playable fictional campaign with no authentication or upload.
+- One complete season and the beginning of a second season can be played offline after installation.
+- Tactical selection, squad depth, recruitment and board rules materially affect decisions and simulation inputs.
+- The same saved state, simulation version and player decisions produce the same outcomes, including after restore.
+- AI clubs obey finite transfer and wage budgets and preserve legal player ownership/contracts.
+- A failed or repeated command never leaves partial results or duplicates money, minutes, growth or progression.
+- Save export/restore preserves history, pending negotiations and the same future simulation.
+- Existing legacy campaigns are preserved without fabricating missing competitive history.
 
-### 1.5 Non-goals for v1 (do not add them)
+### 1.5 Scope choices and non-goals
 
-- Standalone match simulation, animated match engine, goal probabilities, real-time xG worm, tactical player movement during live games, or artificial fixture generation posing as results.
-- Scraping EA/FC, Football Manager, PES/eFootball, league websites, or other games; reading console saves directly; automatic two-way integration with games.
-- Backend server, accounts, cloud saves, multiplayer, chat, subscriptions, real-money budgets, or app-hosted proprietary player databases.
-- Native desktop packaging/Tauri, SQLite/WASM/OPFS, Drizzle ORM, unbounded plugin architecture.
-- AI-generated factual scouting claims, external hosted LLM calls, embeddings, paid model APIs, or browser-exposed secret API keys.
-- Replication of a specific real-world league's official registration or financial regulations unless exact rules are explicitly configured and documented.
+**Initial release defaults:** instant results only; lightweight fatigue/sharpness, injuries lasting 7–28 game days and simple match bans; Board Philosophies / Challenge presets with editable Sandbox.
 
-**Scope guard:** A 2D **tactics planning board** is in scope. A 2D **match visualizer** is not.
+In scope: four independent fictional leagues, 18 clubs each; double round-robin schedules; one managed club; automatic substitutions; deterministic transfer decisions and player progression.
+
+Out of scope for v1:
+
+- Interactive live ticker, pause/resume match management, live tactical changes, 2D/3D match animation or physics.
+- Cups, continental competitions, promotion/relegation, club switching during a standalone career, staff hiring, agents, morale systems or manager dismissal.
+- Detailed commercial income, debt/FFP, weekly payroll cash accounting or replication of official league regulations.
+- Scraping commercial databases, console saves or external games; automatic two-way game integration.
+- Backend servers, accounts, cloud saves, multiplayer, subscriptions or real-money mechanics.
+- SQLite/WASM/OPFS, Tauri, Drizzle, paid model APIs, hosted LLMs or exposed secret keys.
+
+The SVG board supplies tactical decisions to the match engine. A simulated result is an outcome in this game, never a claim about a real match.
 
 ---
 
 ## 2. FROZEN TECHNICAL DECISIONS
 
-| Area | Decision | Rationale / constraint |
-| --- | --- | --- |
-| Application | Vite + React + TypeScript (`strict` mode) | Fast local development, static deployment |
-| Persistence | **IndexedDB through Dexie** | Simple browser-native data model; transactions and versioned schema |
-| Database upgrade | Explicit Dexie `version(...).stores(...)` migrations | Never wipe user data during app updates |
-| Validation | Zod for imports, persistence boundaries, configuration | Runtime checks outside TypeScript's compile-time safety |
-| Routing | React Router | Explicit campaign-scoped URLs |
-| UI styling | Tailwind CSS with design tokens/CSS variables | Dense, consistent dark interface |
-| Accessible components | Radix primitives where needed | Dialogs, menus, select, keyboard interaction |
-| Icons/graphics | Lucide icons; generated SVG crests and pitch | No licensed image assets required |
-| Data visuals | Recharts | Age/minutes scatter, wage bars, comparison radar |
-| Dense tables | TanStack Table; add virtualization for big result sets | Sorting/filtering with scalable rendering |
-| Forms | React Hook Form + Zod resolver | Accessible validation and error states |
-| UI state | Local React state; small Zustand stores only for ephemeral cross-screen UI | Persistent state lives in Dexie, not duplicate stores |
-| Background work | Dedicated Web Worker for large import/normalization and large analytics where needed | Avoid blocking primary interactions |
-| Offline install | `vite-plugin-pwa` + precached app shell/assets | No runtime CDN dependency |
-| Unit/integration tests | Vitest + React Testing Library | Rule, model, command and UI behavior |
-| E2E tests | Playwright | Real browser persistence, import/export, offline workflows |
-| Accessibility checks | `axe-core` integration where practical | Catch regressions beyond manual keyboard testing |
-| Formatting/quality | ESLint + Prettier + TypeScript `tsc --noEmit` | Consistent agent commits |
-| Package manager | `pnpm` with committed lockfile | Reproducible dependency graph |
-| Deploy | Static HTTPS host (e.g. Cloudflare Pages or Vercel static output) | No app server; same bundle available for local dev |
+| Area                   | Decision                                                                                         | Rationale / constraint                                              |
+| ---------------------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------- |
+| Application            | Vite + React + TypeScript (`strict` mode)                                                        | Fast local development, static deployment                           |
+| Persistence            | **IndexedDB through Dexie**                                                                      | Simple browser-native data model; transactions and versioned schema |
+| Database upgrade       | Explicit Dexie `version(...).stores(...)` migrations                                             | Never wipe user data during app updates                             |
+| Validation             | Zod for imports, persistence boundaries, configuration                                           | Runtime checks outside TypeScript's compile-time safety             |
+| Routing                | React Router                                                                                     | Explicit campaign-scoped URLs                                       |
+| UI styling             | Tailwind CSS with design tokens/CSS variables                                                    | Dense, consistent dark interface                                    |
+| Accessible components  | Radix primitives where needed                                                                    | Dialogs, menus, select, keyboard interaction                        |
+| Icons/graphics         | Lucide icons; generated SVG crests and pitch                                                     | No licensed image assets required                                   |
+| Data visuals           | Recharts                                                                                         | Age/minutes scatter, wage bars, comparison radar                    |
+| Dense tables           | TanStack Table; add virtualization for big result sets                                           | Sorting/filtering with scalable rendering                           |
+| Forms                  | React Hook Form + Zod resolver                                                                   | Accessible validation and error states                              |
+| UI state               | Local React state; small Zustand stores only for ephemeral cross-screen UI                       | Persistent state lives in Dexie, not duplicate stores               |
+| Background work        | Dedicated Web Worker for expensive simulation, import/normalization and analytics where measured | Avoid blocking primary interactions                                 |
+| Offline install        | `vite-plugin-pwa` + precached app shell/assets                                                   | No runtime CDN dependency                                           |
+| Unit/integration tests | Vitest + React Testing Library                                                                   | Rule, model, command and UI behavior                                |
+| E2E tests              | Playwright                                                                                       | Real browser persistence, import/export, offline workflows          |
+| Accessibility checks   | `axe-core` integration where practical                                                           | Catch regressions beyond manual keyboard testing                    |
+| Formatting/quality     | ESLint + Prettier + TypeScript `tsc --noEmit`                                                    | Consistent agent commits                                            |
+| Package manager        | `pnpm` with committed lockfile                                                                   | Reproducible dependency graph                                       |
+| Deploy                 | Static HTTPS host (e.g. Cloudflare Pages or Vercel static output)                                | No app server; same bundle available for local dev                  |
 
 **Do not swap IndexedDB for SQLite during v1.** Introduce `src/data/repositories/` and domain-facing repository interfaces so a later persistence migration is possible, but do not build multiple actual storage adapters now.
 
-Use one confirmed stable version of each dependency at implementation time, pin it, and avoid hardcoding speculative future package versions in this plan.
+Retain the installed dependency graph and committed lockfile. Simulation is pure TypeScript and needs no new runtime dependency in Phase 7. Libraries listed here but not installed remain future-phase choices, not claims of completed implementation.
 
 ### 2.1 Browser and platform contract
 
@@ -154,415 +161,368 @@ Use one confirmed stable version of each dependency at implementation time, pin 
 
 ```text
 Welcome / Demo Launcher
-  ├─ Try Fictional Demo (select club)
-  ├─ Create New Campaign
-  └─ Import Backup / Import Dataset
+  ├─ Play Fictional Demo
+  ├─ New Standalone Career (seed, club, Challenge / Sandbox)
+  └─ Import Backup / Dataset (Phase 12)
 
 Campaign Workspace
-  ├─ Command Center       — summary, violations, activity, next actions
-  ├─ Squad                — player table, details, contracts, development
-  ├─ Tactics              — 2D formation board, assignments, bench
-  ├─ Transfers            — shortlist, offers, scenario preview, completed deals
-  ├─ Finance              — ledger, transfer funds, wage structure
-  ├─ Registration         — eligibility, quota checker, matchday selection
-  ├─ Scouting             — archetypes, comparisons, confidence notes
-  ├─ Match Journal        — manual match records and appearances
-  ├─ Seasons              — timeline, season review, rollover
-  └─ Constitution         — enabled rules, thresholds, audit trail
+  ├─ Command Center — game date, Continue, blockers, inbox, next fixture
+  ├─ Squad — contracts, availability, development, performance
+  ├─ Tactics — SVG formation, roles, XI, bench
+  ├─ Transfers — shortlist, negotiations, incoming offers, completed deals
+  ├─ Finance — transfer capacity, club spending limit, wages, ledger
+  ├─ Registration — eligibility, homegrown quota, match selection
+  ├─ Fixtures & Results — calendar, match reports, league tables
+  ├─ Seasons — review, objectives, settlement, next-season preview
+  ├─ Scouting — comparisons and Moneyball signals (Phase 11)
+  └─ Board Philosophies — challenge rules or Sandbox editor
 
 Global Utilities
-  ├─ Campaign Switcher
+  ├─ Campaign Switcher (standalone / legacy labeled)
   ├─ Search / Command Palette
   ├─ Backup / Restore
   ├─ Settings / Accessibility
   └─ Help / Data Provenance
 ```
 
-### 3.2 Visual system: Bloomberg terminal × tactical canvas
+Existing route slugs may remain for compatibility; the `/matches` route becomes Fixtures & Results for standalone saves and retains the legacy journal for old saves.
 
-- Default theme: dark graphite surfaces, fine separators, restrained amber/teal indicators, red only for serious blockers, small crisp typography, generous numeric alignment.
-- Main screen: 240–280 px collapsible navigation rail; 12-column content grid; KPI ribbon; dense interactive tables; right-side context drawer where useful.
-- Numbers and budgets use tabular numerals. Use explicit units: `€`, `€/week`, `€m`, `%`, minutes, years. Never rely on color alone to signal status.
-- Distinguish **Blocked / Warning / Informational / Passed** using text and icons, not only red/amber/green.
-- Give the tactical pitch a strong visual identity: SVG field lines, numbered discs/shirt silhouettes, position/role labels, controlled drag/click interactions. No animation that suggests simulated real matches.
-- Generate fictional club crests from seeded SVG geometry (shield/stripe/chevron/monogram) and palette. Do not ship real club crests, licensed player images, scraped photos, or trademarked game branding.
-- Responsive priority: excellent desktop and landscape tablet; mobile can use a condensed read/entry layout instead of fitting the entire desktop terminal.
-- Keyboard navigation, visible focus indicators, accessible table names, dialogs, form labels, touch targets, reduced-motion support, and legible contrast are acceptance requirements.
+### 3.2 Visual system
+
+- Preserve dark graphite surfaces, restrained amber/teal indicators, dense tables and the SVG pitch.
+- Use explicit units and tabular numerals: EUR, EUR/week, dates, minutes, ratings and percentages.
+- Blocked / Warning / Informational / Passed are text plus icons, never color alone.
+- Instant results show a final score, xG, accessible event list and both teams' player performance. A loading state is not a promise of a live simulation.
+- Crests and identities are fictional; no licensed photos, badges or copied rosters.
+- Prioritize desktop and landscape tablet; provide usable condensed mobile reports and controls.
+- Keyboard operation, visible focus, legible contrast, touch targets and reduced-motion support are acceptance requirements.
 
 ### 3.3 App behavior
 
-- Campaign-aware URL pattern: `/app/:campaignId/<section>`; route guards for missing or invalid campaigns.
-- Persistent search/filter state only when beneficial; transient modal/toggle state should not accidentally leak between campaigns.
-- A **quick action** button on each main screen, e.g. “Record transfer,” “Add match,” “Check registration,” with clear success/failure feedback.
-- Destructive actions require explicit confirmation and explain whether reversible. On rule rejection, show the exact rule, evidence and user-correctable next step.
-- Loading, empty, error, success, first-run and no-data states are designed states, not afterthoughts.
+- Campaign URLs are scoped to `/app/:campaignId/<section>` and guard missing/invalid campaigns.
+- Show the game date and the exact next action: Continue, Resolve offer, Select lineup, Sim Matchday or Review season.
+- A pending decision shows evidence and a concrete remedy. A match form cannot disable a board rule.
+- Challenge policies are locked at the command boundary. Sandbox customization is explicit and audited.
+- Prevent duplicate submission; reload on a stale revision. Render results only after successful persistence.
+- Preserve clear loading, empty, error, first-run and unavailable-feature states. During staged implementation, label future features as unavailable rather than pretending they exist.
 
 ---
 
 ## 4. DOMAIN MODEL AND INVARIANTS
 
-### 4.1 Domain rules shared by all features
+### 4.1 Shared invariants
 
-1. **Campaign isolation:** Every campaign-owned record has `campaignId`; queries and writes are scoped to it. No cross-save leakage.
-2. **Stable identity:** Every entity has an internal stable ID independent of names/jersey numbers/import row numbers. Imported external identifiers are optional provenance metadata.
-3. **Currency:** v1 campaign currency is **EUR only**; all money is integer **cents** (`MoneyCents`), not float euros. User input/output converts at boundaries.
-4. **Dates:** Stored date-only values use `YYYY-MM-DD`. Store event times as ISO UTC timestamps. Never infer a game's current season from the user's real-world clock.
-5. **Age:** Use a known DOB where present. Otherwise keep reported age + reference season/date and label later calculations as estimated. **Never synthesize a DOB and display it as fact.**
-6. **Unknown ≠ zero:** Missing wage, fee, market value, nationality, registration status, minutes, ability, or budget remains nullable/unknown with visible provenance; do not quietly substitute zero.
-7. **Authority:** Only completed, explicitly user-confirmed commands change roster, finance, appearances, or season state. Drafts/previews do not.
-8. **Auditability:** Persist a meaningful event for each committed business action. Financial adjustments use compensating entries, not deletion of posted historical entries.
-9. **Determinism:** Seed generation, derived analytics and policy evaluation accept explicit inputs; no network or implicit `Date.now()` / `Math.random()` in pure business logic.
-10. **No fictional fact laundering:** Generated/demo/imported/user-entered/estimated values carry source classification. Reports never present estimates as directly observed facts.
+1. **Campaign isolation:** all owned rows and writes carry and validate `campaignId`.
+2. **Stable identity:** entity IDs are independent of names. Simulation keys and event seeds survive restore ID remapping.
+3. **Money:** EUR only; nonnegative integer cents at boundaries. Typed ledger kinds express direction.
+4. **Time:** game dates are `YYYY-MM-DD`; audit timestamps are UTC. Real-world time never advances a campaign. Creation takes an explicit in-game start year.
+5. **Age:** use DOB or reported age + reference season; estimated age stays labeled. Never turn generated or inferred DOB into imported fact.
+6. **Unknown is not zero:** preserve source data and missing values. Simulation requires complete inputs or a separately labeled generated profile; legacy statistics remain incomplete where appropriate.
+7. **Authority:** user confirmation authorizes a bounded action and its autonomous consequences. Previews and loading a screen do not write gameplay state.
+8. **Auditability:** persisted gameplay changes have operation receipts and concise audits. Financial history uses compensating entries.
+9. **Determinism:** explicit seed, versions, ordered inputs and decisions; no network, ambient clock or `Math.random` in domain code.
+10. **Provenance:** distinguish original fictional/imported/user-entered data from generated profiles and simulated outcomes.
+11. **One canonical result:** one completed result per fixture and one appearance per fixture/player. Legacy journal entries never enter standalone standings.
+12. **Atomic progression:** results, appearances, availability, finances and the time pointer commit together for each bounded event.
+13. **Compatibility:** schema migration preserves legacy saves and never silently promotes them to simulated careers.
 
-### 4.2 Required data entities
+### 4.2 Existing entities retained
 
-The following are **domain-level contracts**, not a literal ready-to-run Dexie index declaration. In Phase 2, formalize Zod schemas, TypeScript types, repository methods and IndexedDB indexes. Additional internal fields (`revision`, timestamps, indices) are allowed without changing semantics.
+These are domain contracts, not literal Dexie store declarations. Existing IDs and historical rows remain valid.
 
-| Entity | Essential fields | Notes |
-| --- | --- | --- |
-| `Campaign` | `id`, `name`, `kind` (`fictional`/`imported`), `seed?`, `managedClubId`, `activeSeasonId`, `currency='EUR'`, `createdAt`, `updatedAt`, `revision` | One managed club per campaign in v1; many separate campaigns allowed |
-| `Season` | `id`, `campaignId`, `label`, `ordinal`, `status` (`active`/`closed`), `startDate?`, `endDate?`, `openedAt`, `closedAt?` | Exactly one active season per campaign |
-| `League` | `id`, `campaignId`, `name`, `countryCode?`, `tier?` | Fictional league names by default |
-| `Club` | `id`, `campaignId`, `leagueId?`, `name`, `shortName`, `colors`, `prestige` (0–100), `academyTier` (1–5), `scoutingRegion?` | `prestige` is a **fictional gameplay setting**, not a claim about real clubs |
-| `Player` | `id`, `campaignId`, `clubId?`, `name`, `positionGroup`, `positions[]`, `nationalityCode?`, `birthDate?`, `reportedAge?`, `ageReferenceSeasonOrdinal?`, `marketValueCents?`, `attributes?`, `potential?`, `source`, `externalSourceId?`, `isNewgen` | Ratings 0–100 when available; all imported fields optional except meaningful identity |
-| `Contract` | `id`, `campaignId`, `playerId`, `clubId`, `weeklyWageCents?`, `squadTier?`, `startsOn?`, `expiresOn?`, `status` | One active contract per club/player pairing |
-| `Constitution` | `id`, `campaignId`, `version`, `rules[]`, `updatedAt` | Versioned snapshot of toggles/parameters; changes audited |
-| `LedgerEntry` | `id`, `campaignId`, `seasonId`, `clubId`, `kind`, `amountCents`, `effectiveOn`, `sourceActionId`, `reversesEntryId?`, `note?` | Posted amounts nonnegative; credit/debit dictated by typed `kind` |
-| `Transfer` | `id`, `campaignId`, `seasonId`, `playerId`, `fromClubId?`, `toClubId?`, `feeCents`, `kind` (`sale`/`purchase`/`free`), `effectiveOn`, `sourceActionId` | Completed moves only; draft proposals stored separately |
-| `Offer` | `id`, `campaignId`, `seasonId`, `playerId`, `bidderClubId`, `feeCents`, `status`, `receivedOn`, `resolvedOn?` | Enables “must accept prestige bid” rule |
-| `Lineup` | `id`, `campaignId`, `seasonId`, `name`, `formation`, `starters[]`, `benchPlayerIds[]`, `updatedAt` | Slot assignments store stable player IDs and roles, not only coordinates |
-| `Registration` | `id`, `campaignId`, `seasonId`, `playerId`, `competitionKey`, `status`, `homegrownClub?`, `homegrownNation?`, `ageExempt?`, `provenance` | `unknown` allowed and shown explicitly |
-| `MatchRecord` | `id`, `campaignId`, `seasonId`, `date`, `opponent`, `homeAway`, `goalsFor`, `goalsAgainst`, `competition?`, `notes?`, `xgFor?`, `xgAgainst?` | Entered game result, never automatically simulated |
-| `Appearance` | `id`, `campaignId`, `seasonId`, `matchId`, `playerId`, `minutes`, `started?`, `goals?`, `assists?`, `rating?` | Unique per (`matchId`, `playerId`); can be omitted if unknown |
-| `ShortlistItem` | `id`, `campaignId`, `playerId`, `priority`, `status`, `notes?`, `addedAt` | Avoid duplicate player entries |
-| `ScoutingReport` | `id`, `campaignId`, `playerId`, `seasonId`, `archetype`, `observations`, `confidence`, `source`, `createdAt` | Scores are derived heuristics or user-authored; labeled accordingly |
-| `DevelopmentPlan` | `id`, `campaignId`, `playerId`, `seasonId`, `targetRole?`, `notes`, `status` | Companion notes only; does not progress game attributes |
-| `AuditEvent` | `id`, `campaignId`, `seasonId?`, `actionId`, `actionType`, `createdAt`, `summary`, `payload` | Append-only history of confirmed domain commands and rule changes |
-| `ImportReceipt` | `id`, `campaignId?`, `sourceName`, `sourceType`, `importedAt`, `rowCounts`, `mappingVersion`, `warnings`, `provenance` | Dataset audit, no external upload |
+| Entity                             | Standalone treatment                                                                                                                                                      |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Campaign`                         | Retain kind/seed/generatorVersion/managed club/active season/revision; add `mode: legacy \| standalone` and `rulesMode: challenge \| sandbox`, separate from dataset kind |
+| `Season`                           | Retain ordinal/status; standalone dates are explicit July–June, exactly one active season                                                                                 |
+| `League` / `Club`                  | Retain identities, colors, prestige and academy tier; leagues remain independent                                                                                          |
+| `Player`                           | Retain source identity, attributes, potential and value; no unsourced imported data overwrite                                                                             |
+| `Contract`                         | Both clubs' transfers and player consent are represented; exactly one active contract per owned, active standalone player                                                 |
+| `Constitution`                     | Versioned rule snapshot; Challenge locks it, Sandbox allows audited edits                                                                                                 |
+| `LedgerEntry`                      | Append-only typed money effects; awards identify the earning season and settlement                                                                                        |
+| `Transfer`                         | Completed world moves only; buyer and seller are explicit, never an unconfirmed proposal                                                                                  |
+| `Offer`                            | AI incoming bid with origin, deadline, qualification snapshot and resolution; extend the legacy shape through migrations when needed                                      |
+| `Lineup`                           | Reusable planning artifact; selected snapshot validated again at kickoff                                                                                                  |
+| `Registration`                     | Competition-scoped eligibility; generated players have explicit fictional homegrown metadata                                                                              |
+| `MatchRecord` / `Appearance`       | Historical manual journal; remain legacy-only, with their existing units and nullability                                                                                  |
+| `ShortlistItem` / `ScoutingReport` | Retain target tracking and evidence; simulated records are labeled                                                                                                        |
+| `DevelopmentPlan`                  | Target role controls bounded future development; free text alone does not grant growth                                                                                    |
+| `AuditEvent` / `ImportReceipt`     | Retain command/import history; add typed action names without deleting old variants                                                                                       |
 
-Store app-wide preferences separately, including theme, reduced motion, and onboarding completion. Do **not** copy all 25k imported players into every view's React state.
+### 4.3 New simulation contracts
 
-### 4.3 Normalization contracts
+| Entity                                     | Minimum semantics                                                                                                                                                      | First phase |
+| ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
+| `SimulationState`                          | Unique per campaign; root seed, simulation/calendar version, current date, active season, lifecycle phase, last consumed boundary key, initialization receipt          | 7           |
+| `ClubSimulationState`                      | Club ID, stable simulation key, finite transfer balance and weekly wage budget                                                                                         | 7           |
+| `PlayerSimulationState`                    | Player ID, stable simulation key, fitness/sharpness 0–100, goalkeeper rating if GK, injury end date, league ban count, active/retired state, generated homegrown flags | 7           |
+| `SimulationReceipt`                        | Unique campaign + logical operation key; input revision/fingerprint, outcome references, persisted event seed/version                                                  | 7           |
+| `Fixture`                                  | League/season/round/date, home and away club IDs, stable fixture key, scheduled/played state                                                                           | 8           |
+| `SimulatedMatch`                           | Unique fixture reference; score, xG milli-units, event timeline, seed/version and immutable tactical/input snapshot                                                    | 8           |
+| `SimulatedAppearance`                      | Fixture/match, player and historical club ID, started/minutes/goals/assists/rating/cards, unique fixture + player                                                      | 8           |
+| `Negotiation`                              | Club fee and player terms, deterministic response state, reserved funds, expiry and bounded counteroffers                                                              | 9           |
+| `BoardObjective`                           | Immutable season target, reward and evaluated settlement outcome; no dismissal system                                                                                  | 10          |
+| `SeasonSettlement` / `DevelopmentSnapshot` | Immutable final table/awards and player before/after progression, uniquely applied per period                                                                          | 10          |
 
-- Supported position groups: `GK`, `DEF`, `MID`, `FWD`; finer supported positions: `GK`, `CB`, `LB`, `RB`, `LWB`, `RWB`, `CDM`, `CM`, `CAM`, `LM`, `RM`, `LW`, `RW`, `ST`, `CF`. Unknown/foreign codes remain mapped to `UNKNOWN` until user mapping is resolved.
-- Attribute scale: integers 0–100 for **known** attributes. Do not pretend source ratings with incompatible scales are comparable without an explicit transform shown in import mapping.
-- Names, clubs and competitions are plain text, escaped in UI; do not render imported HTML.
-- Custom registration presets describe the user's challenge rules, **not certified real competition rules**.
-- Use stable indexes for `campaignId`, `(campaignId, clubId)`, `(campaignId, seasonId)`, player identity, relevant status/filter combinations; review indexes against real queries.
+- Keep v1 `Appearance.rating` and simulation ratings on 0–100; a UI may render 68 as 6.8/10 with an explicit scale.
+- xG stays integer milli-units, reusing the existing parse/format convention. Do not change legacy units.
+- Both teams' simulated appearances are canonical. Use read adapters for common player reports, not duplicate manual match rows.
+- Future entities receive migrations in their owning phase; Phase 7 does not prebuild every later table.
+- Large world snapshots/results belong in their own stores, not the bounded audit payload.
 
-### 4.4 Repository/API boundary
+### 4.4 Repository/API and migration boundary
 
-Organize read/write paths as:
+`src/domain/**` contains pure calculations and parsing. `src/data/commands/**` loads authoritative state, validates, checks policies and commits. Repositories enforce ownership and relationships; feature components orchestrate without importing Dexie or migrations.
 
-```text
-UI component → feature hook / query → repository read
-UI intent → application command → current snapshot + pure policy preflight
-         → Dexie transaction → records + ledger + audit → UI refresh
-```
+Phase 7 adds `version(2)` after the frozen `version(1).stores(schemaV1)` declaration. Existing campaigns migrate to `mode: legacy` and `rulesMode: sandbox`; no simulation state or invented fixtures are attached to them. Missing mode in old command payloads defaults only to legacy, never standalone.
 
-UI must **not** call `db.table.put()` to execute a transfer, renew a contract, or advance a season. Expose typed command functions, for example:
+New standalone creation is a separate command with explicit complete inputs. Legacy match/deal/player-correction/finance commands reject standalone saves. Planned standalone negotiations are the only later path to executing transfers. Challenge constitution writes fail even when called directly.
 
-```ts
-previewTransfer(command: TransferCommand, snapshot: ClubSnapshot): RuleReport
-commitTransfer(command: TransferCommand): Promise<CommandResult>
-previewContract(command: ContractCommand, snapshot: ClubSnapshot): RuleReport
-commitContract(command: ContractCommand): Promise<CommandResult>
-previewRegistration(command: RegistrationCommand, snapshot: ClubSnapshot): RuleReport
-commitRegistration(command: RegistrationCommand): Promise<CommandResult>
-recordMatch(command: RecordMatchCommand): Promise<CommandResult>
-advanceSeason(command: AdvanceSeasonCommand): Promise<CommandResult>
-```
+### 4.5 Deterministic simulation protocol
 
-Commands load **fresh** relevant data, re-run checks at commit time, and persist affected records **atomically** in a short Dexie transaction. Do not leave external awaited work (file I/O, network, prompt, timer) inside a live IndexedDB transaction. Use campaign `revision`/optimistic conflict checks to reject stale multi-tab edits instead of silently overwriting them.
+- Derive separate random streams from root seed + simulation version + stable logical keys for fixture, market event or development period. Club/player enumeration and unrelated random draws cannot change a match.
+- Seeds never depend on remappable campaign/entity IDs, audit time, animation speed or browser wall time. Persist logical keys and event seeds through export/restore.
+- Compute outside a short write transaction, optionally in a Worker. The command rechecks revision, current date, prerequisites and receipt before applying the trusted result.
+- A receipt key is campaign + event/fixture identity, not a newly generated request ID. Retrying the same logical operation returns or references the persisted outcome; it never draws again.
+- A stale result returns conflict and applies nothing. Worker messages cannot write Dexie or bypass command validation.
+- Saves pin their simulation and generator versions. Unsupported versions open with a clear compatibility state; do not silently rerun history with a new engine.
 
 ---
 
-## 5. CLUB CONSTITUTION — RULE ENGINE (PRIMARY DIFFERENTIATOR)
+## 5. BOARD PHILOSOPHIES, CONSTITUTION AND FINANCE
 
 ### 5.1 Design principle
 
-A versioned, explainable, deterministic **policy engine** decides whether a proposed user action is permitted. It must be independently testable without React, browser storage, or date/time globals.
+Reuse `evaluateAction` and its explainable BLOCK/WARN/INFO reports. Preview and commit evaluate the same policy against fresh authoritative state. Add action variants for window close, matchday selection and settlement in their owning phases; do not scatter rule checks into components.
 
-```ts
-type Severity = 'BLOCK' | 'WARN' | 'INFO';
-type RuleVerdict = {
-  ruleId: string;
-  severity: Severity;
-  code: string;                 // stable machine-readable reason
-  message: string;              // human-readable reason
-  evidence: Record<string, unknown>;
-  remedy?: string;
-};
-type RuleReport = {
-  allowed: boolean;              // false if any BLOCK verdict
-  verdicts: RuleVerdict[];
-  snapshotRevision: number;
-};
-```
+Challenge mode locks the chosen board policy through command checks. Sandbox exposes the existing audited editor. Switching a Challenge career to Sandbox, if offered, is explicit, irreversible for that career's challenge status and audited; silently toggling a rule is prohibited.
 
-Functions follow `evaluateAction(action, snapshot, constitution, effectiveDate): RuleReport`. Given the same inputs, outputs must be identical. Every committed command uses this exact engine rather than a separately implemented UI validation approximation.
+### 5.2 Rules and gameplay semantics
 
-### 5.2 Enabled v1 rules and exact semantics
+| Rule                 | Retained setting                                                                   | Standalone enforcement                                                                   |
+| -------------------- | ---------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `SELL_TO_BUY`        | Balanced: sales 70%, prize 100%; explicit opening allocation and carryover percent | Incoming deal cannot exceed policy capacity or actual club spending limit                |
+| `MAX_SIGNING_AGE`    | Balanced age 26; configurable free-transfer exemption                              | Incoming transfer preview and settlement                                                 |
+| `WAGE_TIER_CAP`      | Key / Rotation / Youth caps; Balanced EUR45k / EUR20k / EUR5k per week             | Contract offer and execution; club-wide wage budget is a separate finite ceiling         |
+| `PRESTIGE_BID_SALE`  | Balanced ratio 3/2 and strictly higher prestige; Strict retains ratio 2/1          | Qualifying rejection, window close and season rollover block until a valid sale resolves |
+| `REGISTRATION_QUOTA` | Balanced roster 25, minimum 8 homegrown, under-21 exemption                        | Registration and actual kickoff eligibility; injuries and bans checked separately        |
 
-| Rule ID | Configuration | Trigger | Enforcement |
-| --- | --- | --- | --- |
-| `SELL_TO_BUY` | `salesReinvestmentPct` default 70; `prizeReinvestmentPct` default 100; `initialAllocationCents` explicit; `carryoverPct` default 0 | Paid incoming transfer | BLOCK if fee exceeds unspent authorized transfer capacity |
-| `MAX_SIGNING_AGE` | `maxAge` default 26; `freeTransfersExempt=true` | Signing a player | BLOCK if known age exceeds max and deal is not eligible for exemption; missing age BLOCK when enabled |
-| `WAGE_TIER_CAP` | Default weekly caps: Key €45,000; Rotation €20,000; Youth €5,000 | Signing/contract renewal or tier edit | BLOCK if known proposed wage exceeds configured cap; unknown wage BLOCK when enabled |
-| `PRESTIGE_BID_SALE` | `requiredFeeMultiple` default 1.5; `requireHigherPrestige=true` | Rejecting qualifying offer; season rollover with unresolved qualifying offer | BLOCK rejection/rollover until qualifying offer accepted or rule disabled through audited constitution update; unknown valuation/prestige = WARN and manual review |
-| `REGISTRATION_QUOTA` | User-configurable roster limit, minimum homegrown count, age exemptions, competition key | Commit matchday registration / confirm selection | BLOCK definitive quota violations and unresolved required eligibility data |
+Existing Strict/Balanced presets remain starting configurations, not claims of official football rules. Newly generated worlds must be able to satisfy them through legal selections and recruitment.
 
-**Rules are opt-in at campaign creation** through presets (e.g. Balanced / Strict Moneyball / Custom) and can be configured. The UI displays every active policy and a plain-language explanation. Changing a rule is a deliberate, audited campaign decision; no stealth switch-off in a transfer modal.
+### 5.3 Financial semantics
 
-### 5.3 Financial semantics (must be stable across all screens)
-
-For managed club `C`, season `S`, transfer capacity in integer cents is:
+For managed club C in season S, all amounts are integer cents:
 
 ```text
 authorizedCapacity = initialAllocation
                    + floor(completedPlayerSales * salesReinvestmentPct / 100)
-                   + floor(recordedPrizeIncome * prizeReinvestmentPct / 100)
+                   + floor(postedPrizeIncome * prizeReinvestmentPct / 100)
                    + approvedCarryover
 
 remainingTransferCapacity = authorizedCapacity - completedIncomingTransferFees
+spendableForDeal = min(remainingTransferCapacity, availableClubTransferBalance)
 ```
 
-- All quantities are **season scoped**, except `approvedCarryover` which is set during explicit rollover according to the previous season's **nonnegative remaining capacity** and `carryoverPct`.
-- `initialAllocation` and actual income are separate sources. Never apply the sales percentage to a club's raw bank balance.
-- **Only completed sales and recorded prizes** affect credits. Speculative bids, projected sales, and planned deals do not.
-- If sales are entered retroactively, ledger is recomputed by effective season, and any resulting inconsistency is flagged; never silently rewrite completed transfers.
-- `feeCents=0` free signings incur no transfer fee but still satisfy wage/age/registration constraints. Do not conflate free transfer with zero wages.
-- Wage **commitment** is calculated from active contracts, e.g. `sum(weeklyWageCents)`; it is **not** automatically subtracted from transfer capacity. Explicit wage caps are separate policy checks.
-- A manual financial correction uses a specific adjusted/reversal ledger entry, includes note and linked audit action, and is visible in history.
-- Negative source amounts are not accepted. Reversal direction is encoded in entry kind and `reversesEntryId`.
+- New seasons receive an explicit board allocation, not a side effect of saving the constitution. Legacy behavior remains compatible.
+- Incoming fees debit the buyer and credit the seller once. A reservation reduces availability while a negotiation is open and is released or consumed once.
+- Only completed deals and settled awards affect credits. Speculative offers never finance a signing.
+- Wage commitment is the sum of active weekly contracts. Compare it with tier caps and the club weekly wage budget; v1 does not debit weekly payroll from transfer capacity.
+- Sandbox may change board rules, but normal transactions still require finite club funds and valid ownership. Any Sandbox budget adjustment is explicit and audited.
+- Free transfers have zero fee, not zero wages. EUR is the only campaign currency.
 
-### 5.4 Preview versus commit
+**Award timing contract:** a `SeasonSettlement` records prizes and objective bonuses earned in the closing season. Their cash and `prize_income` ledger entries are credited to the **new season**, effective on its July 1, with earning-season and award-kind metadata. Apply `prizeReinvestmentPct` there once. The closing ledger receives no duplicate prize credit.
 
-A user can draft an outgoing sale or incoming signing and receive:
+`approvedCarryover = floor(max(0, closingRemainingCapacity) * carryoverPct / 100)`. Closing capacity excludes the awards that will be credited to the new season. Settlement posts carryover, new board allocation and award credits once, with independent identities; repeated rollover cannot repeat any of them. No award is counted both in carryover and in new-season prizes.
 
-- **Before / after** transfer capacity and weekly wage commitment.
-- Each applicable rule verdict with exact thresholds and affected player data.
-- An explicit “Preview only — no changes recorded” state.
-- A disabled confirmation button for blockers. Warnings may be acknowledged and committed if there are no blockers.
+### 5.4 Mandatory offers and deadlock prevention
 
-**Race protection:** A preview is not permission forever. Re-read current data and re-evaluate on commit; a stale view or another tab cannot spend the same budget twice.
+- AI incoming bids are affordable and include pre-agreed player terms. Reserve buyer funds so Accept can complete the sale; unreserved speculative interest cannot become compulsory.
+- Store fee, value and both prestige values at offer creation. Qualification uses that immutable snapshot and the board rule version, not a fluctuating current valuation.
+- Allow at most one open compulsory bid per player. On transfer, competing offers for that player become superseded and release reservations.
+- A compulsory offer remains actionable until resolved. It cannot expire or be withdrawn to bypass a window-close blocker; the engine must not generate an impossible compulsory sale.
+- Other bids may expire by game date. An accepted, rejected, expired, withdrawn or superseded bid cannot block progression.
+- Pure preview and commit use the same qualifying-offer definition. Sandbox changes to policy are audited; Challenge cannot remove the obligation through a hidden alternate command.
 
-### 5.5 Quotas and incomplete data
+### 5.5 Registration and incomplete data
 
-- When a hard-check rule requires a missing field (e.g. age, weekly wage, homegrown eligibility), show an `INSUFFICIENT_DATA` blocker and a way to supply it. Unknown is not an automatic fail **until** that field is required by an enabled rule/action.
-- Homegrown definitions vary by competition. v1 uses **configurable challenge presets**, not asserted legal/league-specific calculations. User-supplied eligibility flags are authoritative for the companion; provenance is visible.
-- Validate registration under one selected competition preset at a time. Only registered players assigned to valid required slots may be confirmed.
+Generated profiles carry explicit fictional homegrown/eligibility data. Imported unknowns remain unknown until the user supplies data or explicitly accepts generated simulation metadata. Never count unknown as homegrown.
+
+Kickoff validates a legal selection, registered or age-exempt players, active ownership/contracts, a goalkeeper and availability. A reusable planning lineup may be incomplete; that does not authorize a match. Define a deterministic AI emergency selection/recruitment policy and test it, rather than allowing a save to become permanently stuck.
 
 ---
 
-## 6. DUAL DATA PIPELINE
+## 6. DATA PIPELINES AND PLAYABLE WORLD
 
-### 6.1 Loader A — reproducible fictional demo (required for public deployment)
+### 6.1 Loader A — versioned fictional world
 
-Seed a fully fictional ecosystem without externally supplied files:
+Retain the deterministic 4-league / 72-club / 3,000-player generator framework. Generator v1 stays reproducible for existing saves. Introduce playable generator v2 without changing historical outputs.
 
-- **4 fictional leagues × 18 clubs = 72 clubs**, approximately **3,000 players** distributed unevenly but plausibly across clubs and free agents.
-- Generation based on a **versioned fixed-seed PRNG**; same seed + generator version yields the same names, ratings, clubs and budgets.
-- Position-aware attribute ranges, realistic age distributions, academy tier, modest finance/prestige tiers, randomized but coherent wages and values.
-- Fictional countries/regions may use real-world country codes for nationality metadata; **all club/team names, crests, and player identities must be invented**. Avoid direct copies of recognizable squad rosters or unique combinations.
-- Include a polished **featured demo campaign** with example finances, offers, transfer targets, two or three manually authored sample match records, incomplete-registration warning, and a vivid but explainable rule-engine scenario.
-- Seed data in bounded batches, surface progress/errors, and write **idempotently**. Reloading the demo must never duplicate initial records.
-- Distinguish **factory demo reset** (destructive confirmed action) from opening a persistent demo save.
-- Store `generatorVersion`, seed and source provenance in campaign metadata.
+- Four independent leagues of 18 clubs; fictional players, names and crests.
+- Preserve the total of 2,880 owned players and 120 free agents; improve squad composition, not the scale.
+- Every club has at least two goalkeepers and positional coverage for a legal supported formation and bench.
+- Generate ability distributions related to club prestige; potential is at least current role-weighted ability. Values and wages follow declared, versioned formulas using ability, age and potential, with bounded seeded variation.
+- Six existing attributes remain. A separate declared goalkeeper rating in the simulation profile avoids treating outfield finishing as goalkeeper quality.
+- Owned active players receive exactly one complete contract: wage, tier and expiry. Free agents have no active contract.
+- Every club has a finite transfer balance and weekly wage ceiling; initial contracts fit that ceiling. The selected challenge has a feasible starting registration and XI.
+- Standalone calendars start July 1 of an explicit year. Root seeds are user supplied or explicitly generated at the UI boundary and then persisted; audit time does not select world content.
+- The playable demo has a separate campaign identity from the existing legacy demo. Reset acts on the selected demo only.
+- World computation/validation precedes one atomic creation transaction. No partially initialized save is listed as playable.
+- Featured gameplay history is produced by the engine or explicitly labeled scripted tutorial state; do not mix authored legacy scores into a competitive table.
 
-**Do not claim the fabricated player ratings represent any licensed real dataset.**
+### 6.2 Loader B — local CSV/JSON import (Phase 12)
 
-### 6.2 Loader B — user-controlled CSV/JSON real-data import
+The existing importer is planned, not implemented at the pivot checkpoint. Retain browser-only parsing, Worker use for large files, field mapping, sample preview, units, row limits, source labels, safe staging and receipts. No hosted proprietary player data or automatic licensing assertions.
 
-Import runs **in the browser only**. No bundled or uploaded copyrighted real-world player datasets.
+An imported dataset does not necessarily describe a playable world. Before career creation:
 
-Minimum ingest capabilities:
+1. Validate club/league mapping, competition sizes, legal squads, contracts, attributes, finances and registration inputs.
+2. Preserve unknown original values. Show which simulation fields are missing.
+3. Let the user supply values or explicitly accept a reproducible generated simulation profile/world completion with separate provenance.
+4. Use 18-club leagues for v1; explicitly complete a partial league with fictional clubs or refuse playable creation. General arbitrary competition formats are deferred.
+5. Preview all additions and assumptions before committing a new standalone campaign.
 
-1. Choose/drag a `.csv` or `.json` file, with clear accepted shape and file-size guidance.
-2. Parse in a Worker for significant files; fail gracefully on unsupported format or malformed encoding.
-3. Detect header candidates; provide a field-mapping UI with a sample preview.
-4. Validate **required identity columns** (`playerName`; club mapping optional) and optional columns (club, league, age/DOB, positions, nationality, potential, wage, value, contract, attributes).
-5. Show units and allow explicit wage/value transformation (e.g. source `€k/week`, `€`, or null). Never guess unsupported currency or convert FX silently.
-6. Normalize to canonical types; report missing fields, collisions, invalid rows, duplicates, unknown clubs/positions, and mapping decisions.
-7. Preview row counts and warnings **before** committing; offer skip-invalid or abort modes.
-8. Create a **new imported campaign** or import a player pool into a chosen campaign via an explicit safe workflow. No silent replacement of an existing roster.
-9. Commit valid staged records transactionally or in a recoverable staging/promote process; failure cannot leave a half-imported playable campaign.
-10. Persist an `ImportReceipt` and source labels. Let users edit missing wages, club assignments and eligibility afterward.
+Imported data may remain a non-playable preview until requirements are met; never claim sparse identity-only rows are simulation ready. Existing legacy campaigns are not automatically converted. Target 25,000 imported players with measured reference-hardware results in Phase 13.
 
-**Reality check:** Kaggle files do not share a uniform schema or guaranteed license; not every dataset includes club budgets, accurate wages, homegrown data, or 18,000+ rows. Support field mapping and unknowns rather than promising fixed coverage/import time. Do not host copyrighted imports or assert that personal imports are automatically redistributable.
+### 6.3 Academy, retirement and development (Phase 10)
 
-Target **up to 25,000 players** as a tested scale goal. Measure parse, load and query time on named reference hardware in Phase 10. Do not promise universal 2-second import or sub-3ms queries.
+Newgens in standalone careers are real fictional gameplay participants. Generate and offer academy intakes for every club, using academy tier and stable season keys; acceptance/promotion establishes an actual contract and roster place through the same eligibility rules.
 
-### 6.3 Loader C — youth academy/newgens
+Replace the companion-only optional planning-candidate workflow for standalone saves. Import-created careers disclose fictional replenishment during setup; it cannot be silently presented as real-world data. Legacy saves retain historical behavior.
 
-- Newgen generation is **optional and opt-in** when completing season rollover.
-- Defaults: **enabled** on fictional campaigns; **disabled** on imported real-world companion campaigns, because the external game remains the source of truth.
-- U19 prospects use academy tier, scouting region, current season and seeded PRNG to produce consistent players and declared fictional provenance.
-- Do not auto-insert generated players as if they appeared in the console game's academy. Present them as **planning candidates** unless the user explicitly adds/records them as part of their companion roster.
-- Generate at most the configured small batch per academy per season; protect from duplicate reruns with season/newgen generation receipts.
-- Aging should update derived age/reference season without falsifying historical records; keep historical appearances and contract audit intact.
+Bounded role-targeted development uses age, potential, simulated minutes and development plans at midseason and season end. Split an annual growth budget across these checkpoints; do not automatically add 1–4 twice. Age-related decline is position-aware, and retirement plus youth intake maintain a playable world over multiple seasons.
 
 ---
 
 ## 7. FEATURE CONTRACTS
 
-### 7.1 Campaigns and command center
+### 7.1 Campaigns, clock and command center
 
-- Campaign create/open/switch/rename/archive/delete, with safe confirmation and scoped queries.
-- Fictional demo picker; first-run walkthrough; empty state for a new/imported club.
-- Summary cards: remaining transfer capacity, weekly wages, squad count/age, registration status, active bids, expiring contracts, upcoming self-assigned tasks.
-- Chronological recent activity from audit events; **not** fabricated news.
+- New Standalone Career selects seed, start year, club and Challenge/Sandbox; legacy saves remain labeled and openable.
+- `Continue` advances to the earliest due decision boundary, never the browser clock. Show current date, next event, progress and blockers.
+- Calendar v1: July 1–June 30 seasons; summer transfers July 1–August 31; winter transfers January 1–31; league round 1 September 1, then 33 weekly rounds. This is a fictional game calendar, not a real league schedule.
+- Same-day order: user-required decisions and deadline guards → closing/opening window transitions → kickoff/results → post-match recovery/development boundaries. Contract expiry and year-end settlement are handled before next-season initialization.
+- Market ticks and recovery intervals use game dates and stable event keys. A command stops at the first unresolved decision or unsupported handler.
+- In Phase 7, Continue stops at the first league kickoff with `Match simulation arrives in Phase 8.` No fixtures or results exist yet.
+- Phase 8 permits playing all 34 rounds and reviewing the final table; rollover remains unavailable until Phase 10.
 
-### 7.2 Squad and contracts
+### 7.2 Squad, contracts and development
 
-- Filterable/sortable searchable player table with name, position, age (exact/estimated), wages, value, tier, contract end, minutes, provenance.
-- Player detail drawer with history, contracts, notes, compare/shortlist actions, manual metadata correction.
-- Weekly wage pyramid by squad tier, clear tier-cap lines and warning/block states.
-- Propose and commit salary/tier/expiration changes via policy checks. Prevent duplicate active contracts.
-- Player development notes are manual, with no claims of autonomous progression in the external game.
+Retain searchable/sortable squad tables, profiles, wage pyramid, contracts and development plans. Add fitness/sharpness, injury return, league bans, role fit, simulated minutes and development history.
 
-### 7.3 Tactical planner (static planning, not simulator)
+Player metadata correction is legacy-only; Sandbox editing, if later exposed, uses a separate audited command. Challenge users cannot manufacture attributes, values or money through existing forms. Contract expiry/renewal and retirement are simulated in Phase 10. All generated first-season contracts run at least to June 30 so intermediate milestones do not expire players without a handler.
 
-- SVG pitch: preset formations (`4-3-3`, `4-2-3-1`, `4-4-2`, `3-5-2`), player assignments, role tags, starter/bench zones.
-- Pointer, touch and **keyboard-accessible** methods to assign/swap a player; guard duplicate selections and invalid empty slots.
-- Persist multiple lineups per season (e.g. “League XI”, “Cup Rotation”), validate players belong to the current roster.
-- Show squad-fit/coverage indicators only from known ratings and position mappings. No pretense of predicting match outcomes.
+### 7.3 Tactical decisions and selection
 
-### 7.4 Transfer desk and offer ledger
+Keep SVG formations `4-3-3`, `4-2-3-1`, `4-4-2` and `3-5-2`, named lineups and keyboard/touch assignment. Define documented role/position weights and out-of-position effects; use the same ability functions for generation, selection and simulation.
 
-- Search player pool, filter and shortlist, manual notes; separate **proposal**, **offer**, and **completed transfer** states.
-- Proposed incoming/outgoing deal calculates effect on budget/roster/wages, evaluates rules, then records completed external-game action.
-- User records bid from another club, accepts/rejects it, with prestige-rule behavior and audit trail.
-- No automatic auctions, transfer market simulation, or moving players just because a rule says they should sell.
+At kickoff require 11 eligible starters including a goalkeeper, unique bench selections and available players. AI clubs choose legal lineups with deterministic tie-breaking and fatigue-aware rotation. Automatic substitutions use a documented policy; the instant result cannot accept mid-match manual changes.
 
-### 7.5 Registration and selection
+### 7.4 AI transfer market and negotiations
 
-- Competition-scoped registration presets; manual eligibility fields with provenance.
-- Validation over selected roster: limits, homegrown count, exempt youth, unknown required fields, duplicates.
-- Matchday confirmation respects hard quota rules. Do not claim to certify real football regulations.
+During windows, AI clubs evaluate positional shortages, player age, affordability and team strength, and generate bounded incoming bids or AI-to-AI deals. Actual simulated form may influence demand once available; no invented performance data.
 
-### 7.6 Match journal and season hub
+Incoming purchases require board approval, selling-club agreement and player agreement on wage, role and term. Use deterministic valuation/willingness formulas, bounded counters, deadlines and budget reservations. Repeating an identical proposal does not reroll acceptance.
 
-- Manually enter opponent/date/home-away/result/competition, optional xG and notes, optional per-player minutes/goals/assists.
-- Aggregate recorded appearances into minutes and season summaries; incomplete logs clearly labeled as incomplete.
-- Edit a logged game through an audited correction flow or replace prior appearance rows in an atomic revision; no double counting.
-- Season dashboard: played matches, W/D/L, goals, appearances, transfers, wage change, policy incidents, notes.
-- Explicit **Review → Preview rollover → Confirm rollover**. Block when constitution demands unresolved qualifying offers or unresolved required state. Close old season and open new one atomically.
-- No random simulated results. No automatic reading of another game's save file.
+One settlement command updates ownership, both clubs' finances, old/new contracts, registrations, affected lineups, offers, receipt and audit atomically. Retain the existing manual transfer commands only for legacy saves. AI clubs cannot sign indefinitely or send unaffordable binding offers.
 
-### 7.7 Moneyball analytics and scouting
+### 7.5 Registration and availability
 
-- Squad age vs. recorded minutes scatter (peak-age window **configurable**, visual heuristic only).
-- Wage pyramid by `squadTier` and spending concentration.
-- Radar chart for 6 normalized selected attributes; show **Missing data** instead of invented values.
-- Player comparison cards and transparent weighted archetype scores (e.g. Ball-Playing Defender / Box-to-Box Midfielder). Expose weights/formula; show confidence based on known-field coverage.
-- “Insight feed”: deterministic **rules-based text** from actual ledger, age, wages, minutes, offers and user notes. Cite the underlying source record in-app.
-- Label this feature “Insights” or “Scouting Signals”, **not AI predictions**. An optional local-model narrative adapter may be researched after v1 but must never be required for core product.
+Use the existing quota engine with generated fictional eligibility. Matchday validation also checks actual registration, contract, injury and suspension status. Lightweight fitness and sharpness influence performance and injury risk; they are not medical predictions.
 
-### 7.8 Backup, import/export, settings
+Injury duration is 7–28 game days; recovery uses game-date differences. A straight red creates a one-league-match ban for v1. The ban applies starting with the next fixture; serving a ban and receiving a new one cannot cancel each other. More elaborate disciplinary accumulation is deferred.
 
-- One-click **export of a complete campaign** to documented `.json` file, including version, campaign ID, generator metadata, entities, ledger, events and provenance. Include all user-created data.
-- On import: validate envelope schema, versions, record relationships, row counts, file size, duplicate IDs, integrity, and **show summary before restore**.
-- Restore as a **new campaign with remapped IDs** by default; destructive overwrite is out of scope for v1. Never corrupt existing campaigns when restore fails.
-- Include upgrade path for older supported export versions and clear rejection for newer unsupported versions. Tests use actual v1 fixture files.
-- Provide persistent storage status, disk usage estimate, manual backup reminder, privacy explanation, no telemetry by default.
-- `.sqlite` exports are **out of scope** because v1 uses IndexedDB; JSON is the required interchange format.
+### 7.6 Fixtures, match reports and seasons
+
+- Generate 34 rounds per league: 9 fixtures per round, 306 per league, 1,224 across four leagues. Each pair meets once at each ground.
+- One Sim Matchday command handles all 36 fixtures in that round. AI results use the same core engine as the managed match.
+- The pure seeded engine computes chances/xG, goals, timeline, appearances, ratings and availability effects from tactical strength, attributes, fitness and home advantage. Publish formulas as gameplay heuristics.
+- Scores equal goal-event totals; scorer/assist/minute/card records reconcile. An own-goal representation must be explicit if supported. A precomputed final score is not an independent second source of truth.
+- Derive standings: 3 points for win, 1 for draw; order by points, goal difference, goals scored, then stable club simulation key. Show this fictional tiebreak rule.
+- Historical lineups/club identity and performance survive later transfers and growth.
+- Simulated results are immutable. Legacy journal corrections, if provided, cannot change standalone fixtures, finances or standings.
+- Phase 10 rollover requires all fixtures resolved, obligations cleared and an explicit review/preview/confirm. Settle awards, contracts, growth, academy and next-season data once.
+
+### 7.7 Moneyball analytics and scouting (Phase 11)
+
+Retain age/minutes scatter, wage pyramid, six-attribute radar, transparent archetype scores, comparisons and grounded insight text. Source metrics from canonical simulated history or labeled legacy logs.
+
+No fabricated radar axes or percentiles for missing imported data. Separate goalkeeper-specific evaluation from outfield six-axis comparisons. Cite source records and formula versions; call this Insights or Scouting Signals, not LLM predictions.
+
+### 7.8 Backup, import/export and settings (Phase 12)
+
+Export a complete versioned JSON campaign with every legacy/simulation store, keys, versions, pending offers/reservations, fixtures, results, receipts and development/settlement history.
+
+Restore validates envelope/versions, limits, relationships, campaign ownership and source labels before promoting a new campaign. Remap entity IDs but preserve simulation keys, root/event seeds and the same future outcomes. Failed restore must leave existing saves intact. No destructive overwrite or SQLite export.
+
+Retain persistence/quota UX, backup reminders, privacy controls and no telemetry by default. Import/export is not available merely because the data model contains an ImportReceipt.
 
 ---
 
 ## 8. TECHNICAL ARCHITECTURE / REPOSITORY SHAPE
 
-Suggested structure (adjust shallow folder names only, preserve boundaries):
+Retain existing folders and add shallow modules as needed:
 
 ```text
-src/
-  app/
-    App.tsx
-    router.tsx
-    providers/
-    layout/
-  components/
-    ui/
-    charts/
-    graphics/
-  features/
-    campaigns/
-    dashboard/
-    squad/
-    tactics/
-    transfers/
-    finance/
-    registration/
-    matches/
-    seasons/
-    scouting/
-    import-export/
-    settings/
-  domain/
-    models/
-    rules/
-    finance/
-    player/
-    seasons/
-    seed/
-    analytics/
-    commands/
-    validation/
-  data/
-    db.ts
-    migrations/
-    repositories/
-    transactions/
-  workers/
-    import.worker.ts
-  styles/
-    tokens.css
-  test/
-    fixtures/
-    helpers/
-public/
-  icons/
-plans/
-  phase1.md ... phase10.md
-  phase1/guide1.md ...
+src/domain/
+  models/ rules/ finance/ player/ matches/ seed/ validation/
+  simulation/       # state, game calendar, deterministic streams
+  fixtures/         # round-robin schedules, standings
+  market/           # AI needs, valuations, negotiations
+  seasons/          # settlement, development, academy
+  analytics/ commands/
+src/data/
+  db.ts
+  migrations/       # immutable v1 plus explicit v2 and later additions
+  repositories/
+  commands/         # the only gameplay write entry points
+  transactions/
+src/features/
+  campaigns/ dashboard/ squad/ tactics/ transfers/ finance/
+  registration/ matches/ seasons/ scouting/ import-export/ settings/
+src/workers/
+  simulation.worker.ts  # when profiling justifies off-thread execution
+  import.worker.ts
+plans/phase1.md ... phase13.md
 README.md
 ARCHITECTURE.md
 DECISIONS.md
 MASTER_PLAN.md
 ```
 
-### Boundaries that may not be violated
+### Boundaries
 
-- **Domain:** pure types, computations, rules, parsing normalization. No React imports, Dexie imports or browser globals.
-- **Data:** Dexie schema and migrations; repository operations; transactional commits. No direct JSX/UI.
-- **Features:** orchestration, hooks and UI. Calls domain APIs/repositories; no duplicated business rule math.
-- **Worker:** parse heavy files/normalize records; communicate with explicit serializable typed messages; do not become another source of business truth.
-- **Shared UI:** generic and reusable, but avoid premature component framework or dozens of abstractions.
+- Domain: pure calculations and schemas; no React, Dexie, browser globals, ambient randomness or clocks.
+- Data: scoped repositories, migrations and transactional commands; no UI.
+- Features: orchestration/UI using domain, repositories and commands; no direct Dexie or duplicated policy math.
+- Shared components: no business logic or persistence imports.
+- Workers: typed serializable inputs/results; share the domain engine and never write authoritative game state.
 
 ### Persistence/write protocol
 
-1. Validate command shape with Zod.
-2. Read relevant campaign-scoped records and revision.
-3. Calculate a pure domain preview.
-4. If permitted and confirmed, open a short transaction over every affected store, re-check revision and all critical invariants, write records + related ledger/audit, increment revision.
-5. On successful transaction, show the persisted result; on failure, show actionable error and do not claim success.
-6. Never reuse ID collisions or edit another campaign through a stale route.
+1. Validate request and campaign mode.
+2. Load a consistent campaign-scoped snapshot/revision.
+3. Evaluate prerequisites and compute the bounded event outside the write transaction.
+4. Open one short transaction; recheck revision, date, policy, receipt and ownership.
+5. Commit all effects, receipt and audit and increment revision once.
+6. Return persisted state or an actionable failure. A failed event writes nothing.
 
-### Cross-cutting quality rules
+For creation, validate the entire generated world before transactionally inserting a playable campaign. If production measurements require staged initialization, staging must remain unplayable and be recoverable; amend the guide before changing its atomic contract.
 
-- Every significant user action has loading/error/success UX; disable duplicate submission while committing.
-- Money math stays in cents until formatting; never compare formatted currency strings.
-- Use type-safe imports, schema parsing at trust boundaries, and explicit unknown states.
-- Lists at 25k scale must use IndexedDB filtering/indexes, pagination/virtualization where appropriate; avoid synchronous full-data sorts every render.
-- No private personal data in analytics, console logs, error reports, or remote services by default.
-- Avoid runtime third-party CDN fonts/assets; bundle or use system fonts so offline UI truly works.
-- Test dark theme, keyboard flows, import failures, storage failures, and demo reset behavior.
+### Cross-cutting rules
+
+- Disable duplicate submission, keep UI responsive and expose progress; do not hide saves behind long synchronous work.
+- Use indexed reads and measured pagination/virtualization for large datasets.
+- Keep audits concise; never duplicate a full world snapshot inside an audit payload.
+- Bundle assets and fonts; no mandatory runtime CDN.
+- No private save data in network logs, telemetry or remote services.
+- Schema version, generator version, simulation version and backup format version are distinct and tested independently.
 
 ---
 
 ## 9. PHASE EXECUTION ROADMAP
 
-**There are exactly 10 implementation phases.** Each row below is a contract for a future `plans/phase<number>.md`. The guide breakdown beneath each phase is the **minimum commit map**. The phase writer may split a guide if it is not safely commit-sized, but must not combine independent guides or change their order/dependencies without documenting why.
+### Historical foundation: Phases 1–6
+
+The entries below preserve completed guide identities under plan 1.0.0. Their original outcomes and non-goals describe the implemented companion foundation; standalone enhancements are forward commits in Phases 7–13. Existing phase1–6 plans are historical and are not regenerated.
 
 ### PHASE 1 — Project foundation and visual shell
 
@@ -638,57 +598,89 @@ MASTER_PLAN.md
 
 **Exit:** Rule bypass is impossible from UI actions; blocked actions do not partially write; completed deals survive refresh.
 
-### PHASE 7 — Match journal, seasons and optional newgens
+### PHASE 7 — Standalone simulation foundations (active)
 
-**Outcome:** The companion can follow an entire manually played career season.
+**Outcome:** Legacy saves survive migration; a new complete seeded career initializes and advances to the first kickoff boundary. No match engine, transfer AI, growth or rollover is claimed yet.
 
-- `P07-G01` — Match form/journal, optional xG, result and appearance validation. Commit: `feat(p07-g01): record played matches`.
-- `P07-G02` — Appearance totals, player minutes and season record aggregation. Commit: `feat(p07-g02): derive season performance from logs`.
-- `P07-G03` — Audited match corrections, season review and timeline. Commit: `feat(p07-g03): review and correct season history`.
-- `P07-G04` — Pure preview and atomic season rollover, carryover budget and pending-offer checks. Commit: `feat(p07-g04): advance campaign seasons explicitly`.
-- `P07-G05` — Seeded youth generation with opt-in, import-save safeguards, idempotency and source labeling. Commit: `feat(p07-g05): support optional academy newgens`.
-- `P07-G06` — E2E campaign-through-season test, age/reference progression and financial boundary checks. Commit: `test(p07-g06): secure season lifecycle`.
+- `P07-G01` — Completed historical manual journal. Commit: `feat(p07-g01): record played matches`. Preserve unchanged.
+- `P07-G02` — Simulation contracts, mode defaults and additive Dexie v2 migration. Commit: `feat(p07-g02): introduce standalone save contracts`.
+- `P07-G03` — Pure game calendar, named random streams and bounded time previews. Commit: `feat(p07-g03): define deterministic game time`.
+- `P07-G04` — Playable generator v2 with legal squads, contracts, profile inputs and budgets. Commit: `feat(p07-g04): generate playable club worlds`.
+- `P07-G05` — Atomic standalone career creation, new-game UI and legacy/Challenge write guards. Commit: `feat(p07-g05): start standalone careers safely`.
+- `P07-G06` — Audited Continue command and command-center progression through preseason to kickoff. Commit: `feat(p07-g06): advance the standalone game clock`.
+- `P07-G07` — Migration, initialization, mode-isolation and progression browser/integration evidence. Commit: `test(p07-g07): verify standalone foundations`.
 
-**Exit:** Users can record games, see accurate minutes, close a season once, open the next, and choose whether to generate fictional prospects.
+**Exit:** Next execution is P07-G02; legacy demo and new playable demo are separate; generator v1 outputs unchanged; no unavailable future handler is bypassed.
 
-### PHASE 8 — Scouting, comparisons and Moneyball insights
+### PHASE 8 — Fixtures and instant match simulation
 
-**Outcome:** High-value decision dashboards backed by actual saved data.
+**Outcome:** Play all 34 matchdays, review both teams' performances and league tables, and reach a final-season review without rollover.
 
-- `P08-G01` — Attribute normalization, archetype score formulas, missing-data confidence and tests. Commit: `feat(p08-g01): calculate transparent scouting signals`.
-- `P08-G02` — Player radar comparisons and scouting reports with evidence. Commit: `feat(p08-g02): compare transfer targets`.
-- `P08-G03` — Age/minutes matrix with selectable age windows and selectable datasets. Commit: `feat(p08-g03): visualize squad lifecycle`.
-- `P08-G04` — Wage-tier distribution and transfer-decision visuals integrated with ledger. Commit: `feat(p08-g04): surface financial structure insights`.
-- `P08-G05` — Deterministic insight feed, actionable flags and source-record links. Commit: `feat(p08-g05): generate grounded club insights`.
-- `P08-G06` — Scalable search/filter tests and chart empty/missing data/a11y validations. Commit: `test(p08-g06): validate analytic integrity`.
+- `P08-G01` — Fixture/result/appearance contracts and versioned persistence.
+- `P08-G02` — Four double round-robin calendars and deterministic standings.
+- `P08-G03` — Shared role strength, AI legal selection and automatic substitution policy.
+- `P08-G04` — Pure instant match engine, coherent timeline/xG/ratings and availability effects.
+- `P08-G05` — Atomic round simulation, reports, tables and squad performance adapters.
+- `P08-G06` — Full-round/full-season deterministic integration tests and browser matchday journey.
 
-**Exit:** Every statistic and insight traces to actual save records or clearly labeled seeded data; incomplete imports do not create fake metrics.
+Future phase plans must assign one imperative commit subject per guide before execution.
 
-### PHASE 9 — CSV/JSON dataset import and campaign backup
+### PHASE 9 — Autonomous market and club/player negotiation
 
-**Outcome:** Practical long-term usability and file portability.
+**Outcome:** Windows produce affordable AI bids and AI-to-AI moves; player decisions and board rules govern completed transfers.
 
-- `P09-G01` — Define complete versioned JSON backup envelope and export command. Commit: `feat(p09-g01): export portable campaign backups`.
-- `P09-G02` — Implement validated new-campaign backup restore, remap IDs, transactional promotion and fixtures. Commit: `feat(p09-g02): restore backups safely`.
-- `P09-G03` — Web Worker CSV/JSON parse with limits, warnings and malicious input handling. Commit: `feat(p09-g03): parse external datasets locally`.
-- `P09-G04` — Visual field mapping, unit conversion, normalization and dedupe preview. Commit: `feat(p09-g04): map imported player records`.
-- `P09-G05` — Atomic staged import to new campaign, import receipts, partial-record UX. Commit: `feat(p09-g05): commit user datasets safely`.
-- `P09-G06` — Import/export round-trip, malformed data, cross-version fixtures, 25k-row baseline tests. Commit: `test(p09-g06): verify data interchange integrity`.
+- `P09-G01` — Negotiation/offer snapshots, deadlines, reservations and migrations.
+- `P09-G02` — AI squad needs, bounded market ticks and valuation formulas.
+- `P09-G03` — Selling-club fee and player wage/role/term agreement.
+- `P09-G04` — Atomic settlement for both clubs with contracts, finance and selection cleanup.
+- `P09-G05` — Incoming inbox, deadline progression and actionable compulsory sales.
+- `P09-G06` — Budget conservation, reservation release, duplicate/stale response and deadlock tests.
 
-**Exit:** Export/import round-trip preserves every required entity and its relationships; failed imports leave existing campaigns intact.
+### PHASE 10 — Player lifecycle and sustainable seasons
 
-### PHASE 10 — Offline PWA, accessibility, performance, portfolio release
+**Outcome:** Complete settlement and start a second season without duplicate awards, depleted world squads or expired ownership.
 
-**Outcome:** Ship-quality public static demo and release proof.
+- `P10-G01` — Objectives, award tables, settlement/development receipts and contracts.
+- `P10-G02` — Bounded midseason/annual growth, decline and value recalculation.
+- `P10-G03` — Renewal, expiry, retirement and academy replenishment for all clubs.
+- `P10-G04` — Atomic season settlement, next-season allocation/prizes/carryover and fixtures.
+- `P10-G05` — Review/preview/confirm UI, objective outcomes and development history.
+- `P10-G06` — Multi-season deterministic, financial-boundary and roster-sustainability tests.
 
-- `P10-G01` — Production service worker/manifest/icons, precache policy and offline install tests. Commit: `feat(p10-g01): deliver offline installable PWA`.
-- `P10-G02` — Storage persistence/quota UX, backup reminders, import/error recovery. Commit: `feat(p10-g02): harden local data safety`.
-- `P10-G03` — Keyboard/a11y/contrast/responsive hardening and reduced-motion checks. Commit: `fix(p10-g03): polish accessibility and responsiveness`.
-- `P10-G04` — Profile 3k and 25k record operations; optimize indexed queries, lists and Worker boundaries with measured evidence. Commit: `perf(p10-g04): tune measured large-save workflows`.
-- `P10-G05` — Documentation, demo walkthrough, screenshots, licensing/privacy statements, deployment setup, backup help. Commit: `docs(p10-g05): prepare portfolio release materials`.
-- `P10-G06` — Full CI, production preview smoke, offline E2E, restore disaster test, release checklist and tagged v1 candidate. Commit: `test(p10-g06): certify v1 release candidate`.
+### PHASE 11 — Scouting, comparisons and Moneyball insights
 
-**Exit:** Deployed demo works on HTTPS, core screens remain functional offline after initial load, accessibility baseline and full release checklist pass.
+Former unimplemented Phase 8, adjusted to simulation history.
+
+- `P11-G01` — Transparent archetype scores and missing-data confidence.
+- `P11-G02` — Radar comparisons and scouting reports.
+- `P11-G03` — Age/minutes matrix and development history.
+- `P11-G04` — Wage structure and transfer-decision visuals.
+- `P11-G05` — Grounded insight feed with source links.
+- `P11-G06` — Analytics integrity, accessibility and scalable search tests.
+
+### PHASE 12 — Dataset import and portable campaign backup
+
+Former unimplemented Phase 9, expanded for playable-world validation and deterministic restore.
+
+- `P12-G01` — Complete versioned backup export, including all simulation stores.
+- `P12-G02` — Safe restore/remapping, preserving seeds and future outcomes.
+- `P12-G03` — Worker CSV/JSON parsing, limits and malformed-input handling.
+- `P12-G04` — Field mapping, units and explicit simulation-profile completion preview.
+- `P12-G05` — Atomic/staged imported-career creation and readiness validation.
+- `P12-G06` — Cross-version/legacy round trips, deterministic continuation and 25k-row fixtures.
+
+### PHASE 13 — PWA, accessibility, performance and release
+
+Former unimplemented Phase 10 plus simulation profiling and balancing.
+
+- `P13-G01` — Production PWA, precache and offline tests.
+- `P13-G02` — Storage/quota/backup recovery UX.
+- `P13-G03` — Keyboard, contrast, responsive and reduced-motion hardening.
+- `P13-G04` — Profile 3k/25k operations, full-world rounds and long saves; document multi-seed balancing.
+- `P13-G05` — Architecture, gameplay help, licensing, portfolio walkthrough and deployment docs.
+- `P13-G06` — Full CI, production/offline restore journey and release checklist.
+
+**Release:** Do not shorten the roadmap by claiming importer, PWA, analytics or game balancing already exist.
 
 ---
 
@@ -700,37 +692,47 @@ A phase planner must generate a self-contained file with **all** of these sectio
 # Phase N — <Name>
 
 ## 1. Parent plan contract
-- Reference `MASTER_PLAN.md` version and relevant sections.
+
+- Reference `MASTER_PLAN.md` version and relevant sections; identify completed historical guides separately.
 - Identify the roadmap entries `P0N-G01` ... `P0N-Gxx` exactly.
 
 ## 2. Phase objective and user-visible outcome
+
 - Explicit working product behavior at phase end.
 
 ## 3. Prerequisites
+
 - Which earlier phases/interfaces/tests must already exist.
 - Required source files and existing models to inspect.
 
 ## 4. In scope / out of scope
+
 - Precise boundaries and deferred features.
 
 ## 5. Architecture impact
+
 - Data contracts, repositories, commands, UI and migrations touched.
 - Decisions or risks requiring documentation.
 
 ## 6. Work breakdown and dependency graph
+
 - Ordered guides; for each: name, goal, expected file changes,
   tests, commit subject, blockers/dependencies.
 
 ## 7. Acceptance criteria
+
 - Numbered, observable and testable user behaviors.
 
 ## 8. Verification
+
 - Exact commands and manual browser flows; failure cases.
 
 ## 9. Risks, mitigations, rollback
+
 - What could corrupt data, weaken rules, or cause regressions.
 
 ## 10. Exit criteria and handoff
+
 - Required evidence, documentation, and assumptions for next phase.
 ```
 
@@ -748,43 +750,55 @@ A guide should be executable by a fresh AI agent that has the repository and mas
 # PNN-GMM — <Specific deliverable>
 
 ## 1. Context and authority
+
 - Master plan version; parent phase; predecessor guide; commit ID.
 
 ## 2. Goal and user-observable result
+
 - One narrowly scoped outcome.
 
 ## 3. Preconditions
+
 - Branch/working tree assumptions, dependencies, commands to inspect.
 
 ## 4. Files to inspect
+
 - Concrete existing paths/interfaces. Never assume an uncreated file exists.
 
 ## 5. Files to create/modify
+
 - Estimated paths; precise public APIs/contracts affected.
 
 ## 6. Implementation steps
+
 1. Small ordered coding steps.
 2. Explicit types, function signatures, data operations and UI behavior.
 3. Error/empty/loading paths and important edge cases.
 
 ## 7. Tests to add/change
+
 - Named unit/integration/e2e tests and fixtures; negative cases.
 
 ## 8. Verification commands
+
 - Exact local scripts available at that phase; expected results.
 
 ## 9. Manual acceptance check
+
 - Reproducible click/keyboard steps and expected state.
 
 ## 10. Definition of done
+
 - Checklist of code, tests, docs, types, clean diff and no scope creep.
 
 ## 11. Commit instructions
+
 - Stage only related files.
 - Suggested message: `<type>(pNN-gMM): <imperative summary>`.
 - Do not commit on failing checks.
 
 ## 12. Handoff
+
 - New APIs, changed constraints, known limitations, next guide needs.
 ```
 
@@ -794,7 +808,7 @@ A guide should be executable by a fresh AI agent that has the repository and mas
 
 ### Guide execution protocol
 
-1. Verify clean working tree and inspect existing files/tests.
+1. Inspect the working tree and existing files/tests. Preserve unrelated user changes and untracked plans; stage only the active guide's files.
 2. Confirm predecessor guide's commit exists and tests pass.
 3. Implement only the active guide.
 4. Add tests for changed behavior and run targeted checks.
@@ -814,30 +828,39 @@ A guide should be executable by a fresh AI agent that has the repository and mas
 
 ## 12. TEST STRATEGY AND RELEASE GATES
 
-### 12.1 Mandatory automated coverage
+### 12.1 Mandatory coverage
 
-- **Unit:** pure formula/rounding, financial ledger, rule evaluation, age handling, seeded determinism, archetype missing-data logic, registration constraints.
-- **Data integration:** Dexie schema, migrations, transaction rollback, stale revision, command idempotency where required, campaign isolation, season rollover, edit corrections.
-- **UI/component:** validation messages, blockers disable commit, keyboard lineup assignment, route/empty states, row virtualization behavior.
-- **E2E journeys:** onboarding → demo → lineup → sale → authorized purchase → journal → rollover → export → restore; failure modes on blocked actions and bad imports.
-- **Fixtures:** deterministic tiny campaigns, strict-policy club, incomplete real-data import, 3k seed, synthetic 25k import for performance.
+- Unit: money/rounding, rules, role strength, calendar boundaries, deterministic streams, fixture schedule, match events, availability, valuation, development and missing data.
+- Integration: real v1→v2 migration, rollback, stale revision, logical-operation idempotency, mode guards, two-club settlement, season settlement and isolation.
+- UI: next-action blockers, registration/selection, accessible reports, new-game settings, Challenge locks and legacy compatibility.
+- E2E: create career → select XI → simulate → resolve AI bid → sign player → complete season → settle → export → restore → identical continuation.
+- Fixtures: tiny deterministic worlds, strict-policy clubs, malformed/incomplete imports, actual v1 save rows, production 3k world and 25k import fixture.
 
-### 12.2 Explicit invariants to prove
+### 12.2 Explicit invariants
 
-1. A 70% sales rule with €10,000,000 of completed sales authorizes **€7,000,000** of additional capacity (before other allocations/spending); not €10m.
-2. A paid transfer for a known 27-year-old violates default age 26 when enabled; a true free transfer may be exempt if configured.
-3. A €46,000/week Key contract violates €45,000/week cap when enabled.
-4. Two concurrent/stale proposed transfers cannot both spend the same remaining capacity.
-5. Failed transactions do not move the player without ledger/audit, or write ledger without player movement.
-6. Unknown player wage never silently counts as €0 when a wage-cap rule needs it.
-7. A duplicate match/player appearance does not double-count minutes.
-8. Season rollover cannot run twice; carryover is based on eligible unspent capacity once.
-9. Import failures do not mutate an existing save; restore preserves referential integrity.
-10. Every entity query/write uses correct `campaignId`; IDs from another save are rejected.
-11. Deterministic generator emits identical output for the same seed + version.
-12. Empty scouting attributes produce no fabricated 6-axis radar values or false percentile rankings.
+1. A 70% sales rule on EUR10m completed sales authorizes EUR7m, not EUR10m.
+2. Age 27 violates enabled default signing age 26; free exemption follows the actual preset.
+3. EUR46k/week violates an enabled EUR45k Key cap; missing wage is never silently zero.
+4. Concurrent deals cannot spend the same balance or reserved funds.
+5. Failed transfers cannot leave ownership, contracts or either club's finance partially changed.
+6. Legacy unknown values remain unknown; generated simulation replacements are separate and labeled.
+7. A fixture/player has one performance row; repeated simulation cannot add minutes again.
+8. Rollover, growth periods, academy intake and each award apply once.
+9. Restore/import failures leave existing saves intact and preserve references.
+10. Every query/write validates campaign ownership and mode.
+11. Generator v1 remains byte-for-byte reproducible; v2 repeats for the same seed/version/logical keys.
+12. Missing scouting axes never become invented measurements.
+13. Each 18-club schedule has 34 rounds/306 fixtures, one game per club per round, one home and one away meeting per pair.
+14. One full-world round produces 36 results or no results. Stale/retried rounds cannot reroll.
+15. Score, goal events, appearances, minutes, bans and fitness effects reconcile.
+16. Club iteration order, UI timing and unrelated random streams do not change fixture outcomes.
+17. AI deals remain affordable, player ownership/contracts remain legal, and compulsory offers are completable.
+18. Prize reinvestment is applied once to the opening season; carryover never includes the same award.
+19. Restore ID remapping preserves the same next match/market/development outcomes.
+20. Challenge guards cannot be bypassed through old manual commands or direct command calls.
+21. Multi-season tests retain enough legal squads and goalkeepers across all clubs; retirement cannot silently hollow out the world.
 
-### 12.3 Required commands (create scripts in Phase 1)
+### 12.3 Required commands
 
 ```bash
 pnpm lint
@@ -847,121 +870,113 @@ pnpm build
 pnpm test:e2e
 ```
 
-CI runs lint, typecheck, unit/integration tests and build on every PR; E2E smoke may run on PR and full E2E before phase exit/release. Each guide's commands reflect the scripts actually available at that moment.
+Use available targeted Vitest/Playwright options for each guide, then the full checks required by its phase. CI covers lint, types, unit/integration and build; phase exit/release includes browser checks. Documentation-only amendments run formatting/link/contract consistency checks; do not claim that planned gameplay tests have run.
 
-### 12.4 Performance / UX budgets (targets, not guarantees)
+### 12.4 Performance and balancing
 
-Use named test hardware/browser, reproducible sample fixture and measured report in Phase 10. Initial budgets to **test and adjust based on evidence**:
+Phase 13 records named hardware/browser and reproducible seeds. Measure first initialization, a 36-fixture round, a 1,224-fixture season, long-history reads, 3k searches and 25k imports. Show progress, avoid sustained main-thread blocking and use a Worker when measurements justify it.
 
-- First demo open after assets cached: interactive without prolonged blank screen; show progress during one-time seed.
-- 3k-player filters/search: smooth input response and no long main-thread tasks from full-array recompute.
-- 25k-player import: progress indicator, cancel path, no persistent partial campaign, no frozen interaction for extended parsing periods.
-- Tactical drag/assignment: clear feedback; no unexpected layout shifts.
-- Typical dashboard interactions should feel responsive even with an imported save.
+Across fixed multiple seeds, report score/xG distributions, home advantage, stronger/weaker squad trends, injury frequency, transfer affordability and annual player growth. Treat these as game-design targets, not verified real football facts. Set thresholds before tuning and do not fabricate universal latency guarantees.
 
-Avoid declaring fictional universal “3ms” database operations or “2 seconds” imports as promises; profile actual devices.
+### 12.5 Accessibility and privacy
 
-### 12.5 Accessibility and privacy release bar
-
-- Keyboard-only user can create/open a save, navigate the app, assign a lineup, review rule blockers, enter a match, and export backup.
-- No critical information relies solely on a color/hover effect or unreadable chart.
-- User-generated/imported data stays in the browser unless the user explicitly downloads a backup or voluntarily uses the browser's own sharing actions.
-- Static deployment contains **no secrets**, third-party player datasets, copyrighted photos, or network-dependent fonts.
+Keyboard users can create/open a career, assign a legal team, resolve blockers, simulate, review reports and export. Essential information does not rely on hover or color. User data stays local unless explicitly exported; static deployment includes no secrets, proprietary databases or network-dependent assets.
 
 ---
 
-## 13. RISKS / EXPLICIT MITIGATIONS
+## 13. RISKS AND MITIGATIONS
 
-| Risk | Mitigation |
-| --- | --- |
-| Browser evicts local save | Clear first-run explanation, request persistence, backup affordance, export/restore, quota errors |
-| Agent overbuilds a football manager game | Enforce Option B non-goals and explicit manual event record contract |
-| Datasets omit or mislabel fields | Mapping preview, nullability, provenance, hard rules require known values |
-| Imported data licensing | No hosted real squads, clear user responsibility/permission guidance, fictional public demo |
-| Financial arithmetic drift | Integer cents, single tested calculation module, append-only ledger, atomic operations |
-| Hard rule bypass in another UI path | Central commands + commit-time pure policy evaluation, negative integration tests |
-| Multiple browser tabs write simultaneously | Revisions/optimistic checks, transaction boundaries, stale-state feedback |
-| Season advances accidentally or twice | Multi-step confirmation, season status/ordinal checks, unique idempotency receipt |
-| Import/restore damages current campaign | Staging, schema/relationship validation, import as new save, rollback cleanup |
-| PWA hides old app code / schema mismatch | Test production updates and Dexie migrations; app update prompts with backup reminder |
-| Dashboards imply unavailable stats | Provenance and missing-data states; only compute from available inputs |
-| AI scope explosion | Ship deterministic grounded insights; optional local LLM only after stable v1 |
-| Big saves freeze UI | Indexed queries, virtualization, workers, fixture-driven profiling |
+| Risk                                               | Mitigation                                                                                    |
+| -------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| Pivot destroys existing saves                      | Frozen v1 migration, legacy mode, separate playable demo and upgrade fixtures                 |
+| Old manual commands bypass gameplay                | Command-level mode/Challenge guards and negative integration tests                            |
+| Simulation rerolls on reload/restore               | Versioned logical keys, event seeds, immutable results and receipts                           |
+| Full-world writes partially apply                  | Bounded transactions, revision checks and rollback fault tests                                |
+| Mandatory transfer permanently blocks time         | Binding affordable offers, reserved funds, pre-agreed terms and one compulsory bid per player |
+| Prize or growth is applied twice                   | Settlement/period identities, explicit earning/receiving seasons and retries                  |
+| World becomes unplayable over years                | Legal generation, AI rotation/recruitment, retirement/intake and multi-season tests           |
+| Match loop expands into a full live manager        | Instant results and auto-substitutions only; live ticker deferred                             |
+| Imported identities look like complete player data | Readiness preview, separate generated profiles and source labels                              |
+| Large rounds/imports freeze the browser            | Profile production workloads, typed Worker boundary and indexed reads                         |
+| Browser eviction or broken update loses save       | Backup/restore, quota UX, explicit migration and production update testing                    |
+| AI refers to hosted models                         | Document local deterministic algorithms; no external AI dependency                            |
+
+Rollback preserves user data. Revert a bad implementation through a compatible forward fix; do not deploy old code that cannot parse a newer DB, delete a save, or reset published history to avoid an upgrade.
 
 ---
 
-## 14. SECURITY, LEGAL AND TRUST PRINCIPLES
+## 14. SECURITY, LEGAL AND TRUST
 
-- App performs client-side computations and storage by default; it has no user accounts and no app-owned backend.
-- Treat every import and backup as untrusted: file-size guard, JSON shape validation, row-count bounds, string-length limits, no HTML evaluation, defensive parse/error handling.
-- Prevent CSV formula injection if a future CSV **export** feature is added; v1 exports JSON only.
-- Service worker never caches remote personal player datasets or third-party private content automatically.
-- No exposed LLM/API secrets. If future integrations require remote credentials, design a separate consented architecture; do not insert keys in client bundles.
-- Generated crests/shirts are independently designed SVGs. Real-world logos, badges, photos, and commercial database assets are not distributed.
-- Include visible “Unofficial fan-made companion; not affiliated with any football game, team or league” disclaimer and content licensing notes.
-- Exported backups can contain user-entered data; warn before sharing publicly. No analytics collection without explicit future opt-in.
+- Client-side storage/computation by default; no accounts or app-owned backend.
+- Treat imports/backups/Worker messages as untrusted: bounded sizes, strings and row counts, schema/relationship checks, no HTML evaluation.
+- Ship fictional identities, independently designed SVG crests and no commercial player databases or licensed photos.
+- Personal imports remain local; no assertion that personal possession grants redistribution rights.
+- Visible product statement: “Independent fictional football simulation; not affiliated with any football game, club or league.” Legacy saves may retain their historical companion label.
+- Label simulated outcomes, generated profiles, estimates and imported facts distinctly.
+- Service worker caches app assets, not imported private files. No exposed API keys, mandatory hosted LLM or telemetry.
+- Backups can contain personal notes/imported data; provide sharing guidance without sending them anywhere automatically.
 
 ---
 
 ## 15. DEMO / PORTFOLIO ACCEPTANCE SCRIPT
 
-A reviewer should be able to perform this exact short journey in the fictional demo:
+At release a reviewer can:
 
-1. Open the URL; select **Try Demo**; view an invented club with a coherent squad and financial story.
-2. Open **Constitution**; see active 70% sell-to-buy, age 26, wage-tier rules, with understandable descriptions.
-3. Open **Transfers**; preview a purchase that is **BLOCKED** due to insufficient authorized capacity. See the specific number and remedy.
-4. Record a completed player sale. Observe a new audit event, roster update, and increased authorized transfer capacity by **70% of that sale**.
-5. Re-preview an eligible purchase; commit it if valid. Observe new player, ledger entry, reduced capacity, no double charge on reload.
-6. Open **Tactics**; place the player in a saved XI with SVG pitch and keyboard/touch alternatives.
-7. Open **Finance**; view wage-tier pyramid and ledger. Open **Squad**; inspect age/minutes information without manufactured match data.
-8. Record a manually played match and player minutes; see the journal and analytics update.
-9. Export JSON; restore it as a separate campaign; verify independent records remain intact.
-10. Reload or go offline after initial load; open saved campaign and use core features.
+1. Open Play Fictional Demo, choose a club and start a seeded Challenge career.
+2. Review board rules, finite funds, wage tiers and the game date.
+3. See an unaffordable or age-ineligible proposed signing blocked with evidence.
+4. Advance to a market decision; receive an affordable compulsory prestige bid with an actionable sale.
+5. Accept it, see the completed move and 70% sale credit, then negotiate an eligible replacement with club/player agreement.
+6. Register the squad and assign the new signing on the accessible SVG board.
+7. Simulate a matchday; inspect score, xG, events, ratings, fitness and all league tables.
+8. Reload; the same result exists once and time does not advance on its own.
+9. Complete the season, review objectives/development, settle once and see next-season awards and capacity.
+10. Export, restore as a separate campaign and verify the same future outcome from identical decisions.
+11. Go offline after app caching and continue playing.
+12. Open a preserved legacy campaign; its manual history has not been converted into a simulated table.
 
-**The portfolio story is the policy-checked managerial workflow**, not a pretend live match engine.
+The portfolio story is a playable sporting-director loop whose board rules create meaningful recruitment decisions.
 
 ---
 
-## 16. DEFINITION OF DONE FOR VERSION 1
+## 16. DEFINITION OF DONE FOR STANDALONE v1
 
-A release is acceptable only when **all** statements below are true:
+- [ ] Historical Phases 1–6/P07-G01 remain intact; current Phases 7–13 have completed guides and reviewable commits.
+- [ ] New playable career and demo initialize without login, uploads or network APIs.
+- [ ] Four leagues complete 34 rounds each with coherent fixtures, results and tables.
+- [ ] Selection/roles, availability and automatic substitutions affect documented match inputs.
+- [ ] AI transfers/negotiations obey funds, wages, ownership and board rules.
+- [ ] Compulsory bids create decisions without impossible progression locks.
+- [ ] Player development, expiry, academy and retirement support a second season and tested longer careers.
+- [ ] Awards, carryover and opening budgets reconcile without duplicate reinvestment.
+- [ ] Save migration, mode isolation, receipts, rollback and deterministic restore have tests.
+- [ ] Moneyball, comparisons and insights trace to canonical labeled data.
+- [ ] Dataset imports validate playable readiness and preserve unknown source fields.
+- [ ] Complete JSON backup/restore and offline PWA work in production.
+- [ ] Keyboard, responsive, contrast, errors and storage recovery meet release gates.
+- [ ] Documentation distinguishes implemented checkpoints from the final product and records measured performance/balancing.
+- [ ] Static build has no secrets, proprietary player data or mandatory hosted services.
 
-- [ ] Phases 1–10 have approved phase plans, completed guides and reviewable commits.
-- [ ] Every guide's required test/verification evidence exists; full CI and release E2E pass.
-- [ ] Public fictional demo starts without login, uploads, licensing-dependent assets or network data APIs.
-- [ ] Campaign, squad, tactics, transfer, finance, registration, journal, season, scouting and settings screens are functional.
-- [ ] Club constitution rules are enforced at commit time, with consistent previews, explanatory verdicts and audit trail.
-- [ ] Save isolation, money precision, atomic writes, season rollover, and incomplete data are covered by tests.
-- [ ] Fictional seed is deterministic/idempotent and real-data import has a safe mapping/preview flow.
-- [ ] User can export a campaign backup and restore it as a separate playable campaign.
-- [ ] Installable PWA works offline after asset caching; storage limitations are documented and backup controls visible.
-- [ ] Keyboard navigation, mobile/tablet fallback, contrast and error/empty/loading states meet the accessibility baseline.
-- [ ] README explains user workflows and non-goals; ARCHITECTURE/DECISIONS document implementation boundaries.
-- [ ] Production build contains no proprietary real player databases, licensed crests, secrets or mandatory hosted AI service.
-- [ ] Actual performance results for both normal fictional and 25k-player test fixtures are recorded without exaggerated guarantees.
+### Post-v1 candidates
 
-### Post-v1 extension candidates — deliberately **not** included in phase plans
-
-- Local on-device LLM-powered writing assistance grounded on saved records, opt-in with resource/privacy controls.
-- Additional simulated or manually calibrated financial rule presets by competition (clearly labeled).
-- Tauri desktop wrapper; optional SQLite import/export and carefully managed migration.
-- More elaborate academy planner, player development histories, season report print/PDF.
-- Read-only external dataset connectors **only** with lawful API access and explicit user consent.
-- Cloud sync and accounts **only if** product strategy later changes; this would be a separate architecture revision.
+Live fast-forwardable ticker and in-match changes; cups and promotion/relegation; deeper commercial finances; staff/morale systems; local narrative assistance; native wrapper; consented lawful connectors; cloud sync only under a separate architecture decision.
 
 ---
 
 ## 17. PLANNING CHANGE CONTROL
 
-Treat this v1 plan as frozen once phase generation starts. Minor clarifications may be added without expanding scope. Any material change must:
+This plan is versioned, not silently frozen around the previous product. A material change must:
 
-1. Describe the motivation and affected user outcome.
-2. Update the corresponding master contract and version; record the change in `DECISIONS.md`.
-3. Identify affected phases/guides and tests.
-4. Regenerate only **unimplemented** affected guides or add explicit migration/follow-up commits; do not rewrite history.
-5. Preserve export/DB backward compatibility or document/test a formal migration.
+1. Explain the motivation and affected outcome.
+2. Amend this master and record the decision/version in `DECISIONS.md`.
+3. Identify affected phases/guides, data migration and tests.
+4. Replace only unimplemented guides; preserve completed commit history and evidence.
+5. Preserve backward compatibility or define and test a formal migration.
+6. Keep future scope separate from current implementation status.
 
-**Instruction to future agents:** Begin with `plans/phase1.md` from this exact specification. Do not start feature coding based solely on a visual mockup, do not add a match simulator, and do not move forward on failing tests.
+**Pivot decision:** 2026-10-20, plan 1.0.0 → 2.0.0, companion → Standalone Sporting Director Sim. Defaults are instant results, lightweight availability and Board Challenge/Sandbox. See DEC-001.
+
+**Instruction to future agents:** Start with `plans/phase7/guide2.md` after reading this file and the amended phase. Do not restart Phase 1, execute archived companion guides, or add the Phase 8 match engine during Phase 7.
 
 ---
 
