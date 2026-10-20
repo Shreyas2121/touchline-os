@@ -2,7 +2,7 @@
 
 ## 1. Context and authority
 
-Master 3.0.0 → [native migration plan](../native-migration.md) → this guide.
+Master 3.0.1 / DEC-003 → [native migration plan](../native-migration.md) → this guide. Previous-logic parity is not required; native correctness and imported-data preservation remain required.
 Predecessor: NM-G05; locate its subject in the bridge progress log and verify its commit is an ancestor.
 Commit: `feat(nm-g06): read campaigns through native services`.
 

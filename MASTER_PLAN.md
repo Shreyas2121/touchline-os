@@ -4,14 +4,14 @@
 > **Product:** Touchline OS (working name)
 > **Product choice:** **Standalone Sporting Director Sim**
 > **Target:** Offline desktop application: Tauri 2 + React/Vite UI + Rust game backend + SQLite
-> **Status:** Web implementation complete through P07-G05; native migration is planned, not implemented
-> **Plan version:** `3.0.0` (product release target remains v1)
+> **Status:** Web implementation complete through P07-G05; native bridge NM-G01–NM-G04 implemented, cutover gate pending
+> **Plan version:** `3.0.1` (product release target remains v1)
 > **Last revised:** 2026-10-20
 > **Execution chain:** master → active phase → guide → one reviewed Git commit per guide
 
 ## 0. HOW AN AI CODING AGENT MUST USE THIS FILE
 
-This is the source of truth for current scope, data semantics, invariants, milestone order and release gates. Plan 3.0.0 changes platform/backend at the P07-G05 checkpoint; the standalone game-design decisions from 2.0.0 remain.
+This is the source of truth for current scope, data semantics, invariants, milestone order and release gates. Plan 3.0.0 changes platform/backend at the P07-G05 checkpoint; the standalone game-design decisions from 2.0.0 remain. Plan 3.0.1 / DEC-003 removes compatibility with previous TypeScript business logic as a requirement. Native correctness, deterministic execution and the intended product rules govern remaining implementation; historical parity instructions in pending guides are superseded. Existing save-data preservation remains in scope.
 
 ### Hierarchy and execution
 
@@ -26,8 +26,8 @@ Read master and the active bridge/phase plan before a guide. Resolve conflicts b
 
 - Phases 1–6 and `P07-G01` are completed companion foundations under plan 1.0.0.
 - `P07-G02` through `P07-G05` are completed web standalone foundations under plan 2.0.0. Preserve every completed guide file, SHA and recorded check.
-- Current implementation: `df23431abf8807cf61d2d1b63c66d6f7ef6a4cd3` (G05), followed by evidence commit `7b3c6a0`. New careers exist in IndexedDB v2; Continue, Tauri, Rust, SQLite and match simulation are not implemented.
-- **Next execution: `plans/native-migration/guide1.md` (NM-G01)**. Phase 7 G06/G07 are blocked until the separate native migration bridge passes. Do not rerun completed guides or reset to an earlier phase.
+- Web checkpoint: `df23431abf8807cf61d2d1b63c66d6f7ef6a4cd3` (G05), followed by evidence commit `7b3c6a0`. New browser careers exist in IndexedDB v2. The native shell, SQLite persistence and pure core foundations are implemented through NM-G04; native gameplay UI, native generation, Continue and match simulation remain pending. See the bridge progress log for actual native SHAs and checks.
+- **Next execution: `plans/native-migration/guide5.md` (NM-G05)**. Phase 7 G06/G07 are blocked until the separate native migration bridge passes. Do not rerun completed guides or reset to an earlier phase.
 - Keep completed P07-G01–G05 unchanged. The bridge has NM-G01–NM-G09 with its own plan/guide IDs. After its cutover gate, resume P07-G06 (Rust Continue), then P07-G07 (native foundation certification).
 - Superseded companion instructions remain under `plans/archive/companion-v1/`. Superseded plan-2 Phase 7 and pending guides are under `plans/archive/web-standalone-v2/`. Archives are reference only.
 - Future Phases 8–12 retain their gameplay/analytics/import outcomes but execute on Rust/SQLite. Phase 13 becomes desktop release hardening.
@@ -37,7 +37,7 @@ Read master and the active bridge/phase plan before a guide. Resolve conflicts b
 
 - Authoritative domain logic is pure Rust in `game-core`; no Tauri, SQL, filesystem, ambient clock, browser or network dependencies there.
 - Rust application services own validation, policies, revisions, receipts and transactions. React handles presentation/form drafts and calls a typed GameClient.
-- TypeScript business logic remains a frozen compatibility oracle/browser migration path during the port; do not maintain two production gameplay engines.
+- TypeScript business logic is a reference and browser migration path, not an authority for native behavior. Native code may correct or simplify previous logic without matching its outputs or bugs. Do not maintain two production gameplay engines.
 - Use one native DB adapter: SQLite through rusqlite. Dexie v1/v2 remain intact for reading/exporting browser saves; never replace the source browser data during migration.
 - Native dependencies are explicitly authorized by these guides. Verify compatible stable versions when introduced, pin Rust tooling and commit both lockfiles. Preserve existing frontend versions unless a documented native compatibility issue requires a change.
 - One guide = one logical commit. If too large, split pending work in master/phase first; never rewrite completed guide identities.
@@ -295,8 +295,8 @@ The native bridge migration export is a complete versioned campaign snapshot, no
 ### 4.6 Determinism and engine upgrade protocol
 
 - Keep root seeds, generator v1/v2, simulation/calendar version 1 and stable logical keys unchanged across this port.
-- Preserve existing PRNG behavior: wrapping uint32 arithmetic, JS UTF-16 seed hashing, draw order and exact versioned JSON array/string fingerprints. Do not substitute Rust's default random generator, UTF-8 hashing, unordered maps or a differently escaped JSON fingerprint.
-- Golden fixtures cover ASCII/non-ASCII/astral Unicode seeds, boundary dates, prices/floor rounding, policies, complete generated worlds and initialization fingerprints.
+- Native PRNGs, stream identities and fingerprints must be explicit, deterministic and tested, including Unicode seeds and ordered inputs. They need not reproduce previous TypeScript draws, worlds or fingerprints. Imported stored fingerprints and seeds remain unchanged data.
+- Historical TypeScript golden fixtures are optional reference evidence. Native tests assert product invariants, integer arithmetic, valid dates, policy decisions, legal worlds and reproducibility; old-output equality is not an acceptance gate.
 - Persist integer cents in checked i64; IPC/JSON numeric values remain within the JavaScript safe-integer range. Reject overflow and unsafe transport values; do not silently round a save.
 - Derive independent world/fixture/market/development streams from seed + pinned version + stable logical keys, excluding remappable IDs and audit time.
 - Compute outside the short commit transaction; recheck revision, source date/cursor, ownership, policy and logical receipt on write. Matching retries return the original outcome without a new revision or audit.
@@ -651,7 +651,7 @@ Authority: `plans/native-migration.md`; executable files: `plans/native-migratio
 | `NM-G08` | Native legacy match/finance/market parity         | `feat(nm-g08): preserve legacy workflows on sqlite`              |
 | `NM-G09` | Native cutover and compatibility certification    | `test(nm-g09): certify the native migration bridge`              |
 
-**Bridge exit gate:** all existing usable workflows run through Rust/SQLite in a packaged Tauri app; imported/browser snapshots, fresh career parity, native reopen/backup, command guards and direct-call tests pass. Record bridge SHAs/checks in its own plan. Only then resume Phase 7.
+**Bridge exit gate:** intended workflows run through Rust/SQLite in a packaged Tauri app; imported/browser snapshots, valid deterministic native careers, native reopen/backup, command guards and direct-call tests pass. Exact compatibility with previous TypeScript logic is not required (DEC-003). Record bridge SHAs/checks in its own plan. Only then resume Phase 7.
 
 #### Resume Phase 7 after NM-G09
 
@@ -880,7 +880,7 @@ A guide should be executable by a fresh AI agent that has the repository and mas
 
 ### 12.1 Mandatory coverage
 
-- Rust core: policy/money/rounding, eligibility/selection, pure dates, PRNG/UTF-16 seed parity, generators and all future match/market/development formulas.
+- Rust core: policy/money/rounding, eligibility/selection, pure dates, deterministic seeded randomness, generators and all future match/market/development formulas. DEC-003 requires native correctness, not previous-logic parity.
 - SQLite integration: actual schema upgrades, constraints, scoped references, rollback, revisions, logical retries, deletion scope and consistent backup/reopen.
 - Migration: actual browser v1/v2 snapshot fixtures, all 23 source stores, null/optional preservation, no regeneration, import collision/retry/fault behavior.
 - Contract/UI: generated DTO freshness, Rust runtime rejection, native adapter errors, mocked GameClient rendering and accessible workflows.
@@ -955,7 +955,7 @@ Keyboard users can create/import/open a native save, select a team, resolve bloc
 | Risk                                               | Mitigation                                                                       |
 | -------------------------------------------------- | -------------------------------------------------------------------------------- |
 | Browser saves are inaccessible from native WebView | Original-origin JSON export, explicit native import; preserve source             |
-| Port changes seeded worlds                         | Exact UTF-16/u32/JSON parity fixtures; keep generator/simulation versions pinned |
+| Native worlds are invalid or nondeterministic       | Native legality/count/reproducibility tests; explicit generator/simulation versions |
 | Rust i64 values lose precision through JS          | Safe-integer transport bounds and checked money arithmetic                       |
 | React still mutates Dexie                          | GameClient conversion, no desktop fallback, dependency-boundary checks           |
 | Core gets coupled to Tauri/SQL                     | Separate core/store/app crates and dependency tests                              |
@@ -964,7 +964,7 @@ Keyboard users can create/import/open a native save, select a team, resolve bloc
 | UI freezes or transaction waits on heavy work      | CPU tasks outside DB worker/short transactions                                   |
 | Legacy commands bypass Challenge or lose behavior  | Rust service port, direct-call guards and parity/native tests                    |
 | App update breaks saves                            | Independent schema/engine/save versions, backup and actual upgrade tests         |
-| Native migration becomes one unreviewable rewrite  | NM-G01–NM-G09 bridge commits; preserve old code as oracle until cutover          |
+| Native migration becomes one unreviewable rewrite  | NM-G01–NM-G09 bridge commits; preserve old code as reference until cutover       |
 | Game loop expands into live manager                | Instant results/auto-substitutions; live ticker deferred                         |
 | World/finance/compulsory offers become unplayable  | Existing legality, budget, settlement and multi-season invariants                |
 
@@ -1036,10 +1036,11 @@ Material changes require a master version update, a DECISIONS entry, affected pe
 
 - DEC-001: plan 1.0.0 → 2.0.0, companion → standalone sim.
 - DEC-002: plan 2.0.0 → 3.0.0 at P07-G05, web/Dexie → native Tauri/Rust/SQLite before match-engine implementation.
+- DEC-003: plan 3.0.0 → 3.0.1 during NM-G04; previous-logic compatibility is no longer required. Native correctness and determinism govern remaining work.
 - Keep standalone game design and Phases 8–12 outcomes. Insert a separate migration bridge before pending Phase 7 G06/G07; update release Phase 13 and preserve completed work.
-- The browser remains the migration/export source and test oracle. Desktop is the primary game; a complete second web edition is deferred.
+- The browser remains the migration/export source and optional test reference. Desktop is the primary game; a complete second web edition is deferred. Previous-logic parity is not required (DEC-003).
 
-**Next execution:** `plans/native-migration/guide1.md` after this master, DEC-002 and the bridge plan. P07-G06 is blocked until NM-G09 passes; then implement Rust Continue and P07-G07 certification. Match simulation starts in Phase 8.
+**Next execution:** `plans/native-migration/guide5.md` after this master, DEC-002/DEC-003 and the bridge plan. P07-G06 is blocked until NM-G09 passes; then implement Rust Continue and P07-G07 certification. Match simulation starts in Phase 8.
 
 ---
 

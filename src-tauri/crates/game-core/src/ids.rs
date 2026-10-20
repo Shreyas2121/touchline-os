@@ -8,6 +8,14 @@ use ts_rs::TS;
 pub struct EntityId(String);
 
 impl EntityId {
+    pub fn new(value: impl Into<String>) -> crate::CoreResult<Self> {
+        let value = value.into();
+        if is_entity_id(&value) {
+            Ok(Self(value))
+        } else {
+            Err(crate::CoreError::Invalid("Malformed entity id."))
+        }
+    }
     pub fn as_str(&self) -> &str {
         &self.0
     }

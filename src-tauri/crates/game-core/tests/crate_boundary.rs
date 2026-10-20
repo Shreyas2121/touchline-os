@@ -25,6 +25,14 @@ fn core_sources_do_not_touch_the_platform() {
         include_str!("../src/rows.rs"),
         include_str!("../src/snapshot.rs"),
         include_str!("../src/validate.rs"),
+        include_str!("../src/calendar.rs"),
+        include_str!("../src/dates.rs"),
+        include_str!("../src/finance.rs"),
+        include_str!("../src/guards.rs"),
+        include_str!("../src/money.rs"),
+        include_str!("../src/policy.rs"),
+        include_str!("../src/random.rs"),
+        include_str!("../src/selection.rs"),
     ];
     for source in sources {
         for forbidden in [
@@ -34,6 +42,15 @@ fn core_sources_do_not_touch_the_platform() {
             "std::path",
             "\"indexeddb\"",
             "\"dexie\"",
+            "SystemTime",
+            "Instant::",
+            "std::time",
+            "std::net",
+            "reqwest",
+            "rand::",
+            "thread_rng",
+            "getrandom",
+            "std::env",
         ] {
             assert!(
                 !source.contains(forbidden),

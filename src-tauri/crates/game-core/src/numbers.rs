@@ -10,6 +10,13 @@ pub const JS_MAX_SAFE_INTEGER: i64 = 9_007_199_254_740_991;
 pub struct SafeInt(i64);
 
 impl SafeInt {
+    pub fn new(value: i64) -> crate::CoreResult<Self> {
+        if (-JS_MAX_SAFE_INTEGER..=JS_MAX_SAFE_INTEGER).contains(&value) {
+            Ok(Self(value))
+        } else {
+            Err(crate::CoreError::Arithmetic)
+        }
+    }
     pub const fn get(self) -> i64 {
         self.0
     }
@@ -35,6 +42,13 @@ impl<'de> Deserialize<'de> for SafeInt {
 pub struct MoneyCents(i64);
 
 impl MoneyCents {
+    pub fn new(value: i64) -> crate::CoreResult<Self> {
+        if (0..=JS_MAX_SAFE_INTEGER).contains(&value) {
+            Ok(Self(value))
+        } else {
+            Err(crate::CoreError::Arithmetic)
+        }
+    }
     pub const fn get(self) -> i64 {
         self.0
     }

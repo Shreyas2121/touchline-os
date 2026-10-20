@@ -198,7 +198,7 @@ fn validate_campaign(row: &CampaignRow) -> Result<(), SnapshotError> {
     require_timestamp(&row.updated_at, "updatedAt")
 }
 
-fn validate_season(row: &SeasonRow) -> Result<(), SnapshotError> {
+pub(crate) fn validate_season(row: &SeasonRow) -> Result<(), SnapshotError> {
     require_bounded(&row.label, 1, 40, "season label")?;
     require_range(row.ordinal.get(), 1, JS_MAX_SAFE_INTEGER, "season ordinal")?;
     require_optional_date(row.start_date.as_deref(), "season start")?;
@@ -279,7 +279,7 @@ fn validate_contract(row: &ContractRow) -> Result<(), SnapshotError> {
     require_optional_date(row.expires_on.as_deref(), "contract end")
 }
 
-fn validate_constitution(row: &ConstitutionRow) -> Result<(), SnapshotError> {
+pub(crate) fn validate_constitution(row: &ConstitutionRow) -> Result<(), SnapshotError> {
     require_range(
         row.version.get(),
         1,
@@ -465,7 +465,7 @@ fn validate_import(row: &ImportReceiptRow) -> Result<(), SnapshotError> {
     Ok(())
 }
 
-fn validate_simulation(row: &SimulationStateRow) -> Result<(), SnapshotError> {
+pub(crate) fn validate_simulation(row: &SimulationStateRow) -> Result<(), SnapshotError> {
     require_key(&row.root_seed, "root seed")?;
     if row.root_seed.chars().count() > 120 {
         return Err(SnapshotError::Invalid("root seed".into()));

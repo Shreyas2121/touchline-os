@@ -2,7 +2,7 @@
 
 ## 1. Context and authority
 
-Master 3.0.0 → [native migration plan](../native-migration.md) → this guide.
+Master 3.0.1 / DEC-003 → [native migration plan](../native-migration.md) → this guide. Compatibility certification refers to save-data preservation and native cutover, not previous-logic equality.
 Predecessor: NM-G08; locate its subject in the bridge progress log and verify its commit is an ancestor.
 Commit: `test(nm-g09): certify the native migration bridge`.
 
@@ -38,11 +38,11 @@ Preserve existing schema/identity/version/nullable contracts. No real user save 
 
 1. Audit the GameClient inventory: every previously usable G05 read/write has an authoritative native path; no TS gameplay fallback, arbitrary SQL or forgotten manual handler.
 2. Add real native desktop automation using current official Tauri/WebdriverIO service. Use isolated paths/test-only instrumentation; exclude automation from normal release builds.
-3. Run source-export/import, same-file retry/collision/rollback, exact core/world parity, current writes, direct-call guards and source preservation checks.
+3. Run source-export/import, same-file retry/collision/rollback, native core/world correctness and reproducibility, current writes, direct-call guards and source preservation checks. No previous-logic parity gate remains.
 4. Close/relaunch actual app and verify imported/new careers, revisions/receipts and backup/reopen. Browser/mocked tests are labeled as compatibility only.
 5. Build/smoke the normal native artifact as well as the dedicated E2E test binary; record Windows support honestly and do not claim other OS/signing/updater release coverage.
 6. Confirm game date remains July 1 and no Continue/fixtures/AI/growth/rollover was added while migrating.
-7. Run full required checks; update README to verified native G05 parity. Record all NM SHAs/results and gate PASS only when every required item actually passes.
+7. Run full required checks; update README to verified native workflow coverage. Record all NM SHAs/results and gate PASS only when every required item actually passes.
 8. Handoff to P07-G06; do not implement its progression here or skip straight to Phase 8.
 
 ## 7. Tests to add/change
@@ -50,7 +50,7 @@ Preserve existing schema/identity/version/nullable contracts. No real user save 
 - Actual Tauri/SQLite import/new career/read/write/relaunch journey.
 - Consistent native backup/export, failed/colliding/repeated import and source preservation.
 - Direct Rust rule/scope/mode guards and dependency/capability boundaries.
-- Current browser compatibility plus Rust golden parity, with no test instrumentation in normal build.
+- Relevant browser regression evidence plus native rule/world correctness and reproducibility, with no test instrumentation in normal build.
 
 Prefer compatibility/integration properties over tests that mirror implementation. Keep golden data independent of the Rust port.
 

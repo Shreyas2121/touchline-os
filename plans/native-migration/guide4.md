@@ -2,7 +2,7 @@
 
 ## 1. Context and authority
 
-Master 3.0.0 → [native migration plan](../native-migration.md) → this guide.
+Master 3.0.1 / DEC-003 → [native migration plan](../native-migration.md) → this guide. The user's clarification removes exact compatibility with previous business logic; native correctness and intended rules govern this implementation.
 Predecessor: NM-G03; locate its subject in the bridge progress log and verify its commit is an ancestor.
 Commit: `feat(nm-g04): port foundational rules to rust`.
 
@@ -10,7 +10,7 @@ Phase 7 G06 is blocked until the full bridge passes. This guide ports existing c
 
 ## 2. Goal and user-observable result
 
-Port existing foundational business rules and calendar to pure Rust with exact golden parity.
+Implement foundational business rules and calendar in pure Rust with direct correctness and determinism tests. Previous TypeScript logic is a reference, not a compatibility obligation.
 
 ## 3. Preconditions
 
@@ -30,7 +30,7 @@ Paths under new native directories exist only after their introducing guide; do 
 
 - game-core models/validation, money/date/position modules
 - game-core policy, finance, lineup/registration and calendar/random modules
-- Rust compatibility tests consuming NM-G01 fixtures
+- Rust rule, arithmetic, selection, guard and determinism tests; historical fixtures may supply synthetic input data
 
 Preserve existing schema/identity/version/nullable contracts. No real user save is a test fixture.
 
@@ -38,21 +38,21 @@ Preserve existing schema/identity/version/nullable contracts. No real user save 
 
 1. Port integer-cent parsing/calculation/rounding with checked arithmetic and JS-safe transport bounds. Preserve unknown/null cases and reversal/season scoping.
 2. Port date bounds/leap logic, current-age estimates, supported formation slot/position semantics and roster/registration checks. UI SVG drawing/formatting can remain TS.
-3. Port evaluateAction presets, verdicts, severity/evidence/remedies, qualification ratios and current Challenge/standalone guards without changing behavior.
-4. Reproduce hashSeed using UTF-16 code units and wrapping u32 operations, mulberry32 draws, stream namespaces and exact JSON fingerprint content. Do not use default Rust RNG or unordered iteration.
+3. Implement presets, policy verdicts, severity/evidence/remedies, qualification ratios and Challenge/standalone guards according to intended product rules. Previous behavior and wording need not match.
+4. Use explicit deterministic seed hashing, PRNG draws, independent stream namespaces and ordered fingerprint content. Existing UTF-16/u32/mulberry32 algorithms may be reused as a sound implementation choice, without making old-world equality a requirement.
 5. Port pure calendar/window/cursor preview functions only. Continue persistence remains blocked until the bridge completes.
 6. Keep core free of store/Tauri/filesystem/ambient clock/network. Expose pure APIs for app-service previews/commit checks.
-7. Compare to fixed fixtures, including Unicode/astral seeds and overflow/date boundaries. Document a discovered pre-existing bug rather than silently changing the oracle.
+7. Test Unicode/astral seeds, integer percentage flooring, overflow/date boundaries and rule/selection/guard invariants. Correct previous implementation quirks where appropriate and document native decisions.
 
 ## 7. Tests to add/change
 
-- Exact PRNG/stream/hash/fingerprint vectors and namespace independence.
+- Native PRNG/stream/hash/fingerprint reproducibility and namespace independence.
 - Money/floor/reversal/budget/age/wage/prestige/registration vectors and invalid data.
 - Calendar July→deadline→kickoff preview and consumed-boundary cases, leap/century/year bounds.
 - Cross-campaign/Challenge/standalone guard decisions and unique selection behavior.
 - Core dependency and ambient-time/randomness checks.
 
-Prefer compatibility/integration properties over tests that mirror implementation. Keep golden data independent of the Rust port.
+Prefer externally meaningful properties and integration tests over tests that mirror implementation. Historical TypeScript golden fixtures remain reference material; exact old-output equality is not required.
 
 ## 8. Verification commands
 
@@ -73,16 +73,16 @@ Run relevant browser compatibility/E2E when its flows are touched; NM-G09 record
 
 ## 9. Manual acceptance check
 
-1. Review Rust vs JS fixture differences; zero unexplained differences are permitted.
+1. Review native rule/arithmetic/selection decisions and their direct correctness tests; previous-logic differences do not block acceptance.
 2. Confirm this guide has no store writes or clock-advance command.
 
 ## 10. Definition of done
 
-- [ ] The narrow outcome is implemented and verified.
-- [ ] Source/browser data and completed guide history are preserved.
-- [ ] Required parity, negative and rollback checks pass.
-- [ ] No new gameplay or false native/release claim is introduced.
-- [ ] Evidence and limitations are recorded in bridge §10.
+- [x] The narrow outcome is implemented and verified.
+- [x] Source/browser data and completed guide history are preserved.
+- [x] Required correctness, negative and side-effect checks pass.
+- [x] No new gameplay or false native/release claim is introduced.
+- [x] Evidence and limitations are recorded in bridge §10.
 
 ## 11. Commit instructions
 
@@ -96,4 +96,4 @@ Do not commit failing required checks. Record actual SHA and commands/results; b
 
 ## 12. Handoff
 
-NM-G05 reuses the pure core for exact world generation and career preparation. New engine features remain deferred.
+NM-G05 reuses the pure core for valid deterministic world generation and career preparation. Exact previous-world equality is not required. New engine features remain deferred.

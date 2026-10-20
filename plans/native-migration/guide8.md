@@ -2,7 +2,7 @@
 
 ## 1. Context and authority
 
-Master 3.0.0 → [native migration plan](../native-migration.md) → this guide.
+Master 3.0.1 / DEC-003 → [native migration plan](../native-migration.md) → this guide. Its historical parity title does not require matching previous logic; implement intended native workflows and preserve imported history.
 Predecessor: NM-G07; locate its subject in the bridge progress log and verify its commit is an ancestor.
 Commit: `feat(nm-g08): preserve legacy workflows on sqlite`.
 

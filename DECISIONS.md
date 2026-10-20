@@ -1,6 +1,6 @@
 # Architecture and product decisions
 
-> Current architecture: DEC-002 / master 3.0.0. DEC-001 records the earlier web decision and its historical checkpoint; it is superseded where DEC-002 changes platform or execution order.
+> Current architecture: DEC-002 + DEC-003 / master 3.0.1. DEC-001 records the earlier web decision and its historical checkpoint; DEC-002 changes platform/execution order, and DEC-003 removes previous-logic compatibility requirements.
 
 ## DEC-001 — Pivot to Standalone Sporting Director Sim
 
@@ -76,7 +76,7 @@ The destination is a desktop Tauri application with Rust-owned game logic and SQ
 5. Keep G06 as Rust Continue and G07 as native foundation certification. Match engine still starts in Phase 8.
 6. Pull forward original-origin browser export and basic native snapshot import/export/backup. Preserve source browser DB and every supported legacy/standalone row, ID, null, revision, seed and receipt.
 7. SQLite schema 1 is independent of Dexie 1/2. Separate transport receipts track import; no fake gameplay audit or revision increment.
-8. Exact JS/Rust UTF-16/u32/PRNG/JSON/date/money/generator parity is a gate. Keep TS as frozen oracle; do not rebalance while porting.
+8. Originally required exact JS/Rust behavior parity; superseded by DEC-003 for remaining work. TypeScript is now reference material rather than a native behavior gate.
 9. App/schema/export/generator/calendar/simulation versions remain independent with tested compatibility.
 10. Desktop is primary, Windows first tested. Full PWA/WASM browser play is deferred. Phase 13 changes to native packaging/signing/upgrades/accessibility/performance/release.
 
@@ -97,3 +97,15 @@ Archive the superseded plan-2 Phase 7 and pending G06/G07 instructions. Update R
 Actual source v1/v2 import and source preservation; native feature parity; exact seed/generator vectors; transaction rollback/collision/retry behavior; direct Rust Challenge/scope guards; close/relaunch/consistent backup; generated contracts; real Cargo/SQLite/native E2E checks.
 
 References: [Tauri](https://v2.tauri.app/start/frontend/vite/), [rusqlite](https://github.com/rusqlite/rusqlite), [ts-rs](https://github.com/Aleph-Alpha/ts-rs).
+
+## DEC-003 — Native logic does not require previous-logic compatibility
+
+- **Date:** 2026-10-20
+- **Status:** Accepted; user explicitly clarified during NM-G04: “we dont need compatibility with prev logic”
+- **Plan change:** 3.0.0 → 3.0.1
+
+Remaining native work follows the intended product rules and native correctness, without a requirement to reproduce TypeScript algorithms, generated worlds, policy wording, rounding quirks or exact output fixtures. Determinism, checked integer money, valid scoped data, finite budgets, mode/Challenge guards and the existing phase boundaries remain required. TypeScript and its existing fixtures remain useful references, and completed guide history is preserved.
+
+This relaxes logic compatibility; it does not authorize deleting browser data or changing imported historical rows. NM-G03's save import/export/backup and source-preservation contracts remain implemented and supported. Native behavior changes are documented and tested directly. No new Continue, match or later-phase gameplay is authorized by this clarification.
+
+DEC-003 takes precedence over remaining exact-old-logic/golden-parity requirements in the master, bridge and NM-G04–NM-G09 guides. Future generator checks prove native validity, counts, reproducibility and receipt consistency rather than byte equality to JavaScript worlds. Native money uses exact checked integer percentage arithmetic rather than emulating floating-point intermediate rounding.

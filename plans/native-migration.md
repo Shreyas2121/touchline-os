@@ -1,14 +1,14 @@
 # Native migration bridge — port the existing G05 application
 
-> **Authority:** `MASTER_PLAN.md` 3.0.0 / DEC-002
+> **Authority:** `MASTER_PLAN.md` 3.0.1 / DEC-002 / DEC-003
 > **Placement:** after completed P07-G05, before P07-G06
-> **Status:** NM-G01 through NM-G03 complete; NM-G04 through NM-G09 pending. Gate not passed.
-> **Next execution:** [NM-G04](native-migration/guide4.md)
+> **Status:** NM-G01 through NM-G04 complete; NM-G05 through NM-G09 pending. Gate not passed.
+> **Next execution:** [NM-G05](native-migration/guide5.md)
 > **Exit:** existing features work natively; Continue still belongs to resumed P07-G06
 
 ## 1. Parent plan contract
 
-Master §§0, 2, 4.4–4.6, 8, 9 and 12 define the native architecture, source-save contract, exact parity, execution gate and verification. This bridge is an explicit prerequisite stage, not a renumbered gameplay phase.
+Master §§0, 2, 4.4–4.6, 8, 9 and 12 define the native architecture, source-save contract, native correctness, execution gate and verification. This bridge is an explicit prerequisite stage, not a renumbered gameplay phase. DEC-003 removes previous-logic compatibility as a requirement for remaining guides; old parity wording below is superseded where it conflicts. Existing save-data preservation and completed history remain required.
 
 `P07-G01–G05` and their evidence remain unchanged. Preserve the original browser implementation and saved data as the migration source/oracle. Resume G06 only after NM-G09 is committed with passing bridge evidence.
 
@@ -124,16 +124,16 @@ Capture the source revision with the rows. Export using the original browser ori
 - Store under `appLocalDataDir()/touchline.sqlite3` with stable bundle identity and separate dev/test paths. Never place mutable DB in install assets.
 - Use SQLite online backup support, validate/reopen a separate snapshot and preserve the prior good backup on failure. Native snapshot export uses the same envelope with sqlite origin.
 
-### 5.4 Exact core parity
+### 5.4 Native core correctness (DEC-003)
 
-Port the existing behavior before improving it:
+Implement the intended native rules using TypeScript as reference material:
 
-- JS seed hashing uses UTF-16 code units and wrapping uint32 arithmetic. Preserve mulberry32, stream namespaces, draw order and exact JSON fingerprint content.
-- Golden fixtures include ASCII/Unicode/astral characters, boundary/leap dates, rounding, money, rules, IDs/remapping, world generators v1/v2 and prepared careers.
+- Use explicit deterministic PRNGs, ordered stream namespaces and versioned fingerprints. Unicode and stream independence are tested; equality with previous JavaScript draws or worlds is optional.
+- Historical golden fixtures remain unchanged reference data. New tests validate native money, dates, rules, selection, worlds and initialization independently.
 - Rust i64 arithmetic is checked; IPC/JSON numbers stay within JS safe integers. Preserve zero vs null vs absent fields.
-- Reuse current defaults/Strict thresholds, verdicts/remedies, Challenge guards and mode semantics.
-- Import saved rows directly. New native generation matches expected data/digest and declared normalization.
-- TypeScript remains a frozen oracle. A discovered behavior bug requires explicit documentation/version decision before changing fixtures; do not regenerate goldens to accommodate a port error.
+- Keep the intended Balanced/Strict product rules, meaningful verdicts/remedies, Challenge guards and mode semantics; previous implementation details and wording are not binding.
+- Import saved rows directly. New native generation must be legal and reproducible, without matching old generator data or digests.
+- Correct previous logic where appropriate, document native decisions and test their invariants. Do not regenerate historical fixtures to conceal a change.
 
 ### 5.5 APIs, reads and writes
 
@@ -148,7 +148,7 @@ Commands keep one audit/revision per new business action; rejections have no sid
 NM-G09 must prove:
 
 - actual browser legacy/standalone import and no source changes;
-- native fresh career parity and existing reads/writes;
+- legal deterministic native fresh careers and intended reads/writes;
 - direct Rust scope/Challenge/standalone guard enforcement;
 - transactional rollback, collision/retry handling, backup and app restart;
 - real SQLite/native tests and generated-contract freshness;
@@ -183,8 +183,8 @@ The original pending web G06/G07 are superseded; active guides retain their orig
 3. Actual source v1/v2 and native snapshot fixtures validate/import without invented data.
 4. Invalid/colliding imports roll back; repeated file cannot overwrite later play.
 5. SQLite constraints, schema upgrades, deletion scope and backups are proven with real files.
-6. Rust matches fixed PRNG/Unicode/JSON/date/money/policy/generator vectors.
-7. Native creation produces the same 72-club/3,000-player world and one opening allocation.
+6. Rust passes deterministic PRNG/Unicode/fingerprint, valid date, checked money and policy tests. Old TypeScript equality is optional reference evidence.
+7. Native creation produces a legal reproducible 72-club/3,000-player world and one opening allocation.
 8. Every current feature uses typed native services, with mode/Challenge guards at direct calls.
 9. Native save/read/write survives close/relaunch; browser/other campaigns stay isolated.
 10. Desktop has no raw SQL command or Dexie fallback.
@@ -231,7 +231,7 @@ Main risks: origin mismatch, changed Unicode/seed algorithm, unsafe i64/JS trans
 - [ ] NM-G01–NM-G09 committed in order with actual check evidence.
 - [ ] Current G05 capabilities all work on Rust/SQLite.
 - [ ] Import/export/backup and native close/relaunch pass.
-- [ ] Exact core/generator compatibility and direct-call guards pass.
+- [ ] Native core/generator correctness, reproducibility and direct-call guards pass.
 - [ ] Source browser data and completed guide history are preserved.
 - [ ] No new game progression or match simulation is falsely certified.
 - [ ] Resume pointer is P07-G06, with native APIs/scripts documented.
@@ -243,7 +243,7 @@ Main risks: origin mismatch, changed Unicode/seed algorithm, unsafe i64/JS trans
 | `NM-G01` | `b4e9e0931ca02d7d91928159c32cf3c63b9165a4` | `pnpm lint`, `pnpm typecheck`, `pnpm test` (51 files / 676 passed), `pnpm build` via the e2e server, and `pnpm test:e2e` (7 passed). Export reads one campaign in a readonly transaction, keeps revision and audits unchanged, and rejects malformed, unsafe, and cross-campaign snapshots. Synthetic indexeddb v1/v2 fixtures and TypeScript determinism vectors are committed. Chromium exported a Harbor campaign at `http://127.0.0.1:4173`, reloaded, and left the save in place. No Rust or native check exists yet. |
 | `NM-G02` | `7129a083bfa3b9adf5890f569950301cde15fafb` | `pnpm native:bindings:check`, `pnpm native:check`, `pnpm lint`, `pnpm typecheck`, `pnpm test` (52 files / 681 passed), `pnpm build`, and `pnpm tauri build` (MSI and NSIS). The release shell reports storage and features unavailable and does not offer IndexedDB. The browser exporter at `http://localhost:5173` exported Playable demo and left that save in place. SQLite and gameplay remain later guides. |
 | `NM-G03` | `004548f62e1cd608793234c7907ea90ef6f2a2c0` | `cargo test -p game-store --locked` (10 real temporary-file integration tests), `pnpm native:bindings:check`, `pnpm native:check` (rustfmt, locked clippy and 21 Rust tests), `pnpm lint`, `pnpm typecheck`, `pnpm test --maxWorkers=2` (52 files / 681 passed), `pnpm build`, and `pnpm tauri build` (MSI and NSIS). SQLite schema 1 persists all 23 arrays, enforces scoped/deferred foreign keys and source identities, and validates import before one transaction. Source-byte SHA-256 transport receipts make retries harmless after later edits; collisions and injected row/receipt failures leave other saves unchanged. Native export and validated/reopened online backup include WAL state and preserve the previous backup on failure. Stable app-local production/dev/test paths are integrated; native UI services remain unavailable until NM-G06. |
-| `NM-G04` | Pending | Not run |
+| `NM-G04` | Implementation commit recorded after commit | `cargo test -p game-core --test foundations --locked` (11 native property/integration tests), `pnpm native:bindings:check`, `pnpm native:check` (rustfmt, locked clippy and 32 Rust tests), `pnpm lint`, `pnpm typecheck`, `pnpm test --maxWorkers=2` (52 files / 681 passed), `pnpm build`, and `pnpm tauri build` (MSI and NSIS). Pure Rust money/date/finance/policy/selection/calendar/random/guard APIs are implemented. Native tests validate exact checked integer credits, scoped reversals/wages, policy limits and unknowns, exact qualification ratios, registration quotas, unique bounded selections, leap dates/age provenance, independent deterministic Unicode streams, consumed calendar boundaries and mode/scope/revision guards. DEC-003 / master 3.0.1 records the user's removal of previous-logic compatibility as a requirement. |
 | `NM-G05` | Pending | Not run |
 | `NM-G06` | Pending | Not run |
 | `NM-G07` | Pending | Not run |
@@ -251,5 +251,7 @@ Main risks: origin mismatch, changed Unicode/seed algorithm, unsafe i64/JS trans
 | `NM-G09` | Pending | Not run |
 
 NM-G03 verification used only synthetic committed source fixtures and injected temporary SQLite paths. The schema-0 upgrade fixture is an empty native SQLite file: there is no earlier deployed native schema to migrate. The harness imported and reopened indexeddb 1/2 and native sqlite 1 snapshots, compared all arrays/nullable values, tested concurrent retries and committed read isolation, rejected unsafe/oversized/future/cross-campaign inputs, and reopened consistent backups. Browser migrations, compatibility fixtures and completed P07-G01–G05 files are unchanged. The frontend dependency-boundary assertion now permits the guide's storage dependencies; the first run found that stale assertion, and a later default-concurrency run alongside the release build hit timing failures. The final full suite passed with two workers and unchanged test timeouts. No browser flow changed, so browser E2E was not repeated. Packaged-app interaction, native import/read UI and final release certification remain later bridge work; no Continue or new gameplay is implemented.
+
+NM-G04 follows DEC-003 rather than an old-output parity gate. Percentage credits use exact checked integer flooring; wage-change previews replace a known previous commitment and show unknown projected wages when that input is missing. Synthetic saved rows supply test inputs, without new JavaScript golden captures or any old-logic equality requirement. No new dependency or lockfile change was needed. All core modules are checked against storage/platform/network/ambient-time/randomness dependencies. The store, shell, app services, existing source fixtures, browser domain and completed guides remain unchanged by this implementation. Calendar APIs only preview values; no storage writes, clock-advance handler, native gameplay UI or later-phase feature was added. Existing browser flows were untouched, so E2E was not repeated. NM-G05 can now build valid deterministic native worlds; the bridge gate remains pending through NM-G09.
 
 **Gate status: NOT PASSED.** This planning amendment does not complete the bridge. NM-G09 records the final SHA/checks; only then execute [P07-G06](phase7/guide6.md).

@@ -2,7 +2,7 @@
 
 ## 1. Context and authority
 
-Master 3.0.0 → [native migration plan](../native-migration.md) → this guide.
+Master 3.0.1 / DEC-003 → [native migration plan](../native-migration.md) → this guide. Previous-logic parity is not required; intended native rules, transactional integrity and scope/mode guards govern behavior.
 Predecessor: NM-G06; locate its subject in the bridge progress log and verify its commit is an ancestor.
 Commit: `feat(nm-g07): execute career management in rust`.
 
