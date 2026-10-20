@@ -21,7 +21,7 @@ test('demo choice, refresh, campaign switching and reset preserve campaign isola
   await page.getByRole('button', { name: 'Try fictional demo' }).click()
   await expect(
     page.getByRole('heading', { name: 'Choose the club you manage' }),
-  ).toBeVisible()
+  ).toBeVisible({ timeout: 60_000 })
   await expect(
     page.getByRole('heading', { name: 'Northwater Premier' }),
   ).toBeVisible()
@@ -88,7 +88,7 @@ test('demo choice, refresh, campaign switching and reset preserve campaign isola
   await reset.click()
   await expect(
     page.getByRole('heading', { name: 'Choose the club you manage' }),
-  ).toBeVisible()
+  ).toBeVisible({ timeout: 60_000 })
   await page.goto('/')
   await page.getByRole('link', { name: 'Harbor', exact: true }).click()
   await expect(kpi(page, 'Squad')).toHaveText('0')

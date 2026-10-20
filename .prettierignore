@@ -6,3 +6,5 @@ test-results
 blob-report
 MASTER_PLAN.md
 plans
+# Exact fixture bytes are hashed in compatibility/manifest.json.
+compatibility

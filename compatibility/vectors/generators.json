@@ -1,0 +1,969 @@
+{
+  "recipe": {
+    "canonicalJson": "SHA-256 of the UTF-8 bytes of JSON.stringify(value), using the generator object key insertion order and no extra whitespace.",
+    "independence": "These digests are the TypeScript oracle. Do not replace them with Rust output. A behavior change needs an explicit version decision.",
+    "generatorV1": "generateWorld generator version 1 and campaign id vector-world.",
+    "generatorV2": "generatePlayableWorld generator version 2, campaign id vector-world, start year 2026. The draw stream is world/playable-world:2 and ignores the campaign id.",
+    "preparedCareer": "prepareStandaloneCareer for each seed at club:01, year 2026, with the listed rules. The world is digested. The career shell is stored in full and excludes the world rows."
+  },
+  "seeds": [
+    {
+      "label": "ascii",
+      "seed": "touchline-demo-v1"
+    },
+    {
+      "label": "non-ascii",
+      "seed": "café-München"
+    },
+    {
+      "label": "astral",
+      "seed": "astral-😀-𐍈"
+    }
+  ],
+  "generatorV1": [
+    {
+      "label": "ascii",
+      "seed": "touchline-demo-v1",
+      "generatorVersion": "1",
+      "campaignId": "vector-world",
+      "counts": {
+        "leagues": 4,
+        "clubs": 72,
+        "players": 3000
+      },
+      "firstClub": {
+        "id": "vector-world-club-01",
+        "name": "Ashbridge",
+        "shortName": "ASH",
+        "prestige": 87
+      },
+      "lastClub": {
+        "id": "vector-world-club-72",
+        "name": "Windgate"
+      },
+      "firstPlayer": {
+        "id": "vector-world-player-0001",
+        "name": "Fenlan Cairn",
+        "reportedAge": 33,
+        "marketValueCents": 1412500000,
+        "weeklyWageCents": 2000000
+      },
+      "lastPlayer": {
+        "id": "vector-world-player-3000",
+        "name": "Hallanvera Esth",
+        "clubId": null
+      },
+      "sha256": "b5dd6ad058d91e12ad83787897409d64601b07908da1d76b4b4ba7be1ee15f8a",
+      "utf8Bytes": 1437151
+    },
+    {
+      "label": "non-ascii",
+      "seed": "café-München",
+      "generatorVersion": "1",
+      "campaignId": "vector-world",
+      "counts": {
+        "leagues": 4,
+        "clubs": 72,
+        "players": 3000
+      },
+      "firstClub": {
+        "id": "vector-world-club-01",
+        "name": "Ashbridge",
+        "shortName": "ASH",
+        "prestige": 21
+      },
+      "lastClub": {
+        "id": "vector-world-club-72",
+        "name": "Windgate"
+      },
+      "firstPlayer": {
+        "id": "vector-world-player-0001",
+        "name": "Kelan Jorn",
+        "reportedAge": 27,
+        "marketValueCents": 1722500000,
+        "weeklyWageCents": 2300000
+      },
+      "lastPlayer": {
+        "id": "vector-world-player-3000",
+        "name": "Elibel Rost",
+        "clubId": null
+      },
+      "sha256": "397bec37213b034369ba38bcda1a30d8a76005435cdb4f3af5d088986f3166a7",
+      "utf8Bytes": 1436955
+    },
+    {
+      "label": "astral",
+      "seed": "astral-😀-𐍈",
+      "generatorVersion": "1",
+      "campaignId": "vector-world",
+      "counts": {
+        "leagues": 4,
+        "clubs": 72,
+        "players": 3000
+      },
+      "firstClub": {
+        "id": "vector-world-club-01",
+        "name": "Ashbridge",
+        "shortName": "ASH",
+        "prestige": 78
+      },
+      "lastClub": {
+        "id": "vector-world-club-72",
+        "name": "Windgate"
+      },
+      "firstPlayer": {
+        "id": "vector-world-player-0001",
+        "name": "Belwyn Skar",
+        "reportedAge": 17,
+        "marketValueCents": 1912500000,
+        "weeklyWageCents": 500000
+      },
+      "lastPlayer": {
+        "id": "vector-world-player-3000",
+        "name": "Iraniamir Jorn",
+        "clubId": null
+      },
+      "sha256": "0a6b8753c20aa0d4bd269f93d4c01153ac6a174774f2890553cddf675a230149",
+      "utf8Bytes": 1436963
+    }
+  ],
+  "generatorV2": [
+    {
+      "label": "ascii",
+      "seed": "touchline-demo-v1",
+      "generatorVersion": "2",
+      "campaignId": "vector-world",
+      "startYear": 2026,
+      "counts": {
+        "leagues": 4,
+        "clubs": 72,
+        "players": 3000,
+        "contracts": 2880,
+        "clubSimulationStates": 72,
+        "playerSimulationStates": 3000
+      },
+      "firstClub": {
+        "id": "vector-world-club-01",
+        "name": "Ashbridge",
+        "shortName": "ASH",
+        "prestige": 44
+      },
+      "lastPlayer": {
+        "id": "vector-world-player-3000",
+        "name": "Orenkel Pell",
+        "clubId": null
+      },
+      "firstContract": {
+        "id": "vector-world-contract-0001",
+        "weeklyWageCents": 628560,
+        "squadTier": "rotation"
+      },
+      "firstClubState": {
+        "simulationKey": "club:01",
+        "transferBalanceCents": 276000000
+      },
+      "sha256": "22dbe25c2d92639a9d9948cdd4dabb98407007ccf010176deb345258af179c49",
+      "utf8Bytes": 2964693
+    },
+    {
+      "label": "non-ascii",
+      "seed": "café-München",
+      "generatorVersion": "2",
+      "campaignId": "vector-world",
+      "startYear": 2026,
+      "counts": {
+        "leagues": 4,
+        "clubs": 72,
+        "players": 3000,
+        "contracts": 2880,
+        "clubSimulationStates": 72,
+        "playerSimulationStates": 3000
+      },
+      "firstClub": {
+        "id": "vector-world-club-01",
+        "name": "Ashbridge",
+        "shortName": "ASH",
+        "prestige": 70
+      },
+      "lastPlayer": {
+        "id": "vector-world-player-3000",
+        "name": "Quinfenyor Dold",
+        "clubId": null
+      },
+      "firstContract": {
+        "id": "vector-world-contract-0001",
+        "weeklyWageCents": 570240,
+        "squadTier": "rotation"
+      },
+      "firstClubState": {
+        "simulationKey": "club:01",
+        "transferBalanceCents": 380000000
+      },
+      "sha256": "378cf96c0dfe2c14d7860a060d385db71500177006889ff133d2f52f73969123",
+      "utf8Bytes": 2964725
+    },
+    {
+      "label": "astral",
+      "seed": "astral-😀-𐍈",
+      "generatorVersion": "2",
+      "campaignId": "vector-world",
+      "startYear": 2026,
+      "counts": {
+        "leagues": 4,
+        "clubs": 72,
+        "players": 3000,
+        "contracts": 2880,
+        "clubSimulationStates": 72,
+        "playerSimulationStates": 3000
+      },
+      "firstClub": {
+        "id": "vector-world-club-01",
+        "name": "Ashbridge",
+        "shortName": "ASH",
+        "prestige": 49
+      },
+      "lastPlayer": {
+        "id": "vector-world-player-3000",
+        "name": "Fendan Yarrow",
+        "clubId": null
+      },
+      "firstContract": {
+        "id": "vector-world-contract-0001",
+        "weeklyWageCents": 570240,
+        "squadTier": "rotation"
+      },
+      "firstClubState": {
+        "simulationKey": "club:01",
+        "transferBalanceCents": 296000000
+      },
+      "sha256": "9f4d2e649c8066e3a670347cabe8fee7d7677451dc207f85daeca2f5f1ff8a57",
+      "utf8Bytes": 2964136
+    }
+  ],
+  "preparedCareers": [
+    {
+      "label": "ascii",
+      "seed": "touchline-demo-v1",
+      "rulesMode": "challenge",
+      "preset": "balanced",
+      "shell": {
+        "fingerprint": "[\"standalone-career\",\"2\",\"Vector career\",\"touchline-demo-v1\",2026,\"club:01\",\"challenge\",\"balanced\"]",
+        "campaign": {
+          "id": "vector-career",
+          "name": "Vector career",
+          "kind": "fictional",
+          "mode": "standalone",
+          "rulesMode": "challenge",
+          "seed": "touchline-demo-v1",
+          "generatorVersion": "2",
+          "managedClubId": "vector-career-club-01",
+          "activeSeasonId": "vector-career-season",
+          "currency": "EUR",
+          "createdAt": "2026-07-01T00:00:00.000Z",
+          "updatedAt": "2026-07-01T00:00:00.000Z",
+          "revision": 0,
+          "status": "active"
+        },
+        "season": {
+          "id": "vector-career-season",
+          "campaignId": "vector-career",
+          "label": "2026/27",
+          "ordinal": 1,
+          "status": "active",
+          "startDate": "2026-07-01",
+          "endDate": "2027-06-30",
+          "openedAt": "2026-07-01T00:00:00.000Z",
+          "closedAt": null
+        },
+        "clock": {
+          "id": "vector-career-clock",
+          "campaignId": "vector-career",
+          "activeSeasonId": "vector-career-season",
+          "rootSeed": "touchline-demo-v1",
+          "simulationVersion": "1",
+          "calendarVersion": "1",
+          "currentDate": "2026-07-01",
+          "phase": "preseason",
+          "lastBoundaryKey": null
+        },
+        "constitution": {
+          "id": "vector-career-rules",
+          "campaignId": "vector-career",
+          "version": 1,
+          "rules": [
+            {
+              "id": "SELL_TO_BUY",
+              "enabled": true,
+              "salesReinvestmentPct": 70,
+              "prizeReinvestmentPct": 100,
+              "carryoverPct": 0,
+              "initialAllocationCents": 500000000
+            },
+            {
+              "id": "MAX_SIGNING_AGE",
+              "enabled": true,
+              "maxAge": 26,
+              "freeTransfersExempt": true
+            },
+            {
+              "id": "WAGE_TIER_CAP",
+              "enabled": true,
+              "keyWeeklyCapCents": 4500000,
+              "rotationWeeklyCapCents": 2000000,
+              "youthWeeklyCapCents": 500000
+            },
+            {
+              "id": "PRESTIGE_BID_SALE",
+              "enabled": true,
+              "requiredFeeNumerator": 3,
+              "requiredFeeDenominator": 2,
+              "requireHigherPrestige": true
+            },
+            {
+              "id": "REGISTRATION_QUOTA",
+              "enabled": true,
+              "rosterLimit": 25,
+              "minimumHomegrown": 8,
+              "ageExemptionUnder": 21,
+              "competitionKey": "league"
+            }
+          ],
+          "updatedAt": "2026-07-01T00:00:00.000Z"
+        },
+        "allocation": {
+          "id": "vector-career-allocation",
+          "campaignId": "vector-career",
+          "seasonId": "vector-career-season",
+          "clubId": "vector-career-club-01",
+          "kind": "initial_allocation",
+          "amountCents": 500000000,
+          "effectiveOn": "2026-07-01",
+          "sourceActionId": "vector-career-action",
+          "reversesEntryId": null,
+          "note": null
+        },
+        "receipt": {
+          "id": "vector-career-receipt",
+          "campaignId": "vector-career",
+          "operationKey": "career:initialize",
+          "inputRevision": 0,
+          "inputFingerprint": "[\"standalone-career\",\"2\",\"Vector career\",\"touchline-demo-v1\",2026,\"club:01\",\"challenge\",\"balanced\"]",
+          "eventSeed": 1323066841,
+          "simulationVersion": "1",
+          "outcomeRefs": [
+            {
+              "kind": "campaign",
+              "id": "vector-career"
+            },
+            {
+              "kind": "season",
+              "id": "vector-career-season"
+            },
+            {
+              "kind": "club",
+              "id": "vector-career-club-01"
+            }
+          ],
+          "createdAt": "2026-07-01T00:00:00.000Z"
+        },
+        "audit": {
+          "id": "vector-career-audit",
+          "campaignId": "vector-career",
+          "seasonId": "vector-career-season",
+          "actionId": "vector-career-action",
+          "actionType": "simulation.initialize",
+          "createdAt": "2026-07-01T00:00:00.000Z",
+          "summary": "Started Vector career at Ashbridge on 2026-07-01.",
+          "payload": {
+            "mode": "standalone",
+            "rulesMode": "challenge",
+            "preset": "balanced",
+            "seed": "touchline-demo-v1",
+            "startYear": 2026,
+            "clubKey": "club:01",
+            "generatorVersion": "2",
+            "leagues": 4,
+            "clubs": 72,
+            "players": 3000,
+            "contracts": 2880
+          }
+        }
+      },
+      "world": {
+        "counts": {
+          "leagues": 4,
+          "clubs": 72,
+          "players": 3000,
+          "contracts": 2880,
+          "clubSimulationStates": 72,
+          "playerSimulationStates": 3000
+        },
+        "firstClub": {
+          "id": "vector-career-club-01",
+          "name": "Ashbridge",
+          "shortName": "ASH",
+          "prestige": 44
+        },
+        "lastPlayer": {
+          "id": "vector-career-player-3000",
+          "name": "Orenkel Pell",
+          "clubId": null
+        },
+        "firstContract": {
+          "id": "vector-career-contract-0001",
+          "weeklyWageCents": 628560,
+          "squadTier": "rotation"
+        },
+        "firstClubState": {
+          "simulationKey": "club:01",
+          "transferBalanceCents": 276000000
+        },
+        "sha256": "eb0d609be1d06fb19b0b9fdaaca7de7f57407864d59df930eeefc32b40d18120",
+        "utf8Bytes": 2994533
+      }
+    },
+    {
+      "label": "non-ascii",
+      "seed": "café-München",
+      "rulesMode": "challenge",
+      "preset": "balanced",
+      "shell": {
+        "fingerprint": "[\"standalone-career\",\"2\",\"Vector career\",\"café-München\",2026,\"club:01\",\"challenge\",\"balanced\"]",
+        "campaign": {
+          "id": "vector-career",
+          "name": "Vector career",
+          "kind": "fictional",
+          "mode": "standalone",
+          "rulesMode": "challenge",
+          "seed": "café-München",
+          "generatorVersion": "2",
+          "managedClubId": "vector-career-club-01",
+          "activeSeasonId": "vector-career-season",
+          "currency": "EUR",
+          "createdAt": "2026-07-01T00:00:00.000Z",
+          "updatedAt": "2026-07-01T00:00:00.000Z",
+          "revision": 0,
+          "status": "active"
+        },
+        "season": {
+          "id": "vector-career-season",
+          "campaignId": "vector-career",
+          "label": "2026/27",
+          "ordinal": 1,
+          "status": "active",
+          "startDate": "2026-07-01",
+          "endDate": "2027-06-30",
+          "openedAt": "2026-07-01T00:00:00.000Z",
+          "closedAt": null
+        },
+        "clock": {
+          "id": "vector-career-clock",
+          "campaignId": "vector-career",
+          "activeSeasonId": "vector-career-season",
+          "rootSeed": "café-München",
+          "simulationVersion": "1",
+          "calendarVersion": "1",
+          "currentDate": "2026-07-01",
+          "phase": "preseason",
+          "lastBoundaryKey": null
+        },
+        "constitution": {
+          "id": "vector-career-rules",
+          "campaignId": "vector-career",
+          "version": 1,
+          "rules": [
+            {
+              "id": "SELL_TO_BUY",
+              "enabled": true,
+              "salesReinvestmentPct": 70,
+              "prizeReinvestmentPct": 100,
+              "carryoverPct": 0,
+              "initialAllocationCents": 500000000
+            },
+            {
+              "id": "MAX_SIGNING_AGE",
+              "enabled": true,
+              "maxAge": 26,
+              "freeTransfersExempt": true
+            },
+            {
+              "id": "WAGE_TIER_CAP",
+              "enabled": true,
+              "keyWeeklyCapCents": 4500000,
+              "rotationWeeklyCapCents": 2000000,
+              "youthWeeklyCapCents": 500000
+            },
+            {
+              "id": "PRESTIGE_BID_SALE",
+              "enabled": true,
+              "requiredFeeNumerator": 3,
+              "requiredFeeDenominator": 2,
+              "requireHigherPrestige": true
+            },
+            {
+              "id": "REGISTRATION_QUOTA",
+              "enabled": true,
+              "rosterLimit": 25,
+              "minimumHomegrown": 8,
+              "ageExemptionUnder": 21,
+              "competitionKey": "league"
+            }
+          ],
+          "updatedAt": "2026-07-01T00:00:00.000Z"
+        },
+        "allocation": {
+          "id": "vector-career-allocation",
+          "campaignId": "vector-career",
+          "seasonId": "vector-career-season",
+          "clubId": "vector-career-club-01",
+          "kind": "initial_allocation",
+          "amountCents": 500000000,
+          "effectiveOn": "2026-07-01",
+          "sourceActionId": "vector-career-action",
+          "reversesEntryId": null,
+          "note": null
+        },
+        "receipt": {
+          "id": "vector-career-receipt",
+          "campaignId": "vector-career",
+          "operationKey": "career:initialize",
+          "inputRevision": 0,
+          "inputFingerprint": "[\"standalone-career\",\"2\",\"Vector career\",\"café-München\",2026,\"club:01\",\"challenge\",\"balanced\"]",
+          "eventSeed": 970596085,
+          "simulationVersion": "1",
+          "outcomeRefs": [
+            {
+              "kind": "campaign",
+              "id": "vector-career"
+            },
+            {
+              "kind": "season",
+              "id": "vector-career-season"
+            },
+            {
+              "kind": "club",
+              "id": "vector-career-club-01"
+            }
+          ],
+          "createdAt": "2026-07-01T00:00:00.000Z"
+        },
+        "audit": {
+          "id": "vector-career-audit",
+          "campaignId": "vector-career",
+          "seasonId": "vector-career-season",
+          "actionId": "vector-career-action",
+          "actionType": "simulation.initialize",
+          "createdAt": "2026-07-01T00:00:00.000Z",
+          "summary": "Started Vector career at Ashbridge on 2026-07-01.",
+          "payload": {
+            "mode": "standalone",
+            "rulesMode": "challenge",
+            "preset": "balanced",
+            "seed": "café-München",
+            "startYear": 2026,
+            "clubKey": "club:01",
+            "generatorVersion": "2",
+            "leagues": 4,
+            "clubs": 72,
+            "players": 3000,
+            "contracts": 2880
+          }
+        }
+      },
+      "world": {
+        "counts": {
+          "leagues": 4,
+          "clubs": 72,
+          "players": 3000,
+          "contracts": 2880,
+          "clubSimulationStates": 72,
+          "playerSimulationStates": 3000
+        },
+        "firstClub": {
+          "id": "vector-career-club-01",
+          "name": "Ashbridge",
+          "shortName": "ASH",
+          "prestige": 70
+        },
+        "lastPlayer": {
+          "id": "vector-career-player-3000",
+          "name": "Quinfenyor Dold",
+          "clubId": null
+        },
+        "firstContract": {
+          "id": "vector-career-contract-0001",
+          "weeklyWageCents": 570240,
+          "squadTier": "rotation"
+        },
+        "firstClubState": {
+          "simulationKey": "club:01",
+          "transferBalanceCents": 380000000
+        },
+        "sha256": "e35743e390c9a83c161aa63a6724caa0e6a40fa48302f97a387d39d2520a3800",
+        "utf8Bytes": 2994565
+      }
+    },
+    {
+      "label": "astral",
+      "seed": "astral-😀-𐍈",
+      "rulesMode": "challenge",
+      "preset": "balanced",
+      "shell": {
+        "fingerprint": "[\"standalone-career\",\"2\",\"Vector career\",\"astral-😀-𐍈\",2026,\"club:01\",\"challenge\",\"balanced\"]",
+        "campaign": {
+          "id": "vector-career",
+          "name": "Vector career",
+          "kind": "fictional",
+          "mode": "standalone",
+          "rulesMode": "challenge",
+          "seed": "astral-😀-𐍈",
+          "generatorVersion": "2",
+          "managedClubId": "vector-career-club-01",
+          "activeSeasonId": "vector-career-season",
+          "currency": "EUR",
+          "createdAt": "2026-07-01T00:00:00.000Z",
+          "updatedAt": "2026-07-01T00:00:00.000Z",
+          "revision": 0,
+          "status": "active"
+        },
+        "season": {
+          "id": "vector-career-season",
+          "campaignId": "vector-career",
+          "label": "2026/27",
+          "ordinal": 1,
+          "status": "active",
+          "startDate": "2026-07-01",
+          "endDate": "2027-06-30",
+          "openedAt": "2026-07-01T00:00:00.000Z",
+          "closedAt": null
+        },
+        "clock": {
+          "id": "vector-career-clock",
+          "campaignId": "vector-career",
+          "activeSeasonId": "vector-career-season",
+          "rootSeed": "astral-😀-𐍈",
+          "simulationVersion": "1",
+          "calendarVersion": "1",
+          "currentDate": "2026-07-01",
+          "phase": "preseason",
+          "lastBoundaryKey": null
+        },
+        "constitution": {
+          "id": "vector-career-rules",
+          "campaignId": "vector-career",
+          "version": 1,
+          "rules": [
+            {
+              "id": "SELL_TO_BUY",
+              "enabled": true,
+              "salesReinvestmentPct": 70,
+              "prizeReinvestmentPct": 100,
+              "carryoverPct": 0,
+              "initialAllocationCents": 500000000
+            },
+            {
+              "id": "MAX_SIGNING_AGE",
+              "enabled": true,
+              "maxAge": 26,
+              "freeTransfersExempt": true
+            },
+            {
+              "id": "WAGE_TIER_CAP",
+              "enabled": true,
+              "keyWeeklyCapCents": 4500000,
+              "rotationWeeklyCapCents": 2000000,
+              "youthWeeklyCapCents": 500000
+            },
+            {
+              "id": "PRESTIGE_BID_SALE",
+              "enabled": true,
+              "requiredFeeNumerator": 3,
+              "requiredFeeDenominator": 2,
+              "requireHigherPrestige": true
+            },
+            {
+              "id": "REGISTRATION_QUOTA",
+              "enabled": true,
+              "rosterLimit": 25,
+              "minimumHomegrown": 8,
+              "ageExemptionUnder": 21,
+              "competitionKey": "league"
+            }
+          ],
+          "updatedAt": "2026-07-01T00:00:00.000Z"
+        },
+        "allocation": {
+          "id": "vector-career-allocation",
+          "campaignId": "vector-career",
+          "seasonId": "vector-career-season",
+          "clubId": "vector-career-club-01",
+          "kind": "initial_allocation",
+          "amountCents": 500000000,
+          "effectiveOn": "2026-07-01",
+          "sourceActionId": "vector-career-action",
+          "reversesEntryId": null,
+          "note": null
+        },
+        "receipt": {
+          "id": "vector-career-receipt",
+          "campaignId": "vector-career",
+          "operationKey": "career:initialize",
+          "inputRevision": 0,
+          "inputFingerprint": "[\"standalone-career\",\"2\",\"Vector career\",\"astral-😀-𐍈\",2026,\"club:01\",\"challenge\",\"balanced\"]",
+          "eventSeed": 3374504830,
+          "simulationVersion": "1",
+          "outcomeRefs": [
+            {
+              "kind": "campaign",
+              "id": "vector-career"
+            },
+            {
+              "kind": "season",
+              "id": "vector-career-season"
+            },
+            {
+              "kind": "club",
+              "id": "vector-career-club-01"
+            }
+          ],
+          "createdAt": "2026-07-01T00:00:00.000Z"
+        },
+        "audit": {
+          "id": "vector-career-audit",
+          "campaignId": "vector-career",
+          "seasonId": "vector-career-season",
+          "actionId": "vector-career-action",
+          "actionType": "simulation.initialize",
+          "createdAt": "2026-07-01T00:00:00.000Z",
+          "summary": "Started Vector career at Ashbridge on 2026-07-01.",
+          "payload": {
+            "mode": "standalone",
+            "rulesMode": "challenge",
+            "preset": "balanced",
+            "seed": "astral-😀-𐍈",
+            "startYear": 2026,
+            "clubKey": "club:01",
+            "generatorVersion": "2",
+            "leagues": 4,
+            "clubs": 72,
+            "players": 3000,
+            "contracts": 2880
+          }
+        }
+      },
+      "world": {
+        "counts": {
+          "leagues": 4,
+          "clubs": 72,
+          "players": 3000,
+          "contracts": 2880,
+          "clubSimulationStates": 72,
+          "playerSimulationStates": 3000
+        },
+        "firstClub": {
+          "id": "vector-career-club-01",
+          "name": "Ashbridge",
+          "shortName": "ASH",
+          "prestige": 49
+        },
+        "lastPlayer": {
+          "id": "vector-career-player-3000",
+          "name": "Fendan Yarrow",
+          "clubId": null
+        },
+        "firstContract": {
+          "id": "vector-career-contract-0001",
+          "weeklyWageCents": 570240,
+          "squadTier": "rotation"
+        },
+        "firstClubState": {
+          "simulationKey": "club:01",
+          "transferBalanceCents": 296000000
+        },
+        "sha256": "eabecbe292c12b2a4302ff00add04c2a3f31ed0998fe6cfe0897358e3632709c",
+        "utf8Bytes": 2993976
+      }
+    },
+    {
+      "label": "ascii-sandbox",
+      "seed": "touchline-demo-v1",
+      "rulesMode": "sandbox",
+      "preset": "strict",
+      "shell": {
+        "fingerprint": "[\"standalone-career\",\"2\",\"Vector career\",\"touchline-demo-v1\",2026,\"club:01\",\"sandbox\",\"strict\"]",
+        "campaign": {
+          "id": "vector-career",
+          "name": "Vector career",
+          "kind": "fictional",
+          "mode": "standalone",
+          "rulesMode": "sandbox",
+          "seed": "touchline-demo-v1",
+          "generatorVersion": "2",
+          "managedClubId": "vector-career-club-01",
+          "activeSeasonId": "vector-career-season",
+          "currency": "EUR",
+          "createdAt": "2026-07-01T00:00:00.000Z",
+          "updatedAt": "2026-07-01T00:00:00.000Z",
+          "revision": 0,
+          "status": "active"
+        },
+        "season": {
+          "id": "vector-career-season",
+          "campaignId": "vector-career",
+          "label": "2026/27",
+          "ordinal": 1,
+          "status": "active",
+          "startDate": "2026-07-01",
+          "endDate": "2027-06-30",
+          "openedAt": "2026-07-01T00:00:00.000Z",
+          "closedAt": null
+        },
+        "clock": {
+          "id": "vector-career-clock",
+          "campaignId": "vector-career",
+          "activeSeasonId": "vector-career-season",
+          "rootSeed": "touchline-demo-v1",
+          "simulationVersion": "1",
+          "calendarVersion": "1",
+          "currentDate": "2026-07-01",
+          "phase": "preseason",
+          "lastBoundaryKey": null
+        },
+        "constitution": {
+          "id": "vector-career-rules",
+          "campaignId": "vector-career",
+          "version": 1,
+          "rules": [
+            {
+              "id": "SELL_TO_BUY",
+              "enabled": true,
+              "salesReinvestmentPct": 50,
+              "prizeReinvestmentPct": 50,
+              "carryoverPct": 0,
+              "initialAllocationCents": 200000000
+            },
+            {
+              "id": "MAX_SIGNING_AGE",
+              "enabled": true,
+              "maxAge": 23,
+              "freeTransfersExempt": false
+            },
+            {
+              "id": "WAGE_TIER_CAP",
+              "enabled": true,
+              "keyWeeklyCapCents": 2250000,
+              "rotationWeeklyCapCents": 1000000,
+              "youthWeeklyCapCents": 250000
+            },
+            {
+              "id": "PRESTIGE_BID_SALE",
+              "enabled": true,
+              "requiredFeeNumerator": 2,
+              "requiredFeeDenominator": 1,
+              "requireHigherPrestige": true
+            },
+            {
+              "id": "REGISTRATION_QUOTA",
+              "enabled": true,
+              "rosterLimit": 20,
+              "minimumHomegrown": 10,
+              "ageExemptionUnder": 21,
+              "competitionKey": "league"
+            }
+          ],
+          "updatedAt": "2026-07-01T00:00:00.000Z"
+        },
+        "allocation": {
+          "id": "vector-career-allocation",
+          "campaignId": "vector-career",
+          "seasonId": "vector-career-season",
+          "clubId": "vector-career-club-01",
+          "kind": "initial_allocation",
+          "amountCents": 200000000,
+          "effectiveOn": "2026-07-01",
+          "sourceActionId": "vector-career-action",
+          "reversesEntryId": null,
+          "note": null
+        },
+        "receipt": {
+          "id": "vector-career-receipt",
+          "campaignId": "vector-career",
+          "operationKey": "career:initialize",
+          "inputRevision": 0,
+          "inputFingerprint": "[\"standalone-career\",\"2\",\"Vector career\",\"touchline-demo-v1\",2026,\"club:01\",\"sandbox\",\"strict\"]",
+          "eventSeed": 3200535376,
+          "simulationVersion": "1",
+          "outcomeRefs": [
+            {
+              "kind": "campaign",
+              "id": "vector-career"
+            },
+            {
+              "kind": "season",
+              "id": "vector-career-season"
+            },
+            {
+              "kind": "club",
+              "id": "vector-career-club-01"
+            }
+          ],
+          "createdAt": "2026-07-01T00:00:00.000Z"
+        },
+        "audit": {
+          "id": "vector-career-audit",
+          "campaignId": "vector-career",
+          "seasonId": "vector-career-season",
+          "actionId": "vector-career-action",
+          "actionType": "simulation.initialize",
+          "createdAt": "2026-07-01T00:00:00.000Z",
+          "summary": "Started Vector career at Ashbridge on 2026-07-01.",
+          "payload": {
+            "mode": "standalone",
+            "rulesMode": "sandbox",
+            "preset": "strict",
+            "seed": "touchline-demo-v1",
+            "startYear": 2026,
+            "clubKey": "club:01",
+            "generatorVersion": "2",
+            "leagues": 4,
+            "clubs": 72,
+            "players": 3000,
+            "contracts": 2880
+          }
+        }
+      },
+      "world": {
+        "counts": {
+          "leagues": 4,
+          "clubs": 72,
+          "players": 3000,
+          "contracts": 2880,
+          "clubSimulationStates": 72,
+          "playerSimulationStates": 3000
+        },
+        "firstClub": {
+          "id": "vector-career-club-01",
+          "name": "Ashbridge",
+          "shortName": "ASH",
+          "prestige": 44
+        },
+        "lastPlayer": {
+          "id": "vector-career-player-3000",
+          "name": "Orenkel Pell",
+          "clubId": null
+        },
+        "firstContract": {
+          "id": "vector-career-contract-0001",
+          "weeklyWageCents": 628560,
+          "squadTier": "rotation"
+        },
+        "firstClubState": {
+          "simulationKey": "club:01",
+          "transferBalanceCents": 276000000
+        },
+        "sha256": "eb0d609be1d06fb19b0b9fdaaca7de7f57407864d59df930eeefc32b40d18120",
+        "utf8Bytes": 2994533
+      }
+    }
+  ]
+}

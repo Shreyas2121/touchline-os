@@ -22,6 +22,7 @@ import {
   GENERATOR_VERSION,
 } from '../../domain/seed/generate-world'
 import { entityIdSchema, type Campaign } from '../../domain/validation/schemas'
+import { ExportForDesktop } from './ExportForDesktop'
 import { NewCareerForm } from './NewCareerForm'
 import type { ConstitutionPresetName } from '../../domain/rules/presets'
 
@@ -311,6 +312,7 @@ export function CampaignManager() {
           </Button>
         </div>
       ) : null}
+      <ExportForDesktop campaigns={campaigns} />
       <section aria-labelledby="saved-campaigns-title">
         <h2 id="saved-campaigns-title">Saved campaigns</h2>
         {campaigns === null ? <p>{copy.loadingCampaign}</p> : null}

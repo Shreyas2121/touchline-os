@@ -1,0 +1,792 @@
+{
+  "recipe": {
+    "hash": "hashSeed is FNV-1a over the UTF-16 code units of generatorVersion, a NUL, and the seed, using Math.imul wrapping uint32 arithmetic.",
+    "prng": "mulberry32(hash) is sampled twice from a fresh stream: four unit-interval draws stored as big-endian IEEE-754 float64 hex, then four nextInt(rng, 10) results from another fresh stream.",
+    "streams": "eventStreamKey and deriveEventSeed use simulation version 1. Logical keys are the empty list and matchday:1. No database ids or clock time are included.",
+    "fingerprints": "careerFingerprint is the JSON array standalone-career, generator 2, name, seed, start year, club key, rules mode, and preset.",
+    "dates": "seasonDates, addDays, transferWindowOn, ageInWholeYears, and previewTimeAdvance are called with the fixed inputs below. No ambient clock is read.",
+    "money": "parseMoneyCents and formatMoneyEuros use the existing euro parser. Amounts stay in integer cents.",
+    "policy": "evaluateAction uses the balanced and strict constitution presets. Reports are the full verdict objects."
+  },
+  "seeds": [
+    {
+      "label": "ascii",
+      "seed": "touchline-demo-v1"
+    },
+    {
+      "label": "non-ascii",
+      "seed": "café-München"
+    },
+    {
+      "label": "astral",
+      "seed": "astral-😀-𐍈"
+    }
+  ],
+  "hash": [
+    {
+      "label": "ascii",
+      "seed": "touchline-demo-v1",
+      "generatorVersion": "1",
+      "hash": 2987706391,
+      "unitIntervalHex": [
+        "3fe5a22c6da00000",
+        "3fee719e4da00000",
+        "3fea1707c0200000",
+        "3fdc7029fa000000"
+      ],
+      "nextInt10": [
+        6,
+        9,
+        8,
+        4
+      ]
+    },
+    {
+      "label": "ascii",
+      "seed": "touchline-demo-v1",
+      "generatorVersion": "2",
+      "hash": 1435781598,
+      "unitIntervalHex": [
+        "3fb376ede5000000",
+        "3fc922bbf2800000",
+        "3fee55bf58c00000",
+        "3fa66f5aae000000"
+      ],
+      "nextInt10": [
+        0,
+        1,
+        9,
+        0
+      ]
+    },
+    {
+      "label": "non-ascii",
+      "seed": "café-München",
+      "generatorVersion": "1",
+      "hash": 3658537709,
+      "unitIntervalHex": [
+        "3fe640acc1600000",
+        "3f908b8abc000000",
+        "3fe4ab9332c00000",
+        "3feb942df5200000"
+      ],
+      "nextInt10": [
+        6,
+        0,
+        6,
+        8
+      ]
+    },
+    {
+      "label": "non-ascii",
+      "seed": "café-München",
+      "generatorVersion": "2",
+      "hash": 1235171702,
+      "unitIntervalHex": [
+        "3fe04163ff400000",
+        "3fd4e484f7c00000",
+        "3fd29f7b92400000",
+        "3fe52588fe000000"
+      ],
+      "nextInt10": [
+        5,
+        3,
+        2,
+        6
+      ]
+    },
+    {
+      "label": "astral",
+      "seed": "astral-😀-𐍈",
+      "generatorVersion": "1",
+      "hash": 1724437382,
+      "unitIntervalHex": [
+        "3fe69b908ce00000",
+        "3fea83c615600000",
+        "3fe448cb39600000",
+        "3fef3526e5c00000"
+      ],
+      "nextInt10": [
+        7,
+        8,
+        6,
+        9
+      ]
+    },
+    {
+      "label": "astral",
+      "seed": "astral-😀-𐍈",
+      "generatorVersion": "2",
+      "hash": 3177193613,
+      "unitIntervalHex": [
+        "3fdd6d2e87000000",
+        "3fe7a01709e00000",
+        "3fef0d1e08000000",
+        "3fc3a0cf4a800000"
+      ],
+      "nextInt10": [
+        4,
+        7,
+        9,
+        1
+      ]
+    }
+  ],
+  "streams": [
+    {
+      "label": "ascii",
+      "seed": "touchline-demo-v1",
+      "eventKind": "world",
+      "logicalKeys": [],
+      "streamKey": "[\"simulation-stream\",\"1\",\"touchline-demo-v1\",\"world\",[]]",
+      "eventSeed": 1046953037,
+      "firstDrawHex": "3fe7464702200000"
+    },
+    {
+      "label": "ascii",
+      "seed": "touchline-demo-v1",
+      "eventKind": "world",
+      "logicalKeys": [
+        "matchday:1"
+      ],
+      "streamKey": "[\"simulation-stream\",\"1\",\"touchline-demo-v1\",\"world\",[\"matchday:1\"]]",
+      "eventSeed": 2135658217,
+      "firstDrawHex": "3fd08c9bee800000"
+    },
+    {
+      "label": "ascii",
+      "seed": "touchline-demo-v1",
+      "eventKind": "calendar",
+      "logicalKeys": [],
+      "streamKey": "[\"simulation-stream\",\"1\",\"touchline-demo-v1\",\"calendar\",[]]",
+      "eventSeed": 3419452227,
+      "firstDrawHex": "3fe580a0a8e00000"
+    },
+    {
+      "label": "ascii",
+      "seed": "touchline-demo-v1",
+      "eventKind": "calendar",
+      "logicalKeys": [
+        "matchday:1"
+      ],
+      "streamKey": "[\"simulation-stream\",\"1\",\"touchline-demo-v1\",\"calendar\",[\"matchday:1\"]]",
+      "eventSeed": 1950217455,
+      "firstDrawHex": "3fe2120b50c00000"
+    },
+    {
+      "label": "ascii",
+      "seed": "touchline-demo-v1",
+      "eventKind": "fixture",
+      "logicalKeys": [],
+      "streamKey": "[\"simulation-stream\",\"1\",\"touchline-demo-v1\",\"fixture\",[]]",
+      "eventSeed": 3545130242,
+      "firstDrawHex": "3fd316797e000000"
+    },
+    {
+      "label": "ascii",
+      "seed": "touchline-demo-v1",
+      "eventKind": "fixture",
+      "logicalKeys": [
+        "matchday:1"
+      ],
+      "streamKey": "[\"simulation-stream\",\"1\",\"touchline-demo-v1\",\"fixture\",[\"matchday:1\"]]",
+      "eventSeed": 249868406,
+      "firstDrawHex": "3fb172e08f000000"
+    },
+    {
+      "label": "ascii",
+      "seed": "touchline-demo-v1",
+      "eventKind": "market",
+      "logicalKeys": [],
+      "streamKey": "[\"simulation-stream\",\"1\",\"touchline-demo-v1\",\"market\",[]]",
+      "eventSeed": 1187735809,
+      "firstDrawHex": "3fdeae00f1800000"
+    },
+    {
+      "label": "ascii",
+      "seed": "touchline-demo-v1",
+      "eventKind": "market",
+      "logicalKeys": [
+        "matchday:1"
+      ],
+      "streamKey": "[\"simulation-stream\",\"1\",\"touchline-demo-v1\",\"market\",[\"matchday:1\"]]",
+      "eventSeed": 2384165253,
+      "firstDrawHex": "3fe4d11882200000"
+    },
+    {
+      "label": "ascii",
+      "seed": "touchline-demo-v1",
+      "eventKind": "development",
+      "logicalKeys": [],
+      "streamKey": "[\"simulation-stream\",\"1\",\"touchline-demo-v1\",\"development\",[]]",
+      "eventSeed": 54899250,
+      "firstDrawHex": "3fd5a1a1ee000000"
+    },
+    {
+      "label": "ascii",
+      "seed": "touchline-demo-v1",
+      "eventKind": "development",
+      "logicalKeys": [
+        "matchday:1"
+      ],
+      "streamKey": "[\"simulation-stream\",\"1\",\"touchline-demo-v1\",\"development\",[\"matchday:1\"]]",
+      "eventSeed": 2470769766,
+      "firstDrawHex": "3fe6648a2b200000"
+    },
+    {
+      "label": "non-ascii",
+      "seed": "café-München",
+      "eventKind": "world",
+      "logicalKeys": [],
+      "streamKey": "[\"simulation-stream\",\"1\",\"café-München\",\"world\",[]]",
+      "eventSeed": 2390286057,
+      "firstDrawHex": "3fca7397c4000000"
+    },
+    {
+      "label": "non-ascii",
+      "seed": "café-München",
+      "eventKind": "world",
+      "logicalKeys": [
+        "matchday:1"
+      ],
+      "streamKey": "[\"simulation-stream\",\"1\",\"café-München\",\"world\",[\"matchday:1\"]]",
+      "eventSeed": 2200722381,
+      "firstDrawHex": "3fedc233f9200000"
+    },
+    {
+      "label": "non-ascii",
+      "seed": "café-München",
+      "eventKind": "calendar",
+      "logicalKeys": [],
+      "streamKey": "[\"simulation-stream\",\"1\",\"café-München\",\"calendar\",[]]",
+      "eventSeed": 2352660215,
+      "firstDrawHex": "3fdf7edbd2400000"
+    },
+    {
+      "label": "non-ascii",
+      "seed": "café-München",
+      "eventKind": "calendar",
+      "logicalKeys": [
+        "matchday:1"
+      ],
+      "streamKey": "[\"simulation-stream\",\"1\",\"café-München\",\"calendar\",[\"matchday:1\"]]",
+      "eventSeed": 4036949179,
+      "firstDrawHex": "3fd9f5ed12c00000"
+    },
+    {
+      "label": "non-ascii",
+      "seed": "café-München",
+      "eventKind": "fixture",
+      "logicalKeys": [],
+      "streamKey": "[\"simulation-stream\",\"1\",\"café-München\",\"fixture\",[]]",
+      "eventSeed": 1314464542,
+      "firstDrawHex": "3fcc46e2bd800000"
+    },
+    {
+      "label": "non-ascii",
+      "seed": "café-München",
+      "eventKind": "fixture",
+      "logicalKeys": [
+        "matchday:1"
+      ],
+      "streamKey": "[\"simulation-stream\",\"1\",\"café-München\",\"fixture\",[\"matchday:1\"]]",
+      "eventSeed": 3877397114,
+      "firstDrawHex": "3fd197da5ac00000"
+    },
+    {
+      "label": "non-ascii",
+      "seed": "café-München",
+      "eventKind": "market",
+      "logicalKeys": [],
+      "streamKey": "[\"simulation-stream\",\"1\",\"café-München\",\"market\",[]]",
+      "eventSeed": 1845357437,
+      "firstDrawHex": "3fc8c6ea71000000"
+    },
+    {
+      "label": "non-ascii",
+      "seed": "café-München",
+      "eventKind": "market",
+      "logicalKeys": [
+        "matchday:1"
+      ],
+      "streamKey": "[\"simulation-stream\",\"1\",\"café-München\",\"market\",[\"matchday:1\"]]",
+      "eventSeed": 2431838041,
+      "firstDrawHex": "3feb918b3c400000"
+    },
+    {
+      "label": "non-ascii",
+      "seed": "café-München",
+      "eventKind": "development",
+      "logicalKeys": [],
+      "streamKey": "[\"simulation-stream\",\"1\",\"café-München\",\"development\",[]]",
+      "eventSeed": 2538586158,
+      "firstDrawHex": "3fe2d5d308c00000"
+    },
+    {
+      "label": "non-ascii",
+      "seed": "café-München",
+      "eventKind": "development",
+      "logicalKeys": [
+        "matchday:1"
+      ],
+      "streamKey": "[\"simulation-stream\",\"1\",\"café-München\",\"development\",[\"matchday:1\"]]",
+      "eventSeed": 1340654346,
+      "firstDrawHex": "3feda620b8a00000"
+    },
+    {
+      "label": "astral",
+      "seed": "astral-😀-𐍈",
+      "eventKind": "world",
+      "logicalKeys": [],
+      "streamKey": "[\"simulation-stream\",\"1\",\"astral-😀-𐍈\",\"world\",[]]",
+      "eventSeed": 171378216,
+      "firstDrawHex": "3fe1ec64b6000000"
+    },
+    {
+      "label": "astral",
+      "seed": "astral-😀-𐍈",
+      "eventKind": "world",
+      "logicalKeys": [
+        "matchday:1"
+      ],
+      "streamKey": "[\"simulation-stream\",\"1\",\"astral-😀-𐍈\",\"world\",[\"matchday:1\"]]",
+      "eventSeed": 2678330740,
+      "firstDrawHex": "3fca77bc67800000"
+    },
+    {
+      "label": "astral",
+      "seed": "astral-😀-𐍈",
+      "eventKind": "calendar",
+      "logicalKeys": [],
+      "streamKey": "[\"simulation-stream\",\"1\",\"astral-😀-𐍈\",\"calendar\",[]]",
+      "eventSeed": 1386242532,
+      "firstDrawHex": "3fc84134ca000000"
+    },
+    {
+      "label": "astral",
+      "seed": "astral-😀-𐍈",
+      "eventKind": "calendar",
+      "logicalKeys": [
+        "matchday:1"
+      ],
+      "streamKey": "[\"simulation-stream\",\"1\",\"astral-😀-𐍈\",\"calendar\",[\"matchday:1\"]]",
+      "eventSeed": 387615304,
+      "firstDrawHex": "3fd24aad70400000"
+    },
+    {
+      "label": "astral",
+      "seed": "astral-😀-𐍈",
+      "eventKind": "fixture",
+      "logicalKeys": [],
+      "streamKey": "[\"simulation-stream\",\"1\",\"astral-😀-𐍈\",\"fixture\",[]]",
+      "eventSeed": 2442265103,
+      "firstDrawHex": "3fe57174cb800000"
+    },
+    {
+      "label": "astral",
+      "seed": "astral-😀-𐍈",
+      "eventKind": "fixture",
+      "logicalKeys": [
+        "matchday:1"
+      ],
+      "streamKey": "[\"simulation-stream\",\"1\",\"astral-😀-𐍈\",\"fixture\",[\"matchday:1\"]]",
+      "eventSeed": 1427683219,
+      "firstDrawHex": "3fc58ac103000000"
+    },
+    {
+      "label": "astral",
+      "seed": "astral-😀-𐍈",
+      "eventKind": "market",
+      "logicalKeys": [],
+      "streamKey": "[\"simulation-stream\",\"1\",\"astral-😀-𐍈\",\"market\",[]]",
+      "eventSeed": 902406002,
+      "firstDrawHex": "3faf18ab12000000"
+    },
+    {
+      "label": "astral",
+      "seed": "astral-😀-𐍈",
+      "eventKind": "market",
+      "logicalKeys": [
+        "matchday:1"
+      ],
+      "streamKey": "[\"simulation-stream\",\"1\",\"astral-😀-𐍈\",\"market\",[\"matchday:1\"]]",
+      "eventSeed": 2968078502,
+      "firstDrawHex": "3fe9211447200000"
+    },
+    {
+      "label": "astral",
+      "seed": "astral-😀-𐍈",
+      "eventKind": "development",
+      "logicalKeys": [],
+      "streamKey": "[\"simulation-stream\",\"1\",\"astral-😀-𐍈\",\"development\",[]]",
+      "eventSeed": 459881495,
+      "firstDrawHex": "3fde6d69ad400000"
+    },
+    {
+      "label": "astral",
+      "seed": "astral-😀-𐍈",
+      "eventKind": "development",
+      "logicalKeys": [
+        "matchday:1"
+      ],
+      "streamKey": "[\"simulation-stream\",\"1\",\"astral-😀-𐍈\",\"development\",[\"matchday:1\"]]",
+      "eventSeed": 2855760347,
+      "firstDrawHex": "3fe30c6339000000"
+    }
+  ],
+  "fingerprints": [
+    {
+      "label": "ascii",
+      "seed": "touchline-demo-v1",
+      "rulesMode": "challenge",
+      "preset": "balanced",
+      "fingerprint": "[\"standalone-career\",\"2\",\"Vector career\",\"touchline-demo-v1\",2026,\"club:01\",\"challenge\",\"balanced\"]"
+    },
+    {
+      "label": "ascii",
+      "seed": "touchline-demo-v1",
+      "rulesMode": "sandbox",
+      "preset": "strict",
+      "fingerprint": "[\"standalone-career\",\"2\",\"Vector career\",\"touchline-demo-v1\",2026,\"club:01\",\"sandbox\",\"strict\"]"
+    },
+    {
+      "label": "non-ascii",
+      "seed": "café-München",
+      "rulesMode": "challenge",
+      "preset": "balanced",
+      "fingerprint": "[\"standalone-career\",\"2\",\"Vector career\",\"café-München\",2026,\"club:01\",\"challenge\",\"balanced\"]"
+    },
+    {
+      "label": "non-ascii",
+      "seed": "café-München",
+      "rulesMode": "sandbox",
+      "preset": "strict",
+      "fingerprint": "[\"standalone-career\",\"2\",\"Vector career\",\"café-München\",2026,\"club:01\",\"sandbox\",\"strict\"]"
+    },
+    {
+      "label": "astral",
+      "seed": "astral-😀-𐍈",
+      "rulesMode": "challenge",
+      "preset": "balanced",
+      "fingerprint": "[\"standalone-career\",\"2\",\"Vector career\",\"astral-😀-𐍈\",2026,\"club:01\",\"challenge\",\"balanced\"]"
+    },
+    {
+      "label": "astral",
+      "seed": "astral-😀-𐍈",
+      "rulesMode": "sandbox",
+      "preset": "strict",
+      "fingerprint": "[\"standalone-career\",\"2\",\"Vector career\",\"astral-😀-𐍈\",2026,\"club:01\",\"sandbox\",\"strict\"]"
+    }
+  ],
+  "dates": {
+    "seasons": [
+      {
+        "year": 1900,
+        "startDate": "1900-07-01",
+        "endDate": "1901-06-30"
+      },
+      {
+        "year": 2024,
+        "startDate": "2024-07-01",
+        "endDate": "2025-06-30"
+      },
+      {
+        "year": 2026,
+        "startDate": "2026-07-01",
+        "endDate": "2027-06-30"
+      },
+      {
+        "year": 2198,
+        "startDate": "2198-07-01",
+        "endDate": "2199-06-30"
+      }
+    ],
+    "addDays": [
+      {
+        "from": "2024-02-28",
+        "days": 1,
+        "result": "2024-02-29"
+      },
+      {
+        "from": "2023-02-28",
+        "days": 1,
+        "result": "2023-03-01"
+      },
+      {
+        "from": "1900-02-28",
+        "days": 1,
+        "result": "1900-03-01"
+      },
+      {
+        "from": "2026-08-31",
+        "days": 1,
+        "result": "2026-09-01"
+      }
+    ],
+    "windows": [
+      {
+        "date": "2026-06-30",
+        "window": null
+      },
+      {
+        "date": "2026-07-01",
+        "window": "summer"
+      },
+      {
+        "date": "2026-08-31",
+        "window": "summer"
+      },
+      {
+        "date": "2026-09-01",
+        "window": null
+      },
+      {
+        "date": "2026-01-01",
+        "window": "winter"
+      },
+      {
+        "date": "2026-01-31",
+        "window": "winter"
+      },
+      {
+        "date": "2026-02-01",
+        "window": null
+      }
+    ],
+    "ages": [
+      {
+        "birth": "2000-02-29",
+        "asOf": "2024-02-28",
+        "years": 23
+      },
+      {
+        "birth": "2000-02-29",
+        "asOf": "2024-02-29",
+        "years": 24
+      }
+    ],
+    "previews": [
+      {
+        "name": "opening",
+        "activeWindow": "summer",
+        "preview": {
+          "fromDate": "2026-07-01",
+          "sourceBoundaryKey": null,
+          "allowed": true,
+          "target": {
+            "key": "season:2026:summer-deadline",
+            "date": "2026-08-31",
+            "kind": "summer-deadline"
+          },
+          "targetBoundaryKey": "season:2026:summer-deadline",
+          "eventSeed": 2731382118,
+          "reason": null
+        }
+      },
+      {
+        "name": "deadline-consumed",
+        "activeWindow": null,
+        "preview": {
+          "fromDate": "2026-08-31",
+          "sourceBoundaryKey": "season:2026:summer-deadline",
+          "allowed": true,
+          "target": {
+            "key": "season:2026:league-kickoff",
+            "date": "2026-09-01",
+            "kind": "league-kickoff"
+          },
+          "targetBoundaryKey": "season:2026:league-kickoff",
+          "eventSeed": 3929414343,
+          "reason": null
+        }
+      },
+      {
+        "name": "kickoff-consumed",
+        "activeWindow": null,
+        "preview": {
+          "fromDate": "2026-09-01",
+          "sourceBoundaryKey": "season:2026:league-kickoff",
+          "allowed": false,
+          "target": null,
+          "targetBoundaryKey": null,
+          "eventSeed": null,
+          "reason": "Match simulation arrives in Phase 8."
+        }
+      }
+    ]
+  },
+  "money": [
+    {
+      "input": "0",
+      "ok": true,
+      "cents": 0,
+      "text": "€0.00"
+    },
+    {
+      "input": "0.1",
+      "ok": true,
+      "cents": 10,
+      "text": "€0.10"
+    },
+    {
+      "input": "0.10",
+      "ok": true,
+      "cents": 10,
+      "text": "€0.10"
+    },
+    {
+      "input": "€12.30",
+      "ok": true,
+      "cents": 1230,
+      "text": "€12.30"
+    },
+    {
+      "input": "1.234",
+      "ok": false,
+      "message": "Enter a non-negative euro amount with at most two decimal places."
+    },
+    {
+      "input": "9999999999999.99",
+      "ok": true,
+      "cents": 999999999999999,
+      "text": "€9,999,999,999,999.99"
+    },
+    {
+      "input": "10000000000000",
+      "ok": false,
+      "message": "Enter a non-negative euro amount with at most two decimal places."
+    }
+  ],
+  "policy": [
+    {
+      "name": "fee-above-capacity",
+      "preset": "balanced",
+      "report": {
+        "allowed": false,
+        "verdicts": [
+          {
+            "ruleId": "SELL_TO_BUY",
+            "severity": "BLOCK",
+            "code": "FEE_EXCEEDS_CAPACITY",
+            "message": "The fee is above the remaining transfer capacity.",
+            "evidence": {
+              "feeCents": 2000,
+              "remainingCapacityCents": 1000
+            },
+            "remedy": "Record a completed sale, raise the allocation, or lower the fee."
+          }
+        ],
+        "snapshotRevision": 3
+      }
+    },
+    {
+      "name": "free-transfer",
+      "preset": "balanced",
+      "report": {
+        "allowed": true,
+        "verdicts": [],
+        "snapshotRevision": 3
+      }
+    },
+    {
+      "name": "strict-age-cap",
+      "preset": "strict",
+      "report": {
+        "allowed": false,
+        "verdicts": [
+          {
+            "ruleId": "MAX_SIGNING_AGE",
+            "severity": "BLOCK",
+            "code": "AGE_ABOVE_CAP",
+            "message": "Age 24 is above the cap of 23.",
+            "evidence": {
+              "age": 24,
+              "maxAge": 23
+            },
+            "remedy": "Choose a younger player, use an exempt free transfer, or change the constitution."
+          }
+        ],
+        "snapshotRevision": 4
+      }
+    },
+    {
+      "name": "wage-above-tier",
+      "preset": "balanced",
+      "report": {
+        "allowed": false,
+        "verdicts": [
+          {
+            "ruleId": "WAGE_TIER_CAP",
+            "severity": "BLOCK",
+            "code": "WAGE_ABOVE_TIER_CAP",
+            "message": "The weekly wage is above the Key cap.",
+            "evidence": {
+              "weeklyWageCents": 9000000,
+              "squadTier": "key",
+              "capCents": 4500000
+            },
+            "remedy": "Lower the wage, change the tier, or change the constitution."
+          }
+        ],
+        "snapshotRevision": 5
+      }
+    },
+    {
+      "name": "qualifying-offer",
+      "preset": "balanced",
+      "report": {
+        "allowed": false,
+        "verdicts": [
+          {
+            "ruleId": "PRESTIGE_BID_SALE",
+            "severity": "BLOCK",
+            "code": "QUALIFYING_OFFER",
+            "message": "This bid qualifies and cannot be rejected while the rule is on.",
+            "evidence": {
+              "feeCents": 300,
+              "marketValueCents": 100,
+              "bidderPrestige": 80,
+              "sellerPrestige": 40,
+              "requiredFeeNumerator": 3,
+              "requiredFeeDenominator": 2
+            },
+            "remedy": "Accept the bid, or change the constitution in an audited update."
+          }
+        ],
+        "snapshotRevision": 6
+      }
+    },
+    {
+      "name": "registration-quota",
+      "preset": "strict",
+      "report": {
+        "allowed": false,
+        "verdicts": [
+          {
+            "ruleId": "REGISTRATION_QUOTA",
+            "severity": "BLOCK",
+            "code": "ROSTER_ABOVE_LIMIT",
+            "message": "The registered list is above the roster limit of 20.",
+            "evidence": {
+              "registeredCount": 21,
+              "rosterLimit": 20
+            },
+            "remedy": "Remove a registered player or change the constitution."
+          },
+          {
+            "ruleId": "REGISTRATION_QUOTA",
+            "severity": "BLOCK",
+            "code": "HOMEGROWN_BELOW_MINIMUM",
+            "message": "Homegrown players are below the minimum of 10.",
+            "evidence": {
+              "homegrownCount": 0,
+              "minimumHomegrown": 10
+            },
+            "remedy": "Mark more homegrown players or change the constitution."
+          }
+        ],
+        "snapshotRevision": 7
+      }
+    }
+  ]
+}

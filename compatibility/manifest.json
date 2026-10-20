@@ -1,0 +1,95 @@
+{
+  "format": "touchline-compatibility",
+  "formatVersion": 1,
+  "sourceCheckpoint": "df23431abf8807cf61d2d1b63c66d6f7ef6a4cd3",
+  "evidenceCommit": "7b3c6a03af0999d61c722e43835ebcbd2998f4c5",
+  "capturedAtHead": "7b3c6a03af0999d61c722e43835ebcbd2998f4c5",
+  "personalSaves": false,
+  "oracle": "TypeScript domain modules captured from this tree. Independent of any later Rust port.",
+  "normalization": {
+    "indexeddbV1": "Missing campaign.mode becomes legacy. Missing campaign.rulesMode becomes sandbox. Simulation store arrays are empty. No wages, contracts, matches, seeds, or other fields are invented.",
+    "indexeddbV2": "Rows are exported as stored. Modes, nulls, ids, money, fingerprints, and audits are not rewritten."
+  },
+  "digest": {
+    "algorithm": "SHA-256",
+    "encoding": "UTF-8",
+    "canonicalJson": "JSON.stringify(value) with generator insertion order and no extra whitespace. The manifest hashes are of the exact fixture file bytes, including pretty-printed JSON and the trailing newline."
+  },
+  "limits": {
+    "maxUtf8Bytes": 33554432,
+    "maxStringLength": 20000,
+    "maxDepth": 12,
+    "maxRows": {
+      "campaigns": 1,
+      "seasons": 64,
+      "leagues": 32,
+      "clubs": 256,
+      "players": 8000,
+      "contracts": 8000,
+      "constitutions": 64,
+      "ledgerEntries": 8000,
+      "transfers": 8000,
+      "offers": 8000,
+      "lineups": 256,
+      "registrations": 16000,
+      "matchRecords": 8000,
+      "appearances": 64000,
+      "shortlistItems": 2000,
+      "scoutingReports": 8000,
+      "developmentPlans": 8000,
+      "auditEvents": 16000,
+      "importReceipts": 256,
+      "simulationStates": 1,
+      "clubSimulationStates": 256,
+      "playerSimulationStates": 8000,
+      "simulationReceipts": 256
+    }
+  },
+  "stores": [
+    "campaigns",
+    "seasons",
+    "leagues",
+    "clubs",
+    "players",
+    "contracts",
+    "constitutions",
+    "ledgerEntries",
+    "transfers",
+    "offers",
+    "lineups",
+    "registrations",
+    "matchRecords",
+    "appearances",
+    "shortlistItems",
+    "scoutingReports",
+    "developmentPlans",
+    "auditEvents",
+    "importReceipts",
+    "simulationStates",
+    "clubSimulationStates",
+    "playerSimulationStates",
+    "simulationReceipts"
+  ],
+  "files": {
+    "snapshots/legacy-v1.json": {
+      "sha256": "a5bf6d695a8ea5e0814af305b6c21fadb9a5dd4aeb0a016ae4b3d08cec102827",
+      "utf8Bytes": 8474
+    },
+    "snapshots/legacy-v2.json": {
+      "sha256": "453847d283f9c8ef262f1a2f993743df1a32a8241fe8e2a6c52dfbf06a9e0de7",
+      "utf8Bytes": 10298
+    },
+    "snapshots/standalone-v2.json": {
+      "sha256": "4f3e8840d01b0064895032741b98978d56c8f93e2d4ddf732ea469ee43fd138c",
+      "utf8Bytes": 10669
+    },
+    "vectors/determinism.json": {
+      "sha256": "f58e82a644ec1a3c34c09ab9fe5612980b32f5c2feb4029ab11c6410817d3d24",
+      "utf8Bytes": 21984
+    },
+    "vectors/generators.json": {
+      "sha256": "03212eccdc06cb296399a284c336d752ead48a0c878aa5898b9521b9a007b375",
+      "utf8Bytes": 30440
+    }
+  }
+}

@@ -1,0 +1,393 @@
+{
+  "format": "touchline-campaign",
+  "formatVersion": 1,
+  "sourceStorage": "indexeddb",
+  "sourceSchemaVersion": 2,
+  "exportId": "export-legacy-v2",
+  "exportedAt": "2026-10-20T12:10:00.000Z",
+  "campaignRevision": 4,
+  "tables": {
+    "campaigns": [
+      {
+        "id": "legacy-v2",
+        "name": "Riverside",
+        "kind": "fictional",
+        "mode": "legacy",
+        "rulesMode": "challenge",
+        "seed": "legacy-v2-seed",
+        "generatorVersion": "1",
+        "managedClubId": "legacy-v2-club",
+        "activeSeasonId": "legacy-v2-season",
+        "currency": "EUR",
+        "createdAt": "2026-07-01T00:00:00.000Z",
+        "updatedAt": "2026-07-01T00:00:00.000Z",
+        "revision": 4,
+        "status": "active"
+      }
+    ],
+    "seasons": [
+      {
+        "id": "legacy-v2-season",
+        "campaignId": "legacy-v2",
+        "label": "Season 1",
+        "ordinal": 1,
+        "status": "active",
+        "startDate": null,
+        "endDate": null,
+        "openedAt": "2026-07-01T00:00:00.000Z",
+        "closedAt": null
+      }
+    ],
+    "leagues": [
+      {
+        "id": "legacy-v2-league",
+        "campaignId": "legacy-v2",
+        "name": "North Counties",
+        "countryCode": null,
+        "tier": null
+      }
+    ],
+    "clubs": [
+      {
+        "id": "legacy-v2-club",
+        "campaignId": "legacy-v2",
+        "leagueId": "legacy-v2-league",
+        "name": "Riverside Athletic",
+        "shortName": "RIV",
+        "colors": {
+          "primary": "#113355",
+          "secondary": "#D4A017"
+        },
+        "prestige": 40,
+        "academyTier": 3,
+        "scoutingRegion": null
+      }
+    ],
+    "players": [
+      {
+        "id": "legacy-v2-player",
+        "campaignId": "legacy-v2",
+        "clubId": "legacy-v2-club",
+        "name": "Amina Cole",
+        "positionGroup": "MID",
+        "positions": [
+          "CM"
+        ],
+        "nationalityCode": null,
+        "birthDate": null,
+        "reportedAge": null,
+        "ageReferenceSeasonOrdinal": null,
+        "marketValueCents": null,
+        "attributes": {
+          "passing": 70
+        },
+        "potential": null,
+        "source": "fictional",
+        "externalSourceId": null,
+        "isNewgen": false
+      }
+    ],
+    "contracts": [
+      {
+        "id": "legacy-v2-contract",
+        "campaignId": "legacy-v2",
+        "playerId": "legacy-v2-player",
+        "clubId": "legacy-v2-club",
+        "weeklyWageCents": null,
+        "squadTier": null,
+        "startsOn": null,
+        "expiresOn": null,
+        "status": "active"
+      }
+    ],
+    "constitutions": [
+      {
+        "id": "legacy-v2-rules",
+        "campaignId": "legacy-v2",
+        "version": 1,
+        "rules": [
+          {
+            "id": "SELL_TO_BUY",
+            "enabled": true,
+            "salesReinvestmentPct": 70,
+            "prizeReinvestmentPct": 100,
+            "carryoverPct": 0,
+            "initialAllocationCents": 500000000
+          },
+          {
+            "id": "MAX_SIGNING_AGE",
+            "enabled": true,
+            "maxAge": 26,
+            "freeTransfersExempt": true
+          },
+          {
+            "id": "WAGE_TIER_CAP",
+            "enabled": true,
+            "keyWeeklyCapCents": 4500000,
+            "rotationWeeklyCapCents": 2000000,
+            "youthWeeklyCapCents": 500000
+          },
+          {
+            "id": "PRESTIGE_BID_SALE",
+            "enabled": true,
+            "requiredFeeNumerator": 3,
+            "requiredFeeDenominator": 2,
+            "requireHigherPrestige": true
+          },
+          {
+            "id": "REGISTRATION_QUOTA",
+            "enabled": true,
+            "rosterLimit": 25,
+            "minimumHomegrown": 8,
+            "ageExemptionUnder": 21,
+            "competitionKey": "league"
+          }
+        ],
+        "updatedAt": "2026-07-01T00:00:00.000Z"
+      }
+    ],
+    "ledgerEntries": [
+      {
+        "id": "legacy-v2-ledger",
+        "campaignId": "legacy-v2",
+        "seasonId": "legacy-v2-season",
+        "clubId": "legacy-v2-club",
+        "kind": "initial_allocation",
+        "amountCents": 150000,
+        "effectiveOn": "2026-07-01",
+        "sourceActionId": "legacy-v2-action",
+        "reversesEntryId": null,
+        "note": null
+      }
+    ],
+    "transfers": [
+      {
+        "id": "legacy-v2-transfer",
+        "campaignId": "legacy-v2",
+        "seasonId": "legacy-v2-season",
+        "playerId": "legacy-v2-player",
+        "fromClubId": null,
+        "toClubId": "legacy-v2-club",
+        "feeCents": 0,
+        "kind": "free",
+        "effectiveOn": "2026-07-01",
+        "sourceActionId": "legacy-v2-action"
+      }
+    ],
+    "offers": [
+      {
+        "id": "legacy-v2-offer",
+        "campaignId": "legacy-v2",
+        "seasonId": "legacy-v2-season",
+        "playerId": "legacy-v2-player",
+        "bidderClubId": "legacy-v2-club",
+        "feeCents": 0,
+        "status": "open",
+        "receivedOn": "2026-07-01",
+        "resolvedOn": null
+      }
+    ],
+    "lineups": [
+      {
+        "id": "legacy-v2-lineup",
+        "campaignId": "legacy-v2",
+        "seasonId": "legacy-v2-season",
+        "name": "Opening",
+        "formation": "4-3-3",
+        "starters": [
+          {
+            "playerId": "legacy-v2-player",
+            "slot": "CM",
+            "role": null
+          }
+        ],
+        "benchPlayerIds": [],
+        "updatedAt": "2026-07-01T00:00:00.000Z"
+      }
+    ],
+    "registrations": [
+      {
+        "id": "legacy-v2-registration",
+        "campaignId": "legacy-v2",
+        "seasonId": "legacy-v2-season",
+        "playerId": "legacy-v2-player",
+        "competitionKey": "league",
+        "status": "unknown",
+        "homegrownClub": null,
+        "homegrownNation": null,
+        "ageExempt": null,
+        "provenance": "fictional"
+      }
+    ],
+    "matchRecords": [
+      {
+        "id": "legacy-v2-match",
+        "campaignId": "legacy-v2",
+        "seasonId": "legacy-v2-season",
+        "date": "2026-07-01",
+        "opponent": "Calder Reserve",
+        "homeAway": "home",
+        "goalsFor": 2,
+        "goalsAgainst": 1,
+        "competition": null,
+        "notes": null,
+        "xgFor": null,
+        "xgAgainst": null
+      }
+    ],
+    "appearances": [
+      {
+        "id": "legacy-v2-appearance",
+        "campaignId": "legacy-v2",
+        "seasonId": "legacy-v2-season",
+        "matchId": "legacy-v2-match",
+        "playerId": "legacy-v2-player",
+        "minutes": 90,
+        "started": null,
+        "goals": null,
+        "assists": null,
+        "rating": null
+      }
+    ],
+    "shortlistItems": [
+      {
+        "id": "legacy-v2-shortlist",
+        "campaignId": "legacy-v2",
+        "playerId": "legacy-v2-player",
+        "priority": 3,
+        "status": "open",
+        "notes": null,
+        "addedAt": "2026-07-01T00:00:00.000Z"
+      }
+    ],
+    "scoutingReports": [
+      {
+        "id": "legacy-v2-scout",
+        "campaignId": "legacy-v2",
+        "playerId": "legacy-v2-player",
+        "seasonId": "legacy-v2-season",
+        "archetype": "Box midfielder",
+        "observations": "",
+        "confidence": "low",
+        "source": "estimated",
+        "createdAt": "2026-07-01T00:00:00.000Z"
+      }
+    ],
+    "developmentPlans": [
+      {
+        "id": "legacy-v2-plan",
+        "campaignId": "legacy-v2",
+        "playerId": "legacy-v2-player",
+        "seasonId": "legacy-v2-season",
+        "targetRole": null,
+        "notes": "",
+        "status": "open"
+      }
+    ],
+    "auditEvents": [
+      {
+        "id": "legacy-v2-audit",
+        "campaignId": "legacy-v2",
+        "seasonId": "legacy-v2-season",
+        "actionId": "legacy-v2-action",
+        "actionType": "campaign.create",
+        "createdAt": "2026-07-01T00:00:00.000Z",
+        "summary": "Created the synthetic campaign",
+        "payload": {
+          "synthetic": true,
+          "nullable": null
+        }
+      }
+    ],
+    "importReceipts": [
+      {
+        "id": "legacy-v2-import",
+        "campaignId": "legacy-v2",
+        "sourceName": "Synthetic receipt",
+        "sourceType": "json",
+        "importedAt": "2026-07-01T00:00:00.000Z",
+        "rowCounts": {
+          "players": 1
+        },
+        "mappingVersion": "synthetic-1",
+        "warnings": [
+          "fingerprint:synthetic-kept"
+        ],
+        "provenance": "fictional"
+      }
+    ],
+    "simulationStates": [
+      {
+        "id": "legacy-v2-clock",
+        "campaignId": "legacy-v2",
+        "activeSeasonId": "legacy-v2-season",
+        "rootSeed": "legacy-v2-seed",
+        "simulationVersion": "1",
+        "calendarVersion": "1",
+        "currentDate": "2026-07-01",
+        "phase": "preseason",
+        "lastBoundaryKey": null
+      }
+    ],
+    "clubSimulationStates": [
+      {
+        "id": "legacy-v2-club-state",
+        "campaignId": "legacy-v2",
+        "clubId": "legacy-v2-club",
+        "simulationKey": "club:01",
+        "transferBalanceCents": 100000,
+        "wageBudgetWeeklyCents": 10000
+      }
+    ],
+    "playerSimulationStates": [
+      {
+        "id": "legacy-v2-player-state",
+        "campaignId": "legacy-v2",
+        "playerId": "legacy-v2-player",
+        "simulationKey": "player:01",
+        "fitness": 100,
+        "sharpness": 60,
+        "goalkeeping": null,
+        "injuryUntilDate": null,
+        "suspensionMatches": 0,
+        "status": "active",
+        "homegrownClub": true,
+        "homegrownNation": false
+      }
+    ],
+    "simulationReceipts": [
+      {
+        "id": "legacy-v2-receipt",
+        "campaignId": "legacy-v2",
+        "operationKey": "career:initialize",
+        "inputRevision": 3,
+        "inputFingerprint": "input:legacy-v2:café-exact",
+        "eventSeed": 123,
+        "simulationVersion": "1",
+        "outcomeRefs": [
+          {
+            "kind": "campaign",
+            "id": "legacy-v2"
+          },
+          {
+            "kind": "season",
+            "id": "legacy-v2-season"
+          },
+          {
+            "kind": "club",
+            "id": "legacy-v2-club"
+          },
+          {
+            "kind": "player",
+            "id": "legacy-v2-player"
+          },
+          {
+            "kind": "boundary",
+            "key": "2026:summer-deadline"
+          }
+        ],
+        "createdAt": "2026-07-01T00:00:00.000Z"
+      }
+    ]
+  }
+}

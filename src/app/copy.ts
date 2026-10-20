@@ -45,6 +45,31 @@ export function seedProgress(
 
 export const importPanel = 'Import is not available in this build.'
 
+export function exportOrigin(origin: string): string {
+  return `This browser origin is ${origin}. Export for Desktop reads only the saves stored at this origin. Opening the app at another address uses a different, empty database.`
+}
+
+export const exportEmpty =
+  'No campaign is saved at this origin. A campaign created at another address is not here.'
+
+export const exportMissing =
+  'That campaign is not in the database at this origin. It may have been deleted, or it belongs to another address.'
+
+export const exportLocal =
+  'The download stays on this computer. Export does not change the saved campaign.'
+
+export const exportReading = 'Reading the campaign.'
+
+export const exportPreparing = 'Checking the snapshot.'
+
+export const exportStarted =
+  'Download started on this computer. The saved campaign was not changed.'
+
+export const exportFailed = 'Export failed. The saved campaign was not changed.'
+
+export const exportCancelled =
+  'Export cancelled. The saved campaign was not changed.'
+
 export const searchPanel = 'Search is not available in this build.'
 
 export const backupPanel = 'Backup is not available in this build.'
