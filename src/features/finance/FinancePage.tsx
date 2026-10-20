@@ -21,6 +21,7 @@ import {
   wageCommitment,
 } from '../../domain/finance/wages'
 import { invalidMoneyMessage, parseMoneyCents } from '../../domain/models/money'
+import { dateOnlySchema, type DateOnly } from '../../domain/models/dates'
 import {
   entityIdSchema,
   type Campaign,
@@ -32,6 +33,7 @@ import {
 } from '../../domain/validation/schemas'
 import { LedgerTable } from './LedgerTable'
 import { WagePyramid } from './WagePyramid'
+import { ActionPreview } from './ActionPreview'
 
 type State = {
   campaignId: string | undefined
@@ -50,14 +52,16 @@ function PrizeForm({
   campaign,
   season,
   onSaved,
+  initialDate,
 }: {
   campaign: Campaign
   season: Season
   onSaved: () => void
+  initialDate: DateOnly
 }) {
   const database = useDatabase()
   const [amount, setAmount] = useState('')
-  const [date, setDate] = useState(() => systemClock().slice(0, 10))
+  const [date, setDate] = useState<string>(initialDate)
   const [note, setNote] = useState('')
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
@@ -155,6 +159,9 @@ export function FinancePage() {
   const { campaignId } = useParams()
   const [state, setState] = useState<State | null>(null)
   const [reload, setReload] = useState(0)
+  const [effectiveDate] = useState(() =>
+    dateOnlySchema.parse(systemClock().slice(0, 10)),
+  )
   useEffect(() => {
     let active = true
     async function load() {
@@ -257,6 +264,7 @@ export function FinancePage() {
         campaign={campaign}
         season={season}
         onSaved={onSaved}
+        initialDate={effectiveDate}
       />
       <LedgerTable
         key={`ledger-${campaignId}`}
@@ -264,6 +272,19 @@ export function FinancePage() {
         campaign={campaign}
         onSaved={onSaved}
       />
+      {constitution && (
+        <ActionPreview
+          key={`preview-${campaign.id}-${campaign.revision}-${constitution.id}`}
+          snapshot={{
+            revision: campaign.revision,
+            remainingCapacityCents: breakdown.remainingCents,
+          }}
+          constitution={constitution}
+          effectiveDate={effectiveDate}
+          wages={wages}
+          prestige={state.club?.prestige ?? null}
+        />
+      )}
     </div>
   )
 }
