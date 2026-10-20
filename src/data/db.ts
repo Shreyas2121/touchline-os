@@ -1,6 +1,12 @@
 import Dexie, { type EntityTable } from 'dexie'
 import type { ZodType } from 'zod'
 import type {
+  SimulationState,
+  ClubSimulationState,
+  PlayerSimulationState,
+  SimulationReceipt,
+} from '../domain/simulation/schemas'
+import type {
   Appearance,
   AuditEvent,
   Campaign,
@@ -23,9 +29,10 @@ import type {
 } from '../domain/validation/schemas'
 import { PersistenceError } from './errors'
 import { schemaV1 } from './migrations/v1'
+import { schemaV2, upgradeLegacyCampaigns } from './migrations/v2'
 
 export const DATABASE_NAME = 'touchline-os'
-export const DATABASE_VERSION = 1
+export const DATABASE_VERSION = 2
 
 export class TouchlineDatabase extends Dexie {
   campaigns!: EntityTable<Campaign, 'id'>
@@ -47,10 +54,24 @@ export class TouchlineDatabase extends Dexie {
   developmentPlans!: EntityTable<DevelopmentPlan, 'id'>
   auditEvents!: EntityTable<AuditEvent, 'id'>
   importReceipts!: EntityTable<ImportReceipt, 'id'>
+  simulationStates!: EntityTable<SimulationState, 'id'>
+  clubSimulationStates!: EntityTable<ClubSimulationState, 'id'>
+  playerSimulationStates!: EntityTable<PlayerSimulationState, 'id'>
+  simulationReceipts!: EntityTable<SimulationReceipt, 'id'>
 
   constructor(name: string) {
     super(name)
-    this.version(DATABASE_VERSION).stores(schemaV1)
+    this.version(1).stores(schemaV1)
+    this.version(2).stores(schemaV2).upgrade(upgradeLegacyCampaigns)
+    this.on('ready', () => {
+      // Dexie can open a newer native database without running an upgrade.
+      // Refuse it explicitly before exposing any reads or writes.
+      if (this.backendDB().version > DATABASE_VERSION * 10) {
+        throw new Dexie.VersionError(
+          'This save uses a newer database version. Update Touchline OS to open it.',
+        )
+      }
+    })
   }
 }
 

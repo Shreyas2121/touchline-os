@@ -6,5 +6,6 @@ export function runInTransaction<T>(
   tables: readonly Table[],
   body: () => Promise<T>,
 ): Promise<T> {
-  return database.transaction('rw', tables, () => body())
+  // Preserve the async callback so Dexie tracks awaits and nested transactions.
+  return database.transaction('rw', tables, body)
 }

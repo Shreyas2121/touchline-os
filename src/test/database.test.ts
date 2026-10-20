@@ -9,6 +9,7 @@ import {
 } from '../data/db'
 import { PersistenceError } from '../data/errors'
 import { schemaV1 } from '../data/migrations/v1'
+import { schemaV2 } from '../data/migrations/v2'
 import {
   entityIdSchema,
   playerSchema,
@@ -45,19 +46,19 @@ afterEach(async () => {
 describe('database constants', () => {
   it('names the production database and version', () => {
     expect(DATABASE_NAME).toBe('touchline-os')
-    expect(DATABASE_VERSION).toBe(1)
+    expect(DATABASE_VERSION).toBe(2)
     expect(testDatabaseName).not.toBe(DATABASE_NAME)
   })
 })
 
 describe('TouchlineDatabase', () => {
-  it('opens version 1 with the schema tables and keeps that version', async () => {
+  it('opens version 2 and preserves the frozen version 1 declarations', async () => {
     const database = new TouchlineDatabase(testDatabaseName)
     try {
       await database.open()
-      expect(database.verno).toBe(1)
+      expect(database.verno).toBe(2)
       expect(database.tables.map((table) => table.name).sort()).toEqual(
-        Object.keys(schemaV1).sort(),
+        Object.keys(schemaV2).sort(),
       )
       expect(schemaV1).toEqual({
         campaigns: 'id, kind, managedClubId, activeSeasonId, updatedAt',
@@ -96,7 +97,7 @@ describe('TouchlineDatabase', () => {
     const reopened = new TouchlineDatabase(testDatabaseName)
     try {
       await reopened.open()
-      expect(reopened.verno).toBe(1)
+      expect(reopened.verno).toBe(2)
     } finally {
       reopened.close()
     }
@@ -115,7 +116,7 @@ describe('getDatabase', () => {
     expect(third).not.toBe(first)
     try {
       await third.open()
-      expect(third.verno).toBe(1)
+      expect(third.verno).toBe(2)
     } finally {
       third.close()
     }

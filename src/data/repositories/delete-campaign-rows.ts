@@ -24,6 +24,10 @@ export async function deleteCampaignRows(
     database.developmentPlans,
     database.auditEvents,
     database.importReceipts,
+    database.simulationStates,
+    database.clubSimulationStates,
+    database.playerSimulationStates,
+    database.simulationReceipts,
   ]
   for (const table of tables)
     await table.where('campaignId').equals(campaignId).delete()

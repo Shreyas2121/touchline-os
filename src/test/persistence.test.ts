@@ -350,11 +350,11 @@ describe('persistence invariants', () => {
     second.close()
     await Dexie.delete(probeDatabaseName)
 
-    expect(DATABASE_VERSION).toBe(1)
+    expect(DATABASE_VERSION).toBe(2)
     const production = new TouchlineDatabase(testDatabaseName)
     try {
       await production.open()
-      expect(production.verno).toBe(1)
+      expect(production.verno).toBe(2)
     } finally {
       production.close()
     }

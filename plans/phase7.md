@@ -815,7 +815,7 @@ Record each guide commit here when it lands. Do not rewrite the subjects.
 | Guide | Commit | Checks |
 | --- | --- | --- |
 | `P07-G01` | `b5332a73353d5fd83d1258776984d79c1ed586b6` | `pnpm format:check`, `pnpm lint`, `pnpm typecheck`, `pnpm test` (503 passed), `pnpm build`, `pnpm exec playwright install chromium`, and `pnpm test:e2e` (5 passed). Browser pass: Match Journal had no preview banner, Calder Reserve 2–1 Win survived reload with blank xG stored as null, squad minutes stayed Unknown, Fill from lineup stored the starter at 90 and left the unchecked bench off, and Seasons still showed the preview banner. |
-| `P07-G02` | | |
+| `P07-G02` | This commit | `pnpm exec vitest run src/test/simulation-migration.test.ts src/test/simulation-repositories.test.ts` (54 passed), `pnpm lint`, `pnpm typecheck`, `pnpm test` (44 files / 557 tests passed), `pnpm build`, and `pnpm test:e2e` (6 passed using existing Chromium). Actual v1 fixture upgrade/reload preserves selected club, 2-1 journal entry, EUR15,000 ledger, original nulls and raw legacy/sandbox modes; four simulation stores stay empty. Frozen schemaV1, generator v1, dependencies and lockfile unchanged. Contract choices: 200-character logical keys, 512-character fingerprints, uint32 event seeds and 1-32 typed outcome refs (campaign/season/club/player/boundary); identity keys/root seed stay fixed. Direct repository transactions compose atomically with commands by preserving the async callback in runInTransaction. No new-career UI or simulation command. |
 | `P07-G03` | | |
 | `P07-G04` | | |
 | `P07-G05` | | |
