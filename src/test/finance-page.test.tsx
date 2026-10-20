@@ -223,7 +223,7 @@ describe('finance and constitution screens', () => {
     await screen.findByText('Version 1')
     expect(
       screen.getByText(
-        'Registration checks are saved here and are not enforced in this build.',
+        'Registration checks run on the Registration screen when this rule is on.',
       ),
     ).toBeInTheDocument()
     const save = vi.spyOn(constitutionCommands, 'saveConstitution')
@@ -303,9 +303,12 @@ describe('finance and constitution screens', () => {
       expect(await screen.findByRole('alert')).toHaveTextContent(message)
     },
   )
-  it('keeps the preview banner on Registration', async () => {
+  it('keeps the preview banner on Scouting', async () => {
     await createCampaign(database(), harborInput)
-    renderAt('/app/campaign-a/registration')
-    expect(await screen.findByText(previewBanner)).toBeInTheDocument()
+    renderAt('/app/campaign-a/scouting')
+    expect(
+      await screen.findByRole('heading', { name: 'Scouting' }),
+    ).toBeInTheDocument()
+    expect(screen.getByText(previewBanner)).toBeInTheDocument()
   })
 })

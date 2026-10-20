@@ -12,6 +12,7 @@ import { getActiveConstitution } from '../../data/repositories/constitutions'
 import { listContractsByClub } from '../../data/repositories/contracts'
 import { listLedgerEntries } from '../../data/repositories/ledger-entries'
 import { listOffers } from '../../data/repositories/offers'
+import { listRegistrations } from '../../data/repositories/registrations'
 import { getActiveSeason } from '../../data/repositories/seasons'
 import { formatCapacity, transferCapacity } from '../../domain/finance/capacity'
 import {
@@ -31,6 +32,7 @@ type Summary = {
   wages?: string
   activeBids?: number
   expiringContracts?: number
+  registration?: string
   missing?: boolean
   failed?: boolean
   chooseClub?: string
@@ -87,6 +89,27 @@ export function CommandCenterPage() {
           (contract) =>
             contract.status === 'active' && contract.expiresOn !== null,
         ).length
+        const registrationRule = constitution?.rules.find(
+          (item) => item.id === 'REGISTRATION_QUOTA',
+        )
+        let registration = 'Unknown'
+        if (
+          registrationRule?.id === 'REGISTRATION_QUOTA' &&
+          registrationRule.enabled &&
+          season
+        ) {
+          const rows = await listRegistrations(
+            database,
+            campaign.id,
+            season.id,
+            registrationRule.competitionKey,
+          )
+          const count = rows.filter(
+            (row) =>
+              row.status === 'registered' && managedPlayerIds.has(row.playerId),
+          ).length
+          registration = `${count} / ${registrationRule.rosterLimit}`
+        }
         const rule = constitution?.rules.find(
           (item) => item.id === 'SELL_TO_BUY',
         )
@@ -112,6 +135,7 @@ export function CommandCenterPage() {
               : 'Unknown',
             activeBids,
             expiringContracts,
+            registration,
           })
       } catch {
         if (active) setSummary({ campaignId, failed: true })
@@ -151,7 +175,7 @@ export function CommandCenterPage() {
             label: 'Expiring contracts',
             value: String(summary.expiringContracts ?? 0),
           },
-          { label: 'Registration', value: 'Unknown' },
+          { label: 'Registration', value: summary.registration ?? 'Unknown' },
         ]}
       />
       <ul aria-label="Activity">

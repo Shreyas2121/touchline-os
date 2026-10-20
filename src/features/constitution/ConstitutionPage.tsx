@@ -44,7 +44,7 @@ const descriptions = {
   PRESTIGE_BID_SALE:
     'A qualifying bid from a higher-prestige club cannot be rejected, and a season cannot roll over while one is unresolved.',
   REGISTRATION_QUOTA:
-    'Registration checks are saved here and are not enforced in this build.',
+    'Registration checks run on the Registration screen when this rule is on.',
 }
 type Field = {
   key: string

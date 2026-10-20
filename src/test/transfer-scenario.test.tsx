@@ -157,14 +157,20 @@ describe('transfer scenario screen', () => {
     expect(await database().ledgerEntries.count()).toBe(ledger)
   })
 
-  it('shows the preview banner on Registration and hides it on Transfers', async () => {
+  it('shows the preview banner on Scouting and hides it on Registration', async () => {
     await createCampaign(database(), harborInput)
     const { router } = renderAt('/app/campaign-a/registration')
-    expect(await screen.findByText(previewBanner)).toBeInTheDocument()
+    await screen.findByRole('heading', { name: 'Registration' })
+    expect(screen.queryByText(previewBanner)).toBeNull()
     await act(async () => {
       await router.navigate('/app/campaign-a/transfers')
     })
     await screen.findByRole('heading', { name: 'Transfers' })
     expect(screen.queryByText(previewBanner)).toBeNull()
+    await act(async () => {
+      await router.navigate('/app/campaign-a/scouting')
+    })
+    await screen.findByRole('heading', { name: 'Scouting' })
+    expect(screen.getByText(previewBanner)).toBeInTheDocument()
   })
 })

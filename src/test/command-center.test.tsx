@@ -109,7 +109,7 @@ describe('command center', () => {
     await screen.findByRole('heading', { level: 2, name: 'Harbor Athletic' })
     expect(kpi('Transfer capacity')).toBe('€5,000,000.00')
     expect(kpi('Weekly wages')).toBe('€0.00')
-    expect(kpi('Registration')).toBe('Unknown')
+    expect(kpi('Registration')).toBe('0 / 25')
     expect(container.textContent).not.toMatch(
       /Blocked|Warning|Informational|Passed/,
     )

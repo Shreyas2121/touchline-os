@@ -7,6 +7,15 @@ import type {
   RuleVerdict,
 } from './types'
 
+type RegistrationRule = Extract<
+  Constitution['rules'][number],
+  { id: 'REGISTRATION_QUOTA' }
+>
+type RegistrationPlayer = Extract<
+  PolicyAction,
+  { type: 'registration' }
+>['players'][number]
+
 export function evaluateAction(
   action: PolicyAction,
   snapshot: PolicySnapshot,
@@ -196,9 +205,134 @@ export function evaluateAction(
     )
   }
 
+  if (action.type === 'registration') {
+    const registrationRule = constitution.rules.find(
+      (rule) => rule.id === 'REGISTRATION_QUOTA',
+    )
+    if (
+      registrationRule?.enabled &&
+      registrationRule.competitionKey === action.competitionKey
+    ) {
+      collectRegistrationVerdicts(action.players, registrationRule, block)
+    }
+  }
+
   return {
     allowed: !verdicts.some((verdict) => verdict.severity === 'BLOCK'),
     verdicts,
     snapshotRevision: snapshot.revision,
+  }
+}
+
+function exemptionDecision(
+  player: RegistrationPlayer,
+  ageExemptionUnder: number | null,
+): 'exempt' | 'counts' | 'unknown' {
+  if (player.ageExempt === true) return 'exempt'
+  if (player.ageExempt === false) return 'counts'
+  if (
+    player.age !== null &&
+    ageExemptionUnder !== null &&
+    player.age < ageExemptionUnder
+  )
+    return 'exempt'
+  if (player.age !== null && ageExemptionUnder !== null) return 'counts'
+  return 'unknown'
+}
+
+function collectRegistrationVerdicts(
+  players: readonly RegistrationPlayer[],
+  rule: RegistrationRule,
+  block: (
+    ruleId: RuleVerdict['ruleId'],
+    code: string,
+    message: string,
+    evidence: RuleVerdict['evidence'],
+    remedy: string,
+  ) => void,
+) {
+  const seen = new Set<string>()
+  let duplicateId: string | null = null
+  for (const player of players) {
+    if (seen.has(player.playerId)) {
+      if (duplicateId === null) duplicateId = player.playerId
+    } else {
+      seen.add(player.playerId)
+    }
+  }
+  if (duplicateId !== null) {
+    block(
+      'REGISTRATION_QUOTA',
+      'DUPLICATE_PLAYER',
+      'This registration list names a player twice.',
+      { playerId: duplicateId },
+      'Remove the duplicate player.',
+    )
+  }
+  for (const player of players) {
+    if (player.status !== 'unknown') continue
+    block(
+      'REGISTRATION_QUOTA',
+      'INSUFFICIENT_DATA',
+      'Registration status is unknown.',
+      { playerId: player.playerId },
+      'Choose Registered or Ineligible.',
+    )
+  }
+  let registeredCount = 0
+  let homegrownCount = 0
+  for (const player of players) {
+    if (player.status !== 'registered') continue
+    const decision = exemptionDecision(player, rule.ageExemptionUnder)
+    if (decision === 'unknown') {
+      block(
+        'REGISTRATION_QUOTA',
+        'INSUFFICIENT_DATA',
+        'Age is unknown, so this registration cannot be checked.',
+        {
+          playerId: player.playerId,
+          age: player.age,
+          ageExemptionUnder: rule.ageExemptionUnder,
+        },
+        'Enter a birth date or an estimated age, or set the age exemption.',
+      )
+      continue
+    }
+    if (decision === 'exempt') continue
+    const homegrown =
+      player.homegrownClub === true || player.homegrownNation === true
+    if (
+      !homegrown &&
+      (player.homegrownClub === null || player.homegrownNation === null)
+    ) {
+      block(
+        'REGISTRATION_QUOTA',
+        'INSUFFICIENT_DATA',
+        'Homegrown eligibility is unknown.',
+        { playerId: player.playerId },
+        'Set the club and nation homegrown flags.',
+      )
+      continue
+    }
+    registeredCount += 1
+    if (homegrown) homegrownCount += 1
+  }
+  if (registeredCount > rule.rosterLimit) {
+    block(
+      'REGISTRATION_QUOTA',
+      'ROSTER_ABOVE_LIMIT',
+      `The registered list is above the roster limit of ${rule.rosterLimit}.`,
+      { registeredCount, rosterLimit: rule.rosterLimit },
+      'Remove a registered player or change the constitution.',
+    )
+  }
+  if (homegrownCount < rule.minimumHomegrown) {
+    block(
+      'REGISTRATION_QUOTA',
+      'HOMEGROWN_BELOW_MINIMUM',
+      `Homegrown players are below the minimum of ${rule.minimumHomegrown}.`,
+      { homegrownCount, minimumHomegrown: rule.minimumHomegrown },
+      'Mark more homegrown players or change the constitution.',
+    )
   }
 }

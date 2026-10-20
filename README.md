@@ -44,6 +44,6 @@ Install Chromium once per machine, before `pnpm test:e2e`.
 
 ## Local database
 
-Campaigns are stored in an IndexedDB database named touchline-os on this device. Creating a campaign, opening the fictional demo, renaming, archiving, deleting, correcting a player, saving a development note, saving a tactics lineup, saving a constitution, posting an opening allocation, posting prize income, reversing a ledger entry, saving a shortlist, recording a completed transfer, recording an offer, accepting an offer, rejecting an offer, and saving a contract write to touchline-os. Registration, scouting, matches, seasons, import, and backup remain previews.
+Campaigns are stored in an IndexedDB database named touchline-os on this device. Creating a campaign, opening the fictional demo, renaming, archiving, deleting, correcting a player, saving a development note, saving a tactics lineup, saving a constitution, posting an opening allocation, posting prize income, reversing a ledger entry, saving a shortlist, recording a completed transfer, recording an offer, accepting an offer, rejecting an offer, saving a contract, and saving a registration write to touchline-os. Scouting, matches, seasons, import, and backup remain previews.
 
 The fictional demo asks for a club once, and reset replaces only that demo.

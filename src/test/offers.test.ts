@@ -665,7 +665,7 @@ describe('external transfer offers', () => {
     expect(label.nextElementSibling?.textContent).toBe('0')
     const ribbon = label.parentElement?.parentElement?.textContent ?? ''
     expect(ribbon).toMatch(
-      /Weekly wages€0\.00Active bids0Expiring contracts0RegistrationUnknown/,
+      /Weekly wages€0\.00Active bids0Expiring contracts0Registration0 \/ 25/,
     )
   })
 

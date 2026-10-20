@@ -1,11 +1,16 @@
 import { z } from 'zod'
 import type { ParseResult } from '../validation/result'
+import { entityIdSchema } from '../validation/schemas'
 
 export type Severity = 'BLOCK' | 'WARN' | 'INFO'
 
 export type RuleVerdict = {
   ruleId:
-    'SELL_TO_BUY' | 'MAX_SIGNING_AGE' | 'WAGE_TIER_CAP' | 'PRESTIGE_BID_SALE'
+    | 'SELL_TO_BUY'
+    | 'MAX_SIGNING_AGE'
+    | 'WAGE_TIER_CAP'
+    | 'PRESTIGE_BID_SALE'
+    | 'REGISTRATION_QUOTA'
   severity: Severity
   code: string
   message: string
@@ -51,6 +56,18 @@ export type PolicyAction =
       type: 'season-rollover'
       unresolvedQualifyingOffers: number
     }
+  | {
+      type: 'registration'
+      competitionKey: string
+      players: {
+        playerId: string
+        status: 'registered' | 'ineligible' | 'unknown'
+        homegrownClub: boolean | null
+        homegrownNation: boolean | null
+        ageExempt: boolean | null
+        age: number | null
+      }[]
+    }
 
 const nonnegativeInteger = z.number().int().nonnegative()
 const nullableWage = nonnegativeInteger.nullable()
@@ -81,6 +98,20 @@ const policyActionSchema = z.discriminatedUnion('type', [
   z.strictObject({
     type: z.literal('season-rollover'),
     unresolvedQualifyingOffers: nonnegativeInteger,
+  }),
+  z.strictObject({
+    type: z.literal('registration'),
+    competitionKey: z.string().min(1).max(40),
+    players: z.array(
+      z.strictObject({
+        playerId: entityIdSchema,
+        status: z.enum(['registered', 'ineligible', 'unknown']),
+        homegrownClub: z.boolean().nullable(),
+        homegrownNation: z.boolean().nullable(),
+        ageExempt: z.boolean().nullable(),
+        age: z.number().int().min(0).max(99).nullable(),
+      }),
+    ),
   }),
 ])
 

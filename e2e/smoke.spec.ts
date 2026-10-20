@@ -49,7 +49,8 @@ test('persistent campaign shell smoke', async ({ page }) => {
     page.getByRole('heading', { name: 'Harbor Athletic', level: 2 }),
   ).toBeVisible()
   await expect(page.getByText(previewBanner)).toHaveCount(0)
-  await expect(page.getByText('Unknown', { exact: true })).toHaveCount(2)
+  await expect(page.getByText('Unknown', { exact: true })).toHaveCount(1)
+  await expect(page.getByText('0 / 25', { exact: true })).toBeVisible()
   await expect(page.getByText('€5,000,000.00', { exact: true })).toBeVisible()
   await expect(page.getByText('Preview', { exact: true })).toHaveCount(0)
   for (const word of ['Blocked', 'Warning', 'Informational', 'Passed']) {
@@ -91,7 +92,10 @@ test('persistent campaign shell smoke', async ({ page }) => {
   await expect(page.getByText('Version 1', { exact: true })).toBeVisible()
   await expect(page.getByText(previewBanner)).toHaveCount(0)
   await expect(page.getByText('SELL_TO_BUY')).toBeVisible()
-  await page.getByRole('link', { name: 'Registration', exact: true }).click()
+  await page.getByRole('link', { name: 'Scouting', exact: true }).click()
+  await expect(
+    page.getByRole('heading', { name: 'Scouting', exact: true }),
+  ).toBeVisible()
   await expect(page.getByText(previewBanner)).toBeVisible()
 
   await page.evaluate(() => {

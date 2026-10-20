@@ -414,7 +414,7 @@ describe('saveContract', () => {
     })
   })
 
-  it('counts dated contracts, including zero, and keeps registration unknown', async () => {
+  it('counts dated contracts, including zero, and shows the registration quota', async () => {
     await createCampaign(database(), {
       ...harborInput,
       preset: 'balanced',
@@ -425,8 +425,8 @@ describe('saveContract', () => {
     const { unmount } = renderAt('/app/campaign-a/command-center')
     await screen.findByRole('heading', { level: 2, name: 'Harbor Athletic' })
     expect(kpi('Expiring contracts')).toBe('0')
-    expect(kpi('Registration')).toBe('Unknown')
-    expect(screen.getAllByText('Unknown', { exact: true })).toHaveLength(2)
+    expect(kpi('Registration')).toBe('0 / 25')
+    expect(screen.getAllByText('Unknown', { exact: true })).toHaveLength(1)
     unmount()
     const revision = await addManaged(1, 'player-a', 'Nia Costa')
     const saved = await saveContract(
@@ -441,7 +441,7 @@ describe('saveContract', () => {
     renderAt('/app/campaign-a/command-center')
     await screen.findByRole('heading', { level: 2, name: 'Harbor Athletic' })
     expect(kpi('Expiring contracts')).toBe('1')
-    expect(kpi('Registration')).toBe('Unknown')
+    expect(kpi('Registration')).toBe('0 / 25')
   })
 
   it('shows zero bids and expiring contracts without a euro sign when Harbor has no preset', async () => {

@@ -161,6 +161,11 @@ const rollover: PolicyAction = {
   type: 'season-rollover',
   unresolvedQualifyingOffers: 0,
 }
+const registration: PolicyAction = {
+  type: 'registration',
+  competitionKey: 'league',
+  players: [],
+}
 
 describe('parsePolicyAction', () => {
   it.each([
@@ -168,6 +173,7 @@ describe('parsePolicyAction', () => {
     wage,
     rejection,
     rollover,
+    registration,
     { ...incoming, feeCents: 0, age: null, isFree: true, squadTier: null },
     { ...incoming, age: 0, weeklyWageCents: 1, squadTier: 'youth' },
     { ...incoming, age: 99 },
@@ -182,7 +188,7 @@ describe('parsePolicyAction', () => {
     expect(parsePolicyAction(action)).toEqual({ ok: true, value: action })
   })
 
-  it.each([incoming, wage, rejection, rollover])(
+  it.each([incoming, wage, rejection, rollover, registration])(
     'rejects unknown keys and missing fields on $type',
     (action) => {
       expect(parsePolicyAction({ ...action, extra: true }).ok).toBe(false)
@@ -195,7 +201,6 @@ describe('parsePolicyAction', () => {
   )
 
   it.each([
-    { type: 'registration' },
     null,
     undefined,
     [],

@@ -46,7 +46,8 @@ export function WorkspaceLayout() {
         pathname.endsWith('/tactics') ||
         pathname.endsWith('/finance') ||
         pathname.endsWith('/constitution') ||
-        pathname.endsWith('/transfers')
+        pathname.endsWith('/transfers') ||
+        pathname.endsWith('/registration')
           ? undefined
           : previewBanner
       }

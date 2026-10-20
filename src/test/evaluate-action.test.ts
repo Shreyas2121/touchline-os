@@ -420,7 +420,7 @@ describe('constitution evaluation', () => {
       })
     }
   })
-  it('Custom disables every check while registration remains outside the action parser', () => {
+  it('Custom disables every check and a registration action parses', () => {
     const constitution = { ...balanced, rules: constitutionPreset('custom') }
     expect(
       evaluate(
@@ -436,6 +436,23 @@ describe('constitution evaluation', () => {
       allowed: true,
       verdicts: [],
     })
-    expect(parsePolicyAction({ type: 'registration' }).ok).toBe(false)
+    const registration = {
+      type: 'registration' as const,
+      competitionKey: 'league',
+      players: [
+        {
+          playerId: 'player-a',
+          status: 'registered' as const,
+          homegrownClub: true,
+          homegrownNation: false,
+          ageExempt: null,
+          age: 24,
+        },
+      ],
+    }
+    expect(parsePolicyAction(registration)).toEqual({
+      ok: true,
+      value: registration,
+    })
   })
 })
