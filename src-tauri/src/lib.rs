@@ -14,7 +14,7 @@ fn prepare_profile_dir(app: &tauri::AppHandle) -> Result<Profile, CommandError> 
     let profile = Profile::resolve(cfg!(debug_assertions), override_profile.as_deref())?;
     let root = app
         .path()
-        .app_data_dir()
+        .app_local_data_dir()
         .map_err(|_| CommandError::Internal {
             message: "The app data directory is unavailable.".into(),
         })?;
@@ -38,6 +38,13 @@ fn client_operation(operation: String) -> Result<(), CommandError> {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .setup(|app| {
+            let profile = prepare_profile_dir(app.handle())?;
+            let root = app.path().app_local_data_dir()?;
+            let path = game_app::database_path(&root, profile.as_str())?;
+            app.manage(game_app::NativeStore::open(path)?);
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![health, client_operation])
         .run(tauri::generate_context!())
         .expect("Touchline OS failed to start");

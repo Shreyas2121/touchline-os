@@ -128,7 +128,7 @@ describe('native boundary', () => {
         ),
         'dependencies',
       ),
-    ).toEqual(['game-core'])
+    ).toEqual(['game-core', 'rusqlite', 'serde', 'serde_json', 'sha2'])
     expect(
       section(
         readFileSync(

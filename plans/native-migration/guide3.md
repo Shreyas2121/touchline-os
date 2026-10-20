@@ -81,11 +81,11 @@ Run relevant browser compatibility/E2E when its flows are touched; NM-G09 record
 
 ## 10. Definition of done
 
-- [ ] The narrow outcome is implemented and verified.
-- [ ] Source/browser data and completed guide history are preserved.
-- [ ] Required parity, negative and rollback checks pass.
-- [ ] No new gameplay or false native/release claim is introduced.
-- [ ] Evidence and limitations are recorded in bridge §10.
+- [x] The narrow outcome is implemented and verified.
+- [x] Source/browser data and completed guide history are preserved.
+- [x] Required parity, negative and rollback checks pass.
+- [x] No new gameplay or false native/release claim is introduced.
+- [x] Evidence and limitations are recorded in bridge §10.
 
 ## 11. Commit instructions
 

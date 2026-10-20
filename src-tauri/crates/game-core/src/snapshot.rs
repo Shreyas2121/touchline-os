@@ -51,8 +51,45 @@ pub fn parse_snapshot(bytes: &[u8]) -> Result<CampaignSnapshot, SnapshotError> {
     if bytes.len() > MAX_UTF8_BYTES {
         return Err(SnapshotError::Invalid("snapshot is too large".into()));
     }
-    let value: serde_json::Value = serde_json::from_slice(bytes).map_err(classify)?;
+    let mut value: serde_json::Value = serde_json::from_slice(bytes).map_err(classify)?;
     walk_json(&value, 0)?;
+    // Only source v1 may omit the metadata introduced by the browser v2 upgrade.
+    if value
+        .get("sourceStorage")
+        .and_then(|source| serde_json::from_value::<SourceStorage>(source.clone()).ok())
+        == Some(SourceStorage::Indexeddb)
+        && value
+            .get("sourceSchemaVersion")
+            .and_then(serde_json::Value::as_i64)
+            == Some(1)
+    {
+        if let Some(tables) = value
+            .get_mut("tables")
+            .and_then(serde_json::Value::as_object_mut)
+        {
+            if let Some(campaigns) = tables
+                .get_mut("campaigns")
+                .and_then(serde_json::Value::as_array_mut)
+            {
+                for campaign in campaigns {
+                    if let Some(row) = campaign.as_object_mut() {
+                        row.entry("mode")
+                            .or_insert_with(|| serde_json::json!("legacy"));
+                        row.entry("rulesMode")
+                            .or_insert_with(|| serde_json::json!("sandbox"));
+                    }
+                }
+            }
+            for name in [
+                "simulationStates",
+                "clubSimulationStates",
+                "playerSimulationStates",
+                "simulationReceipts",
+            ] {
+                tables.entry(name).or_insert_with(|| serde_json::json!([]));
+            }
+        }
+    }
     reject_null_attributes(&value)?;
     let snapshot: CampaignSnapshot = serde_json::from_value(value).map_err(classify)?;
     validate_snapshot(&snapshot)?;

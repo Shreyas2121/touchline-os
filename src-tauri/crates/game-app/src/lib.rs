@@ -4,6 +4,7 @@
 
 use game_core::{reject_client_operation, StorageAvailability, APP_IDENTIFIER, PRODUCT_NAME};
 pub use game_core::{CommandError, HealthReport};
+pub use game_store::{database_path, Store as NativeStore};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Profile {

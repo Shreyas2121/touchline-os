@@ -2,8 +2,8 @@
 
 > **Authority:** `MASTER_PLAN.md` 3.0.0 / DEC-002
 > **Placement:** after completed P07-G05, before P07-G06
-> **Status:** NM-G01 and NM-G02 complete; NM-G03 through NM-G09 pending. Gate not passed.
-> **Next execution:** [NM-G03](native-migration/guide3.md)
+> **Status:** NM-G01 through NM-G03 complete; NM-G04 through NM-G09 pending. Gate not passed.
+> **Next execution:** [NM-G04](native-migration/guide4.md)
 > **Exit:** existing features work natively; Continue still belongs to resumed P07-G06
 
 ## 1. Parent plan contract
@@ -242,12 +242,14 @@ Main risks: origin mismatch, changed Unicode/seed algorithm, unsafe i64/JS trans
 | -------- | ------- | ------- |
 | `NM-G01` | `b4e9e0931ca02d7d91928159c32cf3c63b9165a4` | `pnpm lint`, `pnpm typecheck`, `pnpm test` (51 files / 676 passed), `pnpm build` via the e2e server, and `pnpm test:e2e` (7 passed). Export reads one campaign in a readonly transaction, keeps revision and audits unchanged, and rejects malformed, unsafe, and cross-campaign snapshots. Synthetic indexeddb v1/v2 fixtures and TypeScript determinism vectors are committed. Chromium exported a Harbor campaign at `http://127.0.0.1:4173`, reloaded, and left the save in place. No Rust or native check exists yet. |
 | `NM-G02` | `7129a083bfa3b9adf5890f569950301cde15fafb` | `pnpm native:bindings:check`, `pnpm native:check`, `pnpm lint`, `pnpm typecheck`, `pnpm test` (52 files / 681 passed), `pnpm build`, and `pnpm tauri build` (MSI and NSIS). The release shell reports storage and features unavailable and does not offer IndexedDB. The browser exporter at `http://localhost:5173` exported Playable demo and left that save in place. SQLite and gameplay remain later guides. |
-| `NM-G03` | Pending | Not run |
+| `NM-G03` | Implementation commit recorded after commit | `cargo test -p game-store --locked` (10 real temporary-file integration tests), `pnpm native:bindings:check`, `pnpm native:check` (rustfmt, locked clippy and 21 Rust tests), `pnpm lint`, `pnpm typecheck`, `pnpm test --maxWorkers=2` (52 files / 681 passed), `pnpm build`, and `pnpm tauri build` (MSI and NSIS). SQLite schema 1 persists all 23 arrays, enforces scoped/deferred foreign keys and source identities, and validates import before one transaction. Source-byte SHA-256 transport receipts make retries harmless after later edits; collisions and injected row/receipt failures leave other saves unchanged. Native export and validated/reopened online backup include WAL state and preserve the previous backup on failure. Stable app-local production/dev/test paths are integrated; native UI services remain unavailable until NM-G06. |
 | `NM-G04` | Pending | Not run |
 | `NM-G05` | Pending | Not run |
 | `NM-G06` | Pending | Not run |
 | `NM-G07` | Pending | Not run |
 | `NM-G08` | Pending | Not run |
 | `NM-G09` | Pending | Not run |
+
+NM-G03 verification used only synthetic committed source fixtures and injected temporary SQLite paths. The schema-0 upgrade fixture is an empty native SQLite file: there is no earlier deployed native schema to migrate. The harness imported and reopened indexeddb 1/2 and native sqlite 1 snapshots, compared all arrays/nullable values, tested concurrent retries and committed read isolation, rejected unsafe/oversized/future/cross-campaign inputs, and reopened consistent backups. Browser migrations, compatibility fixtures and completed P07-G01–G05 files are unchanged. The frontend dependency-boundary assertion now permits the guide's storage dependencies; the first run found that stale assertion, and a later default-concurrency run alongside the release build hit timing failures. The final full suite passed with two workers and unchanged test timeouts. No browser flow changed, so browser E2E was not repeated. Packaged-app interaction, native import/read UI and final release certification remain later bridge work; no Continue or new gameplay is implemented.
 
 **Gate status: NOT PASSED.** This planning amendment does not complete the bridge. NM-G09 records the final SHA/checks; only then execute [P07-G06](phase7/guide6.md).
