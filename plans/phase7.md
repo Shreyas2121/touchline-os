@@ -1,10 +1,10 @@
 # Phase 7 — Standalone simulation foundations
 
 > **Derived from:** `MASTER_PLAN.md` version `2.0.0` (2026-10-20)
-> **Phase IDs:** historical `P07-G01`; pending `P07-G02` … `P07-G07`
-> **Status:** Guides 1 and 2 are complete. Standalone save contracts and the v2 migration are implemented; gameplay guides 3-7 remain pending.
+> **Phase IDs:** completed `P07-G01` … `P07-G03`; pending `P07-G04` … `P07-G07`
+> **Status:** Guides 1-3 are complete. Standalone contracts, the v2 migration and pure deterministic time/seed previews are implemented; gameplay guides 4-7 remain pending.
 > **Checkpoint:** `b5332a73353d5fd83d1258776984d79c1ed586b6` (`feat(p07-g01): record played matches`), followed by `e77d9a6` documenting completion.
-> **Next guide:** `plans/phase7/guide3.md`. Do not restart Phase 1, reset to Phase 6 or execute the archived companion guides.
+> **Next guide:** `plans/phase7/guide4.md`. Do not restart Phase 1, reset to Phase 6 or execute the archived companion guides.
 
 ## 1. Parent plan contract
 
@@ -26,7 +26,7 @@ Relevant master sections:
 | --------- | -------------------------------------------- | ---------------------------------------------------- | ------------------ |
 | `P07-G01` | Historical manual match journal              | `feat(p07-g01): record played matches`               | Complete; preserve |
 | `P07-G02` | Simulation contracts and Dexie v2 migration  | `feat(p07-g02): introduce standalone save contracts` | Complete           |
-| `P07-G03` | Pure game calendar and deterministic streams | `feat(p07-g03): define deterministic game time`      | Pending            |
+| `P07-G03` | Pure game calendar and deterministic streams | `feat(p07-g03): define deterministic game time`      | Complete           |
 | `P07-G04` | Playable world generator v2                  | `feat(p07-g04): generate playable club worlds`       | Pending            |
 | `P07-G05` | Atomic new-career creation and write guards  | `feat(p07-g05): start standalone careers safely`     | Pending            |
 | `P07-G06` | Continue command and progression UI          | `feat(p07-g06): advance the standalone game clock`   | Pending            |
@@ -157,14 +157,21 @@ type GameBoundary = {
 
 type ClockPreview = {
   fromDate: DateOnly
+  sourceBoundaryKey: string | null
   target: GameBoundary | null
+  targetBoundaryKey: string | null
+  eventSeed: number | null
   allowed: boolean
   reason: string | null
 }
 
 deriveEventSeed(rootSeed, simulationVersion, eventKind, logicalKeys): number
+createEventStream(rootSeed, simulationVersion, eventKind, logicalKeys): () => number
+eventStreamKey(rootSeed, simulationVersion, eventKind, logicalKeys): string
+addDays(date, days): DateOnly
 seasonDates(startYear): { startDate: DateOnly; endDate: DateOnly }
 transferWindowOn(date): 'summer' | 'winter' | null
+activeTransferWindow(state, season): 'summer' | 'winter' | null
 nextFoundationBoundary(state, season): GameBoundary | null
 previewTimeAdvance(state, season): ClockPreview
 ```
@@ -177,6 +184,15 @@ previewTimeAdvance(state, season): ClockPreview
 - At September 1, phase is league and further Phase 7 advancement is refused with the explicit Phase 8 message. Never skip unimplemented match events.
 - Serialize seed components unambiguously. Different event kinds use independent streams; persistent keys omit campaign/entity IDs and audit timestamps.
 - No fixtures, recovery or market ticks are executed in this phase. The API can later accept event handlers, but do not build a plugin framework.
+
+G03 implementation contract:
+
+- `addDays` uses pure Gregorian arithmetic and validates its input/output against DateOnly (1900-2199). Complete seasons can start in 1900-2198. Day offsets must be safe integers and remain within the supported dates.
+- A clock references an active, unclosed season in the same campaign with exact July 1/June 30 dates. Boundary keys are `season:<startYear>:summer-deadline` and `season:<startYear>:league-kickoff`, independent of season ordinal and remappable IDs.
+- Valid foundation states are preseason July 1-August 31 with a null cursor, preseason August 31 with the consumed deadline key, and league September 1 with the consumed kickoff key. Other date/phase/cursor combinations throw `RangeError`; malformed schemas throw Zod errors. Later gameplay dates/handlers are not accepted by the foundation clock.
+- An unconsumed August 31 deadline may target that same day once: the target key differs from the source cursor. After consumption, `activeTransferWindow` closes summer and the next preview targets September 1. This readiness helper is limited to foundation states; `transferWindowOn` independently covers both full calendar intervals.
+- Allowed previews include source/target keys and a uint32 seed from the `calendar` namespace with the target key. A valid kickoff returns a blocked preview with null target/seed and the Phase 8 reason, without changing inputs or producing persistent records.
+- Named namespaces are `world`, `calendar`, `fixture`, `market`, and `development`. Stream identity is the JSON array `['simulation-stream', '1', rootSeed, eventKind, orderedLogicalKeys]`, hashed by existing `hashSeed` with the `simulation-stream` discriminator. Existing seed/key validation applies; 0-32 logical keys are supported, with an empty list naming the namespace root. Each `createEventStream` owns a fresh existing `mulberry32` generator. Fixed seed/draw fixtures pin version 1 behavior.
 
 ### 5.4 Playable generator v2
 
@@ -336,7 +352,7 @@ Final manual/browser journey:
 9. Reset/delete the standalone demo, verify all its new stores are cleaned, and confirm the legacy demo remains.
 10. Repeat the critical journey on `pnpm build` + `pnpm preview`.
 
-No check in this phase certifies a match engine or completed season. Guide 2 implementation checks and migration/browser evidence are recorded in §10; guides 3-7 remain pending.
+No check in this phase certifies a match engine or completed season. Guide 2 migration/browser evidence and Guide 3 pure calendar/seed checks are recorded in §10; guides 4-7 remain pending.
 
 ## 9. Risks, mitigations, rollback
 
@@ -375,7 +391,7 @@ Historical evidence below is preserved from the prior plan. It describes tests r
 | --------- | ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `P07-G01` | `b5332a73353d5fd83d1258776984d79c1ed586b6` | `pnpm format:check`, `pnpm lint`, `pnpm typecheck`, `pnpm test` (503 passed), `pnpm build`, `pnpm exec playwright install chromium`, and `pnpm test:e2e` (5 passed). Browser pass: Match Journal had no preview banner, Calder Reserve 2–1 Win survived reload with blank xG stored as null, squad minutes stayed Unknown, Fill from lineup stored the starter at 90 and left the unchecked bench off, and Seasons still showed the preview banner. |
 | `P07-G02` | `e30da9665c440c3f95b04f6f46d790ac6abaf9ca` | `pnpm exec vitest run src/test/simulation-migration.test.ts src/test/simulation-repositories.test.ts` (54 passed), `pnpm lint`, `pnpm typecheck`, `pnpm test` (44 files / 557 tests passed), `pnpm build`, and `pnpm test:e2e` (6 passed using existing Chromium). Actual v1 fixture upgrade/reload preserves selected club, 2-1 journal entry, EUR15,000 ledger, original nulls and raw legacy/sandbox modes; four simulation stores stay empty. Frozen schemaV1, generator v1, dependencies and lockfile unchanged. Contract choices: 200-character logical keys, 512-character fingerprints, uint32 event seeds and 1-32 typed outcome refs (campaign/season/club/player/boundary); identity keys/root seed stay fixed. Direct repository transactions compose atomically with commands by preserving the async callback in runInTransaction. No new-career UI or simulation command. |
-| `P07-G03` | Pending                                    | Not run                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `P07-G03` | This commit | `pnpm exec vitest run src/test/simulation-calendar.test.ts src/test/simulation-random.test.ts src/test/dates.test.ts` (3 files / 104 passed), `pnpm lint`, `pnpm typecheck`, `pnpm test` (46 files / 647 passed), `pnpm build`, and targeted Prettier checks passed. Reviewed explicit 2026 July 1 -> August 31 -> September 1/Phase 8-stop fixtures: previews leave state/season unchanged, expose source/target keys and stable seeds, and close logical summer readiness after deadline consumption. Leap/century arithmetic, supported-year bounds, invalid season/date/phase/cursor refusal, JSON key ambiguity, independent named streams, pinned version-1 seed/draw fixtures, ID-remap/audit-time independence and absence of ambient clocks/randomness/persistence are covered. Database contracts, generator v1, dependency graph and browser UI unchanged; G03 does not require browser tests. |
 | `P07-G04` | Pending                                    | Not run                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | `P07-G05` | Pending                                    | Not run                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | `P07-G06` | Pending                                    | Not run                                                                                                                                                                                                                                                                                                                                                                                                                                             |

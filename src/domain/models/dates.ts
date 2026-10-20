@@ -77,6 +77,50 @@ export function parseDateOnly(input: string): ParseResult<DateOnly> {
   return { ok: true, value: parsed.data }
 }
 
+function daysBeforeYear(year: number): number {
+  const previous = year - 1
+  return (
+    previous * 365 +
+    Math.floor(previous / 4) -
+    Math.floor(previous / 100) +
+    Math.floor(previous / 400)
+  )
+}
+
+/** Gregorian day arithmetic, bounded by DateOnly's supported years. */
+export function addDays(date: DateOnly, days: number): DateOnly {
+  const parsed = dateOnlySchema.parse(date)
+  if (!Number.isSafeInteger(days)) {
+    throw new RangeError('Day offset must be a safe integer.')
+  }
+  const parts = readDateParts(parsed)
+  if (!parts) throw new RangeError(invalidDateMessage)
+  let ordinal = daysBeforeYear(parts.year) + parts.day - 1
+  for (let month = 1; month < parts.month; month++) {
+    ordinal += daysInMonth(parts.year, month) ?? 0
+  }
+  const target = ordinal + days
+  if (
+    target < daysBeforeYear(limits.yearMin) ||
+    target >= daysBeforeYear(limits.yearMax + 1)
+  ) {
+    throw new RangeError('Date arithmetic is outside the supported range.')
+  }
+  let year = limits.yearMin
+  while (target >= daysBeforeYear(year + 1)) year++
+  let remaining = target - daysBeforeYear(year)
+  let month = 1
+  let length = daysInMonth(year, month)
+  while (length !== undefined && remaining >= length) {
+    remaining -= length
+    month++
+    length = daysInMonth(year, month)
+  }
+  return dateOnlySchema.parse(
+    `${year}-${String(month).padStart(2, '0')}-${String(remaining + 1).padStart(2, '0')}`,
+  )
+}
+
 export function parseTimestampUtc(input: string): ParseResult<TimestampUtc> {
   const parsed = timestampUtcSchema.safeParse(input)
   if (!parsed.success) return { ok: false, message: invalidTimestampMessage }
