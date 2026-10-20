@@ -4,11 +4,13 @@ import { useDatabase } from '../../app/providers/database'
 import { Button } from '../../components/ui/Button'
 import { systemClock } from '../../data/clock'
 import { createEntityId } from '../../data/ids'
+import { saveContract } from '../../data/commands/save-contract'
 import { saveShortlistItem } from '../../data/commands/save-shortlist-item'
 import { updatePlayer } from '../../data/commands/update-player'
 import { saveDevelopmentNote } from '../../data/commands/save-development-note'
 import { getDevelopmentPlan } from '../../data/repositories/development-plans'
 import { listAuditEvents } from '../../data/repositories/audit-events'
+import { listContractsByPlayer } from '../../data/repositories/contracts'
 import { listShortlist } from '../../data/repositories/shortlist'
 import { parseDateOnly } from '../../domain/models/dates'
 import { formatMoneyUnknown, parseMoneyCents } from '../../domain/models/money'
@@ -20,11 +22,27 @@ import {
 } from '../../domain/player/squad-view'
 import type {
   AuditEvent,
+  Contract,
   DevelopmentPlan,
   Player,
   Season,
   ShortlistItem,
 } from '../../domain/validation/schemas'
+
+function tierText(tier: Contract['squadTier']): string {
+  if (tier === 'key') return 'Key'
+  if (tier === 'rotation') return 'Rotation'
+  if (tier === 'youth') return 'Youth'
+  return 'Unknown'
+}
+
+function compareContracts(left: Contract, right: Contract): number {
+  if (left.status !== right.status) return left.status === 'active' ? -1 : 1
+  if (left.startsOn === right.startsOn) return 0
+  if (left.startsOn === null) return 1
+  if (right.startsOn === null) return -1
+  return left.startsOn < right.startsOn ? 1 : -1
+}
 
 const attributes = [
   ['pace', 'Pace'],
@@ -54,6 +72,7 @@ export function PlayerProfile({
     plan?: DevelopmentPlan
     history: AuditEvent[]
     shortlist?: ShortlistItem
+    contracts: Contract[]
     failed?: boolean
   } | null>(null)
   const [message, setMessage] = useState('')
@@ -61,7 +80,7 @@ export function PlayerProfile({
     let active = true
     async function load() {
       try {
-        const [plan, audits, shortlist] = await Promise.all([
+        const [plan, audits, shortlist, contracts] = await Promise.all([
           season
             ? getDevelopmentPlan(
                 database,
@@ -72,18 +91,21 @@ export function PlayerProfile({
             : Promise.resolve(undefined),
           listAuditEvents(database, player.campaignId),
           listShortlist(database, player.campaignId),
+          listContractsByPlayer(database, player.campaignId, player.id),
         ])
         if (active)
           setDetails({
             revision,
             plan,
+            contracts,
             shortlist: shortlist.find((item) => item.playerId === player.id),
             history: audits
               .filter((audit) => audit.payload.playerId === player.id)
               .slice(0, 20),
           })
       } catch {
-        if (active) setDetails({ revision, history: [], failed: true })
+        if (active)
+          setDetails({ revision, history: [], contracts: [], failed: true })
       }
     }
     void load()
@@ -122,7 +144,15 @@ export function PlayerProfile({
           onSaved={onSaved}
         />
       )}
-      <p>Contracts are not recorded in this build.</p>
+      <ContractForm
+        player={player}
+        revision={revision}
+        onSaved={onSaved}
+        setMessage={setMessage}
+      />
+      {details && details.revision === revision && !details.failed && (
+        <ContractList contracts={details.contracts} />
+      )}
       <CorrectionForm
         key={JSON.stringify(player)}
         player={player}
@@ -225,6 +255,122 @@ function ShortlistButton({
       </Button>
       {error && <p role="alert">{error}</p>}
     </div>
+  )
+}
+
+function ContractList({ contracts }: { contracts: readonly Contract[] }) {
+  const rows = [...contracts].sort(compareContracts)
+  if (rows.length === 0) return <p>No contracts are recorded.</p>
+  return (
+    <ul aria-label="Contracts">
+      {rows.map((contract) => (
+        <li key={contract.id}>
+          {contract.status === 'active' ? 'Active' : 'Ended'}{' '}
+          {formatMoneyUnknown(contract.weeklyWageCents)}{' '}
+          {tierText(contract.squadTier)} {contract.startsOn ?? 'Unknown'}{' '}
+          {contract.expiresOn ?? 'Unknown'}
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+function ContractForm({
+  player,
+  revision,
+  onSaved,
+  setMessage,
+}: Omit<ProfileProps, 'season'> & { setMessage: (message: string) => void }) {
+  const database = useDatabase()
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (busy) return
+    const form = new FormData(event.currentTarget)
+    const text = (key: string) => String(form.get(key) ?? '').trim()
+    const wageText = text('weeklyWage')
+    const wage = wageText ? parseMoneyCents(wageText) : null
+    if (wage && !wage.ok) {
+      setError(wage.message)
+      return
+    }
+    const startsText = text('startsOn')
+    const starts = startsText ? parseDateOnly(startsText) : null
+    if (starts && !starts.ok) {
+      setError(starts.message)
+      return
+    }
+    const expiresText = text('expiresOn')
+    const expires = expiresText ? parseDateOnly(expiresText) : null
+    if (expires && !expires.ok) {
+      setError(expires.message)
+      return
+    }
+    const tier = text('tier')
+    const squadTier =
+      tier === 'key' || tier === 'rotation' || tier === 'youth' ? tier : null
+    setError('')
+    setMessage('')
+    setBusy(true)
+    try {
+      const result = await saveContract(database, {
+        campaignId: player.campaignId,
+        contractId: createEntityId(),
+        playerId: player.id,
+        expectedRevision: revision,
+        now: systemClock(),
+        auditEventId: createEntityId(),
+        actionId: createEntityId(),
+        weeklyWageCents: wage?.ok ? wage.value : null,
+        squadTier,
+        startsOn: starts?.ok ? starts.value : null,
+        expiresOn: expires?.ok ? expires.value : null,
+      })
+      if (!result.ok) {
+        setError(result.code === 'CONFLICT' ? staleSave : result.message)
+        return
+      }
+      setMessage('Saved the contract.')
+      onSaved(result.revision)
+    } catch {
+      setError('The contract could not be saved. Try again.')
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <form
+      aria-label="Contract"
+      noValidate
+      onSubmit={(event) => void submit(event)}
+    >
+      <label>
+        Weekly wage
+        <input name="weeklyWage" inputMode="decimal" />
+      </label>
+      <label>
+        Tier
+        <select name="tier" defaultValue="">
+          <option value="">Unknown</option>
+          <option value="key">Key</option>
+          <option value="rotation">Rotation</option>
+          <option value="youth">Youth</option>
+        </select>
+      </label>
+      <label>
+        Starts on
+        <input name="startsOn" placeholder="YYYY-MM-DD" />
+      </label>
+      <label>
+        Expires on
+        <input name="expiresOn" placeholder="YYYY-MM-DD" />
+      </label>
+      {error && <p role="alert">{error}</p>}
+      <Button type="submit" disabled={busy}>
+        Save contract
+      </Button>
+    </form>
   )
 }
 

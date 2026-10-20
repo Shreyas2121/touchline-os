@@ -6,10 +6,12 @@ import { useDatabase } from '../../app/providers/database'
 import { getCampaign } from '../../data/repositories/campaigns'
 import { getClub } from '../../data/repositories/clubs'
 import { listAuditEvents } from '../../data/repositories/audit-events'
+import { listContractsByClub } from '../../data/repositories/contracts'
 import { listPlayersByClub } from '../../data/repositories/players'
 import { getActiveSeason } from '../../data/repositories/seasons'
 import {
   entityIdSchema,
+  type Contract,
   type Player,
   type Season,
 } from '../../domain/validation/schemas'
@@ -20,6 +22,7 @@ import type { Club } from '../../domain/validation/schemas'
 type SquadState = {
   campaignId: string | undefined
   players?: Player[]
+  contracts?: Contract[]
   season?: Season
   missing?: boolean
   failed?: boolean
@@ -59,16 +62,18 @@ export function SquadPage() {
           if (active) setState({ campaignId, chooseClub: campaign.id })
           return
         }
-        const [club, season, players] = await Promise.all([
+        const [club, season, players, contracts] = await Promise.all([
           getClub(database, campaign.id, campaign.managedClubId),
           getActiveSeason(database, campaign.id),
           listPlayersByClub(database, campaign.id, campaign.managedClubId),
+          listContractsByClub(database, campaign.id, campaign.managedClubId),
         ])
         if (active)
           setState({
             campaignId,
             season,
             players: club ? players : [],
+            contracts,
             revision: campaign.revision,
             club,
           })
@@ -102,6 +107,7 @@ export function SquadPage() {
       <SquadBrowser
         key={campaignId}
         players={state.players ?? []}
+        contracts={state.contracts ?? []}
         season={state.season}
         revision={state.revision ?? 0}
         onSaved={onSaved}

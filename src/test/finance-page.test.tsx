@@ -85,7 +85,7 @@ describe('finance and constitution screens', () => {
     expect(screen.getAllByText('Cap not set')).toHaveLength(4)
     expect(screen.queryByRole('button', { name: 'Preview action' })).toBeNull()
   })
-  it('shows adopted allocation, all four tiers and a blocker for an over-cap contract while Squad wages remain unknown', async () => {
+  it('shows adopted allocation, all four tiers, a blocker for an over-cap contract, and that wage on Squad', async () => {
     await createCampaign(database(), presetInput)
     await addContract(4_600_000)
     await database().players.add(
@@ -127,9 +127,12 @@ describe('finance and constitution screens', () => {
       .getAllByRole('columnheader')
       .map((header) => header.textContent)
     const wageIndex = headers.findIndex((header) => /wage/i.test(header ?? ''))
+    const tierIndex = headers.findIndex((header) => header === 'Tier')
+    const minutesIndex = headers.findIndex((header) => header === 'Minutes')
     expect(wageIndex).toBeGreaterThanOrEqual(0)
-    expect(cells[wageIndex]).toHaveTextContent(/^Unknown$/)
-    expect(screen.queryByText('€46,000.00')).toBeNull()
+    expect(cells[wageIndex]).toHaveTextContent('€46,000.00')
+    expect(cells[tierIndex]).toHaveTextContent(/^Key$/)
+    expect(cells[minutesIndex]).toHaveTextContent(/^Unknown$/)
   })
   it('blocks a null wage and leaves it Unknown, while disabled caps show no blocker', async () => {
     await createCampaign(database(), presetInput)

@@ -19,16 +19,37 @@ import {
   type SortDirection,
   type SquadSortKey,
 } from '../../domain/player/squad-view'
-import type { Player, Season } from '../../domain/validation/schemas'
+import type { Contract, Player, Season } from '../../domain/validation/schemas'
 import { PlayerProfile } from './PlayerProfile'
+
+function activeContract(
+  contracts: readonly Contract[],
+  player: Player,
+): Contract | undefined {
+  return contracts.find(
+    (contract) =>
+      contract.playerId === player.id &&
+      contract.status === 'active' &&
+      contract.clubId === player.clubId,
+  )
+}
+
+function tierText(tier: Contract['squadTier']): string {
+  if (tier === 'key') return 'Key'
+  if (tier === 'rotation') return 'Rotation'
+  if (tier === 'youth') return 'Youth'
+  return 'Unknown'
+}
 const features = tableFeatures({})
 export function SquadBrowser({
   players,
+  contracts,
   season,
   revision,
   onSaved,
 }: {
   players: readonly Player[]
+  contracts: readonly Contract[]
   season?: Season
   revision: number
   onSaved: (revision: number) => void
@@ -73,14 +94,35 @@ export function SquadBrowser({
             season ? displayAge(row.original, season) : { kind: 'unknown' },
           ),
       },
-      { id: 'wage', header: 'Wage', cell: () => 'Unknown' },
+      {
+        id: 'wage',
+        header: 'Wage',
+        cell: ({ row }) => {
+          const contract = activeContract(contracts, row.original)
+          return contract
+            ? formatMoneyUnknown(contract.weeklyWageCents)
+            : 'Unknown'
+        },
+      },
       {
         id: 'value',
         header: 'Value',
         cell: ({ row }) => formatMoneyUnknown(row.original.marketValueCents),
       },
-      { id: 'tier', header: 'Tier', cell: () => 'Unknown' },
-      { id: 'contract', header: 'Contract end', cell: () => 'Unknown' },
+      {
+        id: 'tier',
+        header: 'Tier',
+        cell: ({ row }) => {
+          const contract = activeContract(contracts, row.original)
+          return contract ? tierText(contract.squadTier) : 'Unknown'
+        },
+      },
+      {
+        id: 'contract',
+        header: 'Contract end',
+        cell: ({ row }) =>
+          activeContract(contracts, row.original)?.expiresOn ?? 'Unknown',
+      },
       { id: 'minutes', header: 'Minutes', cell: () => 'Unknown' },
       {
         id: 'source',
@@ -88,7 +130,7 @@ export function SquadBrowser({
         cell: ({ row }) => sourceLabel(row.original.source),
       },
     ],
-    [season],
+    [season, contracts],
   )
   const table = useTable({
     features,

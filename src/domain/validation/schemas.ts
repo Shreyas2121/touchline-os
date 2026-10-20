@@ -484,6 +484,7 @@ export const auditEventSchema = z.strictObject({
     'offer.record',
     'offer.accept',
     'offer.reject',
+    'contract.save',
   ]),
   createdAt: timestampUtcSchema,
   summary: boundedText(limits.noteMax),

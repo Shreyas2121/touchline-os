@@ -67,7 +67,7 @@ describe('player profile', () => {
   it('shows identity, missing attributes and honest source and contract copy', async () => {
     await setup()
     expect(
-      profile().getByText('Contracts are not recorded in this build.'),
+      profile().getByRole('button', { name: 'Save contract' }),
     ).toBeInTheDocument()
     expect(
       profile().getByText(
@@ -83,7 +83,7 @@ describe('player profile', () => {
     expect(profile().queryByRole('button', { name: 'Shortlist' })).toBeNull()
     expect(profile().queryByRole('button', { name: 'Compare' })).toBeNull()
     expect(profile().queryByText('Newgen', { exact: true })).toBeNull()
-    for (const label of ['Wage', 'Tier', 'Minutes', 'Club', 'Source'])
+    for (const label of ['Wage', 'Minutes', 'Club', 'Source'])
       expect(profile().queryByLabelText(label)).toBeNull()
   })
   it('preserves zero attributes and persists a development note without submitting correction fields', async () => {

@@ -30,6 +30,7 @@ type Summary = {
   capacity?: string
   wages?: string
   activeBids?: number
+  expiringContracts?: number
   missing?: boolean
   failed?: boolean
   chooseClub?: string
@@ -82,6 +83,10 @@ export function CommandCenterPage() {
           (offer) =>
             offer.status === 'open' && managedPlayerIds.has(offer.playerId),
         ).length
+        const expiringContracts = contracts.filter(
+          (contract) =>
+            contract.status === 'active' && contract.expiresOn !== null,
+        ).length
         const rule = constitution?.rules.find(
           (item) => item.id === 'SELL_TO_BUY',
         )
@@ -106,6 +111,7 @@ export function CommandCenterPage() {
                 )
               : 'Unknown',
             activeBids,
+            expiringContracts,
           })
       } catch {
         if (active) setSummary({ campaignId, failed: true })
@@ -141,6 +147,10 @@ export function CommandCenterPage() {
           { label: 'Transfer capacity', value: summary.capacity ?? 'Unknown' },
           { label: 'Weekly wages', value: summary.wages ?? 'Unknown' },
           { label: 'Active bids', value: String(summary.activeBids ?? 0) },
+          {
+            label: 'Expiring contracts',
+            value: String(summary.expiringContracts ?? 0),
+          },
           { label: 'Registration', value: 'Unknown' },
         ]}
       />

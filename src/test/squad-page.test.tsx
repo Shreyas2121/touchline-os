@@ -99,8 +99,9 @@ describe('squad page', () => {
     expect(ash).toHaveAttribute('aria-pressed', 'true')
     expect(wind).toHaveAttribute('aria-pressed', 'false')
     expect(
-      within(screen.getByRole('region', { name: 'Selected player' })).getByText(
-        'Contracts are not recorded in this build.',
+      within(screen.getByRole('region', { name: 'Selected player' })).getByRole(
+        'button',
+        { name: 'Save contract' },
       ),
     ).toBeInTheDocument()
     expect(screen.queryByText(previewBanner)).toBeNull()
