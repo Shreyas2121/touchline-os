@@ -2,11 +2,16 @@
 
 #![forbid(unsafe_code)]
 
+pub mod ability;
 mod boundary;
 pub mod calendar;
+pub mod career;
 pub mod dates;
 mod enums;
+mod fictional_names;
 pub mod finance;
+pub mod generation;
+mod generation_settings;
 pub mod guards;
 mod ids;
 pub mod money;
@@ -18,6 +23,7 @@ mod rows;
 pub mod selection;
 mod snapshot;
 mod validate;
+mod world_validation;
 
 pub use boundary::{
     reject_client_operation, CommandError, HealthReport, StorageAvailability, APP_IDENTIFIER,

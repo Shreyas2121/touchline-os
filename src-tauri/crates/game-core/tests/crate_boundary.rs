@@ -33,6 +33,12 @@ fn core_sources_do_not_touch_the_platform() {
         include_str!("../src/policy.rs"),
         include_str!("../src/random.rs"),
         include_str!("../src/selection.rs"),
+        include_str!("../src/ability.rs"),
+        include_str!("../src/career.rs"),
+        include_str!("../src/generation.rs"),
+        include_str!("../src/generation_settings.rs"),
+        include_str!("../src/fictional_names.rs"),
+        include_str!("../src/world_validation.rs"),
     ];
     for source in sources {
         for forbidden in [

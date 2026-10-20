@@ -29,7 +29,7 @@ Paths under new native directories exist only after their introducing guide; do 
 
 - game-core generator v1/v2, settings/names/ability/valuation modules
 - game-core prepared-career DTO and fingerprint/initialization logic
-- Rust production-count and compatibility tests
+- Rust production-count, correctness and determinism tests
 
 Preserve existing schema/identity/version/nullable contracts. No real user save is a test fixture.
 
@@ -46,11 +46,11 @@ Preserve existing schema/identity/version/nullable contracts. No real user save 
 
 - Native world and prepared-career invariants and reproducibility, including fixed Unicode seed cases.
 - Multiple seeds satisfy all club coverage/contract/budget/registration invariants.
-- Same seed repeats and ID/year normalization matches current code.
+- Same seed repeats; campaign IDs do not affect football content and dates follow the explicit year.
 - Unsupported version/invalid identity/year/preset fails before persistence.
 - No ambient RNG/clock/storage dependency.
 
-Prefer compatibility/integration properties over tests that mirror implementation. Keep golden data independent of the Rust port.
+Prefer correctness/integration properties over tests that mirror implementation. Keep historical golden data independent of the Rust implementation.
 
 ## 8. Verification commands
 
@@ -76,11 +76,11 @@ Run relevant browser compatibility/E2E when its flows are touched; NM-G09 record
 
 ## 10. Definition of done
 
-- [ ] The narrow outcome is implemented and verified.
-- [ ] Source/browser data and completed guide history are preserved.
-- [ ] Required parity, negative and rollback checks pass.
-- [ ] No new gameplay or false native/release claim is introduced.
-- [ ] Evidence and limitations are recorded in bridge §10.
+- [x] The narrow outcome is implemented and verified.
+- [x] Source/browser data and completed guide history are preserved.
+- [x] Required correctness, determinism and negative checks pass; preparation has no persistence side effects.
+- [x] No new gameplay or false native/release claim is introduced.
+- [x] Evidence and limitations are recorded in bridge §10.
 
 ## 11. Commit instructions
 

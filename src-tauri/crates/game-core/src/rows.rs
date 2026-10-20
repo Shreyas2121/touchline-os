@@ -496,7 +496,7 @@ pub struct SimulationReceiptRow {
     pub created_at: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct SnapshotTables {
     pub campaigns: Vec<CampaignRow>,

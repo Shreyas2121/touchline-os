@@ -4,7 +4,7 @@
 > **Product:** Touchline OS (working name)
 > **Product choice:** **Standalone Sporting Director Sim**
 > **Target:** Offline desktop application: Tauri 2 + React/Vite UI + Rust game backend + SQLite
-> **Status:** Web implementation complete through P07-G05; native bridge NM-G01–NM-G04 implemented, cutover gate pending
+> **Status:** Web implementation complete through P07-G05; native bridge NM-G01–NM-G05 implemented, cutover gate pending
 > **Plan version:** `3.0.1` (product release target remains v1)
 > **Last revised:** 2026-10-20
 > **Execution chain:** master → active phase → guide → one reviewed Git commit per guide
@@ -26,8 +26,8 @@ Read master and the active bridge/phase plan before a guide. Resolve conflicts b
 
 - Phases 1–6 and `P07-G01` are completed companion foundations under plan 1.0.0.
 - `P07-G02` through `P07-G05` are completed web standalone foundations under plan 2.0.0. Preserve every completed guide file, SHA and recorded check.
-- Web checkpoint: `df23431abf8807cf61d2d1b63c66d6f7ef6a4cd3` (G05), followed by evidence commit `7b3c6a0`. New browser careers exist in IndexedDB v2. The native shell, SQLite persistence and pure core foundations are implemented through NM-G04; native gameplay UI, native generation, Continue and match simulation remain pending. See the bridge progress log for actual native SHAs and checks.
-- **Next execution: `plans/native-migration/guide5.md` (NM-G05)**. Phase 7 G06/G07 are blocked until the separate native migration bridge passes. Do not rerun completed guides or reset to an earlier phase.
+- Web checkpoint: `df23431abf8807cf61d2d1b63c66d6f7ef6a4cd3` (G05), followed by evidence commit `7b3c6a0`. New browser careers exist in IndexedDB v2. The native shell, SQLite persistence, pure core foundations, world generation and career preparation are implemented through NM-G05; native gameplay UI, career creation persistence, Continue and match simulation remain pending. See the bridge progress log for actual native SHAs and checks.
+- **Next execution: `plans/native-migration/guide6.md` (NM-G06)**. Phase 7 G06/G07 are blocked until the separate native migration bridge passes. Do not rerun completed guides or reset to an earlier phase.
 - Keep completed P07-G01–G05 unchanged. The bridge has NM-G01–NM-G09 with its own plan/guide IDs. After its cutover gate, resume P07-G06 (Rust Continue), then P07-G07 (native foundation certification).
 - Superseded companion instructions remain under `plans/archive/companion-v1/`. Superseded plan-2 Phase 7 and pending guides are under `plans/archive/web-standalone-v2/`. Archives are reference only.
 - Future Phases 8–12 retain their gameplay/analytics/import outcomes but execute on Rust/SQLite. Phase 13 becomes desktop release hardening.
@@ -371,7 +371,7 @@ Kickoff validates a legal selection, registered or age-exempt players, active ow
 
 ### 6.1 Loader A — versioned fictional world
 
-Retain the deterministic 4-league / 72-club / 3,000-player generator framework. Generator v1 stays reproducible for existing saves. Introduce playable generator v2 without changing historical outputs.
+Retain the deterministic 4-league / 72-club / 3,000-player generator framework. Native generator v1 produces legacy demo data and v2 produces playable worlds. Each native version is reproducible; DEC-003 does not require previous JavaScript outputs. Import existing saved rows directly without regeneration.
 
 - Four independent leagues of 18 clubs; fictional players, names and crests.
 - Preserve the total of 2,880 owned players and 120 free agents; improve squad composition, not the scale.
@@ -1040,7 +1040,7 @@ Material changes require a master version update, a DECISIONS entry, affected pe
 - Keep standalone game design and Phases 8–12 outcomes. Insert a separate migration bridge before pending Phase 7 G06/G07; update release Phase 13 and preserve completed work.
 - The browser remains the migration/export source and optional test reference. Desktop is the primary game; a complete second web edition is deferred. Previous-logic parity is not required (DEC-003).
 
-**Next execution:** `plans/native-migration/guide5.md` after this master, DEC-002/DEC-003 and the bridge plan. P07-G06 is blocked until NM-G09 passes; then implement Rust Continue and P07-G07 certification. Match simulation starts in Phase 8.
+**Next execution:** `plans/native-migration/guide6.md` after this master, DEC-002/DEC-003 and the bridge plan. P07-G06 is blocked until NM-G09 passes; then implement Rust Continue and P07-G07 certification. Match simulation starts in Phase 8.
 
 ---
 

@@ -107,7 +107,7 @@ pub fn career_fingerprint(
     }
     serde_json::to_string(&(
         "standalone-career",
-        "2",
+        crate::generation::PLAYABLE_GENERATOR_VERSION,
         name,
         seed,
         start_year,

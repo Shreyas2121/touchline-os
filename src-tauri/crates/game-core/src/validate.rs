@@ -207,7 +207,7 @@ pub(crate) fn validate_season(row: &SeasonRow) -> Result<(), SnapshotError> {
     require_optional_timestamp(row.closed_at.as_deref(), "season closedAt")
 }
 
-fn validate_league(row: &LeagueRow) -> Result<(), SnapshotError> {
+pub(crate) fn validate_league(row: &LeagueRow) -> Result<(), SnapshotError> {
     require_name(&row.name, 120, "league name")?;
     require_optional_country(row.country_code.as_deref())?;
     if let Some(tier) = row.tier {
@@ -216,7 +216,7 @@ fn validate_league(row: &LeagueRow) -> Result<(), SnapshotError> {
     Ok(())
 }
 
-fn validate_club(row: &ClubRow) -> Result<(), SnapshotError> {
+pub(crate) fn validate_club(row: &ClubRow) -> Result<(), SnapshotError> {
     require_name(&row.name, 120, "club name")?;
     require_name(&row.short_name, 16, "club short name")?;
     require_hex(&row.colors.primary)?;
@@ -226,7 +226,7 @@ fn validate_club(row: &ClubRow) -> Result<(), SnapshotError> {
     require_optional_bounded(row.scouting_region.as_deref(), 1, 80, "scouting region")
 }
 
-fn validate_player(row: &PlayerRow) -> Result<(), SnapshotError> {
+pub(crate) fn validate_player(row: &PlayerRow) -> Result<(), SnapshotError> {
     require_name(&row.name, 120, "player name")?;
     if row.positions.is_empty() || row.positions.len() > 5 {
         return Err(SnapshotError::Invalid("positions".into()));
@@ -274,7 +274,7 @@ fn validate_attributes(attributes: &PlayerAttributes) -> Result<(), SnapshotErro
     Ok(())
 }
 
-fn validate_contract(row: &ContractRow) -> Result<(), SnapshotError> {
+pub(crate) fn validate_contract(row: &ContractRow) -> Result<(), SnapshotError> {
     require_optional_date(row.starts_on.as_deref(), "contract start")?;
     require_optional_date(row.expires_on.as_deref(), "contract end")
 }
@@ -477,7 +477,7 @@ pub(crate) fn validate_simulation(row: &SimulationStateRow) -> Result<(), Snapsh
     Ok(())
 }
 
-fn validate_player_state(row: &PlayerSimulationStateRow) -> Result<(), SnapshotError> {
+pub(crate) fn validate_player_state(row: &PlayerSimulationStateRow) -> Result<(), SnapshotError> {
     require_key(&row.simulation_key, "player simulation key")?;
     require_range(row.fitness.get(), 0, 100, "fitness")?;
     require_range(row.sharpness.get(), 0, 100, "sharpness")?;
