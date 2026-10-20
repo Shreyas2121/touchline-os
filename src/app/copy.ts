@@ -113,3 +113,11 @@ export const missingCampaignBody = 'This address does not include a campaign.'
 export const notFoundBody = 'This address does not match a page in this build.'
 
 export const backToWelcome = 'Back to welcome'
+
+export const nativeShellHeading = 'Touchline OS'
+export const nativeShellStatus =
+  'Native shell. Storage and features are unavailable.'
+export const nativeShellBoundary =
+  'This desktop shell does not open the browser database.'
+export const nativeShellRefused =
+  'The shell refused to start because storage was not unavailable.'

@@ -1,0 +1,9 @@
+[package]
+name = "game-store"
+version = "0.0.0"
+edition = "2021"
+publish = false
+description = "Storage boundary. SQLite arrives in NM-G03."
+
+[dependencies]
+game-core = { path = "../game-core" }

@@ -1,0 +1,10 @@
+[package]
+name = "game-app"
+version = "0.0.0"
+edition = "2021"
+publish = false
+description = "Application use cases for the Touchline shell"
+
+[dependencies]
+game-core = { path = "../game-core" }
+game-store = { path = "../game-store" }

@@ -1,0 +1,18 @@
+[workspace]
+members = [".", "crates/game-core", "crates/game-store", "crates/game-app"]
+resolver = "2"
+
+[package]
+name = "touchline-desktop"
+version = "0.0.0"
+edition = "2021"
+publish = false
+description = "Thin Tauri shell for Touchline OS"
+
+[build-dependencies]
+tauri-build = { version = "=2.7.3", features = [] }
+
+[dependencies]
+game-app = { path = "crates/game-app" }
+serde = { version = "1", features = ["derive"] }
+tauri = { version = "=2.12.4", features = [] }

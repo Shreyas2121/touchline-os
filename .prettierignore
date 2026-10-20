@@ -8,3 +8,7 @@ MASTER_PLAN.md
 plans
 # Exact fixture bytes are hashed in compatibility/manifest.json.
 compatibility
+# Generated from Rust. native:bindings:check compares these bytes.
+src/platform/generated
+src-tauri/target
+src-tauri/gen

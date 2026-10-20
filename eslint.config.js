@@ -10,6 +10,8 @@ export default defineConfig(
     ignores: [
       'dist',
       'node_modules',
+      'src/platform/generated',
+      'src-tauri',
       'coverage',
       'playwright-report',
       'test-results',

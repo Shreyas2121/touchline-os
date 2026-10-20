@@ -2,8 +2,8 @@
 
 > **Authority:** `MASTER_PLAN.md` 3.0.0 / DEC-002
 > **Placement:** after completed P07-G05, before P07-G06
-> **Status:** NM-G01 complete; NM-G02 through NM-G09 pending. Gate not passed.
-> **Next execution:** [NM-G02](native-migration/guide2.md)
+> **Status:** NM-G01 and NM-G02 complete; NM-G03 through NM-G09 pending. Gate not passed.
+> **Next execution:** [NM-G03](native-migration/guide3.md)
 > **Exit:** existing features work natively; Continue still belongs to resumed P07-G06
 
 ## 1. Parent plan contract
@@ -75,7 +75,7 @@ React → GameClient → typed invoke → Tauri adapter → game-app
 - `src/platform`: GameClient, native adapter, generated Rust DTOs; browser adapter only for frozen migration/compatibility.
 - No desktop feature imports concrete Dexie repositories after cutover. Unsupported native services report unavailable, never fall back to browser writes.
 
-Use serde/serde_json, ts-rs and rusqlite with bundled SQLite/backup support. Pin verified versions in NM-G02/NM-G03, not speculative version numbers in docs.
+Use serde/serde_json, ts-rs and rusqlite with bundled SQLite/backup support. Pin verified versions in NM-G02/NM-G03, not speculative version numbers in docs. NM-G02 pins Rust 1.99.0 for x86_64-pc-windows-msvc, Tauri 2.12.4, tauri-build 2.7.3, @tauri-apps/api 2.12.4, @tauri-apps/cli 2.12.3, ts-rs 12.0.1, serde 1.0.229 and serde_json 1.0.154. rusqlite waits for NM-G03.
 
 ### 5.2 Snapshot envelope and source preservation
 
@@ -241,7 +241,7 @@ Main risks: origin mismatch, changed Unicode/seed algorithm, unsafe i64/JS trans
 | Guide    | Commit  | Checks  |
 | -------- | ------- | ------- |
 | `NM-G01` | `b4e9e0931ca02d7d91928159c32cf3c63b9165a4` | `pnpm lint`, `pnpm typecheck`, `pnpm test` (51 files / 676 passed), `pnpm build` via the e2e server, and `pnpm test:e2e` (7 passed). Export reads one campaign in a readonly transaction, keeps revision and audits unchanged, and rejects malformed, unsafe, and cross-campaign snapshots. Synthetic indexeddb v1/v2 fixtures and TypeScript determinism vectors are committed. Chromium exported a Harbor campaign at `http://127.0.0.1:4173`, reloaded, and left the save in place. No Rust or native check exists yet. |
-| `NM-G02` | Pending | Not run |
+| `NM-G02` | Recorded after this implementation commit | `pnpm native:bindings:check`, `pnpm native:check`, `pnpm lint`, `pnpm typecheck`, `pnpm test` (52 files / 681 passed), `pnpm build`, and `pnpm tauri build` (MSI and NSIS). The release shell reports storage and features unavailable and does not offer IndexedDB. The browser exporter at `http://localhost:5173` exported Playable demo and left that save in place. SQLite and gameplay remain later guides. |
 | `NM-G03` | Pending | Not run |
 | `NM-G04` | Pending | Not run |
 | `NM-G05` | Pending | Not run |
