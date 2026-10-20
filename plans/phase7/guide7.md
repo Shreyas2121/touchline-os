@@ -1,92 +1,93 @@
-# P07-G07 — Verify standalone foundations
+# P07-G07 — Verify native standalone foundations
 
 ## 1. Context and authority
 
-- Master: `MASTER_PLAN.md` 2.0.0 §§9 Phase 7 and 12.
-- Parent: `plans/phase7.md` §§7–10.
-- Predecessor: `guide6.md`; find `feat(p07-g06): advance the standalone game clock` and verify ancestry.
-- Commit: `test(p07-g07): verify standalone foundations`.
+Master 3.0.0 §§9/12; [Phase 7](../phase7.md); predecessor P07-G06 `feat(p07-g06): advance native careers deterministically` plus passed NM-G09 bridge.
+
+Commit: `test(p07-g07): verify native standalone foundations`.
 
 ## 2. Goal and user-observable result
 
-The foundation has reviewable migration, creation, guard, retry and browser evidence. A reviewer can keep an old save, start a separate complete standalone world and reach kickoff exactly once. No later gameplay feature is falsely certified.
+Certify the completed native foundation after migration and Rust Continue: existing saves/workflows stay intact, time advances once and the game stops at kickoff. This is the gate before Phase 8.
 
 ## 3. Preconditions
 
-All preceding guides are committed and their targeted tests pass. Do not use this guide to introduce the match engine, AI market, rollover, importer or PWA. Fix failures within existing foundation contracts rather than weakening them.
+Verify bridge NM-G09 and P07-G06 commits/actual checks. Do not use certification to implement missing migration, fixtures, AI, development or rollover. Fix foundation regressions without weakening constraints or changing golden data.
 
 ## 4. Files to inspect
 
-- All active Phase 7 guides and progress log.
-- Migration, generator, creation, guards and advance-time suites from G02–G06.
-- Existing `e2e/demo-journey.spec.ts`, `transfers.spec.ts`, `smoke.spec.ts` and Playwright configuration.
-- `README.md`, `DECISIONS.md` and the master implementation-status notes.
-- DB cleanup/reset scopes and standalone demo identity.
+- Phase 7 and bridge acceptance/progress logs and active guides.
+- Rust core/calendar/generator golden tests, SQLite import/retry/backup/fault tests.
+- Native GameClient/commands and direct-call guards.
+- Desktop E2E harness and release/test feature configuration.
+- README, DEC-002 and actual supported-version/platform notes.
 
 ## 5. Files to create/modify
 
-| Path                                      | Change                                    |
-| ----------------------------------------- | ----------------------------------------- |
-| `e2e/standalone-foundations.spec.ts`      | Isolated new-career/reload/mode journey   |
-| `src/test/standalone-foundations.test.ts` | Cross-feature integration gaps only       |
-| Existing foundation tests                 | Fix meaningful missing cases/regressions  |
-| `README.md`                               | Verified checkpoint and remaining roadmap |
-| `plans/phase7.md` §10                     | Actual commits, checks and handoff        |
+- Cross-feature Rust integration tests for any remaining foundation gaps.
+- Native E2E foundation journey including imported/current saves and progression/relaunch.
+- UI progression/blocker tests only where useful.
+- README, Phase 7 progress and Phase 8 handoff.
 
-Do not mirror every implementation function with another test. Reuse the earlier suites and add only cross-feature properties or uncovered failure cases.
+Reuse meaningful earlier tests. Do not duplicate every implementation function or rewrite completed guide files.
 
 ## 6. Implementation steps
 
-1. Audit actual v1 migration coverage, complete-world checks and direct-call guards. Confirm no legacy data was promoted or rewritten.
-2. Add a browser journey with its own context and appropriate seed timeout: preserve legacy match, create standalone Challenge, reload, advance to deadline/kickoff, switch saves and inspect isolation.
-3. Cover separate demo reset/delete and simulation-store cleanup without affecting legacy or another standalone campaign.
-4. Verify Sandbox policy edit does not create a second opening allocation.
-5. Inspect rendered states at kickoff: future match/market/lifecycle features are clearly unavailable. There are no simulated results, awards, newgens or development snapshots.
-6. Compare normalized generated worlds under two campaign IDs and different audit timestamps. Confirm stable logical keys/seeds; a full export/restore test belongs to Phase 12.
-7. Run full checks and the browser journey in a production preview where practical. Record actual evidence, failures and limitations honestly.
-8. Update README and the Phase 7 handoff. Historical Guide 1 file and progress evidence remain intact.
+1. Audit native existing-feature parity and bridge evidence; exact import/generator/receipt semantics remain protected.
+2. Exercise source legacy/standalone import, native new career, guarded management and one permitted legacy workflow through the actual native app.
+3. Advance to deadline/kickoff with close/relaunch; verify matching retries/stale conflicts and hard stop. No unrelated player/finance/history changes.
+4. Check export/consistent backup/reopen and campaign/reset isolation after progression. Source browser data is unchanged.
+5. Confirm generated bindings and IPC screen projections are current and desktop runtime has no Dexie fallback or raw SQL API.
+6. Run native tests with isolated app paths/test-only automation; build and smoke the normal artifact without that instrumentation.
+7. Record actual commands/results/support limitations. Frontend/browser passes do not imply packaged Rust/SQLite success.
+8. Mark phase complete only after every required gate passes; hand off to Phase 8 planning.
 
 ## 7. Tests to add/change
 
-Browser journey proves visible user behavior and reload persistence. Integration coverage proves atomicity, actual upgrade, direct-call protections and cleanup; do not rely only on hidden UI.
-
-Retain legacy tests and their meaning. New standalone history must not be seeded into the legacy demo just to update assertions.
+- Actual create/import/read/write/advance/relaunch foundation journey.
+- Retry/concurrency/failure and cross-campaign isolation where not already proven.
+- Retained Challenge/Sandbox/standalone guard behavior after advancement.
+- Snapshot/backup reflects latest clock and can reopen without duplicating receipts.
+- Kickoff has explicit future-feature state; no fabricated matches/AI/growth/rollover.
+- Normal release artifact excludes test automation; browser exporter compatibility remains.
 
 ## 8. Verification commands
 
 ```bash
+pnpm native:bindings:check
+pnpm native:check
 pnpm lint
 pnpm typecheck
 pnpm test
 pnpm build
-pnpm exec playwright test e2e/standalone-foundations.spec.ts
-pnpm test:e2e
+pnpm tauri build
+pnpm test:desktop
 ```
 
-Use installed Chromium or install it if missing. Run `pnpm preview` for the production manual check; document results rather than claiming a PWA/offline certification.
+Run relevant browser compatibility E2E when changed. Record targeted/full native results and manual normal-artifact smoke; do not claim Phase 13 installer/updater or untested-platform certification.
 
 ## 9. Manual acceptance check
 
-Perform the complete phase §8 journey with keyboard-accessible controls. Verify distinct saved dates/history after switching campaigns, separate demo reset scope, immutable Challenge policy and audited Sandbox edits. At kickoff inspect the explicit Phase 8 message and confirm Continue cannot bypass it.
+Follow Phase 7 §8 journey in the native app. Check imported legacy history, new fixed-seed career, Challenge rejection/Sandbox edit, persisted deadline/kickoff and restart, export/backup, separate demo reset and source preservation.
 
 ## 10. Definition of done
 
-- [ ] Phase acceptance criteria pass with actual code/test evidence.
-- [ ] Required guide commits exist in order and progress log is complete.
-- [ ] v1 migration and generator v1 remain compatible.
-- [ ] Complete standalone creation, guards, retries, rollback and cleanup are covered.
-- [ ] Browser reload/isolation journey passes.
-- [ ] No match engine, full-season or offline release claim is recorded.
-- [ ] README and Phase 8 handoff match implementation.
+- [ ] NM bridge and P07-G06 evidence verified.
+- [ ] Native acceptance criteria and required checks pass.
+- [ ] Completed G01–G05 artifacts and evidence remain unchanged.
+- [ ] Source/backup/history/versions and native authority preserved.
+- [ ] Time progresses once and stops at kickoff.
+- [ ] No match engine, full-season or broad release claim.
+- [ ] Phase 8 handoff accurately names Rust/SQLite/IPC contracts.
 
 ## 11. Commit instructions
 
 ```text
-test(p07-g07): verify standalone foundations
+test(p07-g07): verify native standalone foundations
 ```
 
-Stage related tests/docs/fixes only. Record the final guide SHA/check evidence in phase §10; a separate narrow evidence docs commit is permitted. Do not mark the phase complete while required checks fail.
+Stage only related tests/fixes/docs and phase evidence. Record actual SHA/checks; a narrow follow-up evidence commit is allowed. Do not mark complete while required native gates fail.
 
 ## 12. Handoff
 
-Generate `plans/phase8.md` and all its guides from master 2.0.0 before match implementation. Phase 8 starts from complete worlds and deterministic kickoff state, adds a later DB migration for fixtures/results/appearances, and uses the same core engine for managed and AI fixtures. AI transfers are Phase 9, sustainable rollover Phase 10, scouting/import/PWA Phases 11/12/13.
+Generate `plans/phase8.md` and all its guides from master 3.0.0 before implementation. Add fixture/result/performance contracts through a later SQLite migration and one pure Rust engine for managed/AI matches. Market/lifecycle/analytics/import/release remain Phases 9–13.

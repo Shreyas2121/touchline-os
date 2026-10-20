@@ -1,8 +1,10 @@
 # Touchline OS
 
-Touchline OS is being developed as an offline-first **Standalone Sporting Director Sim**: build squads, negotiate transfers, follow board philosophies and simulate a fictional football world.
+Touchline OS is being developed as an offline **desktop Standalone Sporting Director Sim** using Tauri, React/Vite, a Rust backend and SQLite: build squads, negotiate transfers, follow board philosophies and simulate a fictional football world.
 
-The current code is complete through **Phase 7 Guide 5**. A new standalone career starts on 1 July with a generated club world, one chosen club, and either Challenge or Sandbox board rules. Challenge rules stay locked. Legacy companion campaigns can still record manual matches, offers, and ledger entries. Match simulation, transfer negotiation, and Continue are not implemented yet. See [MASTER_PLAN.md](MASTER_PLAN.md), [Phase 7](plans/phase7.md) and [the pivot decision](DECISIONS.md). The next implementation guide is [P07-G06](plans/phase7/guide6.md).
+The current implementation is complete through **Phase 7 Guide 5 on the web/Dexie stack**. Native migration is planned, not implemented. First complete the [native migration bridge](plans/native-migration.md), starting with [NM-G01](plans/native-migration/guide1.md). Only after its NM-G09 cutover gate passes should Phase 7 Guide 6 implement Rust Continue; Guide 7 then verifies the foundation.
+
+Existing web careers can start on July 1 with generated clubs and Challenge/Sandbox rules. Match simulation, negotiations and Continue remain unavailable. See [MASTER_PLAN.md](MASTER_PLAN.md), [Phase 7](plans/phase7.md) and [DEC-002](DECISIONS.md).
 
 ## Non-goals
 
@@ -12,7 +14,7 @@ The current code is complete through **Phase 7 Guide 5**. A new standalone caree
 
 Independent football game project; not affiliated with any football game, team or league. Existing legacy screens still use the companion framing until their implementation guides update them.
 
-## Setup
+## Current web setup
 
 Install dependencies:
 
@@ -26,7 +28,7 @@ Start the dev server:
 pnpm dev
 ```
 
-## Checks
+## Current checks
 
 ```bash
 pnpm lint
@@ -46,8 +48,8 @@ Install Chromium once per machine, before `pnpm test:e2e`.
 
 ## Local database
 
-The following describes the currently implemented legacy companion workflows. The standalone systems in the plans remain pending.
+The current implementation stores legacy and standalone campaigns in IndexedDB v2. The migration bridge will export complete snapshots and import them into Rust-owned SQLite while preserving the original browser data. The exporter, native tooling and SQLite are pending; the current build still uses the commands above.
 
 Campaigns are stored in an IndexedDB database named touchline-os on this device. Creating a campaign, opening the fictional demo, renaming, archiving, deleting, correcting a player, saving a development note, saving a tactics lineup, saving a constitution, posting an opening allocation, posting prize income, reversing a ledger entry, saving a shortlist, recording a completed transfer, recording an offer, accepting an offer, rejecting an offer, saving a contract, saving a registration, and recording a match write to touchline-os. Scouting, seasons, import, and backup remain previews.
 
-The fictional demo asks for a club once, and reset replaces only that demo.
+Legacy and standalone demos have distinct identities; reset targets only the selected demo. Native build/check scripts will be introduced during NM-G02; real desktop verification is separate from the current frontend checks.

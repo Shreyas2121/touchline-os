@@ -3,61 +3,61 @@
 > **Document type:** Authoritative product and engineering plan
 > **Product:** Touchline OS (working name)
 > **Product choice:** **Standalone Sporting Director Sim**
-> **Target:** Local-first, offline-capable, installable web app (PWA)
-> **Status:** Standalone pivot approved for planning; implementation remains at P07-G01
-> **Plan version:** `2.0.0` (product release target remains v1)
+> **Target:** Offline desktop application: Tauri 2 + React/Vite UI + Rust game backend + SQLite
+> **Status:** Web implementation complete through P07-G05; native migration is planned, not implemented
+> **Plan version:** `3.0.0` (product release target remains v1)
 > **Last revised:** 2026-10-20
-> **Execution chain:** `MASTER_PLAN.md` → `plans/phase<number>.md` → `plans/phase<number>/guide<number>.md` → one reviewed Git commit per guide
+> **Execution chain:** master → active phase → guide → one reviewed Git commit per guide
 
 ## 0. HOW AN AI CODING AGENT MUST USE THIS FILE
 
-This is the single source of truth for current scope, data semantics, invariants, execution order and definition of done. Plan version `2.0.0` replaces the companion product contract; it does not claim the simulator has been implemented.
+This is the source of truth for current scope, data semantics, invariants, milestone order and release gates. Plan 3.0.0 changes platform/backend at the P07-G05 checkpoint; the standalone game-design decisions from 2.0.0 remain.
 
-### Document hierarchy and precedence
+### Hierarchy and execution
 
-1. `MASTER_PLAN.md` — current product contract and architecture.
-2. `plans/phase<number>.md` — active phase contract.
-3. `plans/phase<number>/guide<number>.md` — executable, commit-sized instruction.
-4. Source and tests — implement the contracts above.
+1. `MASTER_PLAN.md` — product and architecture contract.
+2. `plans/native-migration.md` during the bridge, otherwise `plans/phase<number>.md` — active stage contract.
+3. The active stage's `guide<number>.md` — executable commit-sized work.
+4. Code/tests — implement the contracts above.
 
-Precedence: master → phase → guide → implementation. Amend the higher-level contract before implementing a conflicting requirement.
+Read master and the active bridge/phase plan before a guide. Resolve conflicts by amending the higher-level document before coding. Generate all pending guides for the active phase before implementation. Preserve unrelated user changes; stage only the active guide's files. Do not commit failing required checks or invent completion evidence.
 
-### Pivot checkpoint and historical documents
+### Current checkpoint and history
 
-- Phases 1–6 and `P07-G01` were completed under plan `1.0.0`. Preserve their commits, implementation evidence and guide subjects. Their companion-only restrictions describe historical work; they do not prohibit the new standalone work.
-- `P07-G01` is commit `b5332a73353d5fd83d1258776984d79c1ed586b6`; `e77d9a6` records its progress. Do not reset to Phase 6 or regenerate Phase 1.
-- Resume at **`plans/phase7/guide2.md`**, after reviewing the amended Phase 7 plan and `DECISIONS.md`.
-- Pending Phase 7 guides are replaced. Their originals and the previous Phase 7 plan are preserved under `plans/archive/companion-v1/` for reference only. Archived instructions are not executable.
-- Former future Phases 8/9/10 become Phases 11/12/13. The roadmap below is authoritative; those future phase plans are not yet generated.
-- Existing manual campaigns remain usable as `legacy` saves. New gameplay uses `standalone` saves. Maintaining legacy data is a compatibility obligation, not a second product roadmap.
+- Phases 1–6 and `P07-G01` are completed companion foundations under plan 1.0.0.
+- `P07-G02` through `P07-G05` are completed web standalone foundations under plan 2.0.0. Preserve every completed guide file, SHA and recorded check.
+- Current implementation: `df23431abf8807cf61d2d1b63c66d6f7ef6a4cd3` (G05), followed by evidence commit `7b3c6a0`. New careers exist in IndexedDB v2; Continue, Tauri, Rust, SQLite and match simulation are not implemented.
+- **Next execution: `plans/native-migration/guide1.md` (NM-G01)**. Phase 7 G06/G07 are blocked until the separate native migration bridge passes. Do not rerun completed guides or reset to an earlier phase.
+- Keep completed P07-G01–G05 unchanged. The bridge has NM-G01–NM-G09 with its own plan/guide IDs. After its cutover gate, resume P07-G06 (Rust Continue), then P07-G07 (native foundation certification).
+- Superseded companion instructions remain under `plans/archive/companion-v1/`. Superseded plan-2 Phase 7 and pending guides are under `plans/archive/web-standalone-v2/`. Archives are reference only.
+- Future Phases 8–12 retain their gameplay/analytics/import outcomes but execute on Rust/SQLite. Phase 13 becomes desktop release hardening.
+- Legacy and standalone saves both remain supported. Migration changes storage/ownership of logic, not campaign mode or game history.
 
-### Rules for agents
+### Engineering rules
 
-- Read the master and active phase before executing a guide. Generate every pending guide in the active phase before starting implementation.
-- Work one phase at a time, in order. Each guide is one logical, verifiable commit. Document a split before coding it.
-- Keep domain logic pure TypeScript. Components do not write Dexie; commands perform validated transactional writes.
-- Preserve installed packages and lockfile; do not add infrastructure or dependencies because a later phase mentions them.
-- A planned deliverable is not a completed feature. Record actual commands and results, never invented tests, benchmarks, datasets or football facts.
-- Preserve unrelated user changes. Do not stage later guides or untracked plans as part of an implementation guide.
-- Never wipe user saves to avoid a migration. Preserve `schemaV1` and generator v1; version additions explicitly.
-- Run the active guide's required checks and fix failures before committing.
-- Routine unspecified details use the smallest compatible assumption, documented in the active phase.
+- Authoritative domain logic is pure Rust in `game-core`; no Tauri, SQL, filesystem, ambient clock, browser or network dependencies there.
+- Rust application services own validation, policies, revisions, receipts and transactions. React handles presentation/form drafts and calls a typed GameClient.
+- TypeScript business logic remains a frozen compatibility oracle/browser migration path during the port; do not maintain two production gameplay engines.
+- Use one native DB adapter: SQLite through rusqlite. Dexie v1/v2 remain intact for reading/exporting browser saves; never replace the source browser data during migration.
+- Native dependencies are explicitly authorized by these guides. Verify compatible stable versions when introduced, pin Rust tooling and commit both lockfiles. Preserve existing frontend versions unless a documented native compatibility issue requires a change.
+- One guide = one logical commit. If too large, split pending work in master/phase first; never rewrite completed guide identities.
+- A docs amendment does not claim native implementation or runtime verification. Record actual checks and limitations.
 
-### Required planning-file paths
+### Planning paths
 
 ```text
 MASTER_PLAN.md
 DECISIONS.md
-plans/
-  phase1.md ... phase13.md
-  phase1/guide1.md ...
-  phase7.md
-  phase7/guide1.md        # completed historical guide, unchanged
-  phase7/guide2.md ...    # current standalone execution
-  archive/companion-v1/   # superseded reference only
+plans/phase1.md ... phase13.md
+plans/phase7/guide1.md ... guide5.md    # completed, unchanged
+plans/native-migration.md
+plans/native-migration/guide1.md ... guide9.md  # prerequisite migration bridge
+plans/phase7/guide6.md ... guide7.md            # resume only after NM-G09
+plans/archive/companion-v1/
+plans/archive/web-standalone-v2/
 ```
 
-Guide numbering restarts at 1 per phase. Use qualified IDs such as `P07-G02` and `P13-G01`. Future phase files are generated only when their phase is ready.
+Guide numbers restart per stage; use P07-G06 and bridge IDs NM-G01. The bridge is the explicitly authorized prerequisite between P07-G05 and P07-G06, not a new gameplay phase. Future phase plans are generated only when their phase is ready.
 
 ---
 
@@ -70,7 +70,7 @@ Guide numbering restarts at 1 per phase. Use qualified IDs such as `P07-G02` and
 ### 1.2 Primary user and setting
 
 - A player seeking short sessions of squad building, recruitment and financial decisions, with instant match results.
-- A reviewer opening a fictional playable demo without accounts, uploads or external services.
+- A reviewer installing the desktop demo and starting a fictional career without accounts or external services; a lightweight website can explain and distribute the game.
 - A tinkerer importing a personal or appropriately licensed dataset locally, with explicit simulation assumptions for missing inputs.
 
 ### 1.3 Core loop
@@ -87,8 +87,8 @@ No external football game is required. AI clubs are deterministic local algorith
 
 ### 1.4 Success criteria
 
-- A visitor starts a playable fictional campaign with no authentication or upload.
-- One complete season and the beginning of a second season can be played offline after installation.
+- A desktop user starts a playable fictional campaign with no authentication or dataset upload.
+- One complete season and the beginning of a second season can be played offline after desktop installation.
 - Tactical selection, squad depth, recruitment and board rules materially affect decisions and simulation inputs.
 - The same saved state, simulation version and player decisions produce the same outcomes, including after restore.
 - AI clubs obey finite transfer and wage budgets and preserve legal player ownership/contracts.
@@ -108,50 +108,48 @@ Out of scope for v1:
 - Cups, continental competitions, promotion/relegation, club switching during a standalone career, staff hiring, agents, morale systems or manager dismissal.
 - Detailed commercial income, debt/FFP, weekly payroll cash accounting or replication of official league regulations.
 - Scraping commercial databases, console saves or external games; automatic two-way game integration.
-- Backend servers, accounts, cloud saves, multiplayer, subscriptions or real-money mechanics.
-- SQLite/WASM/OPFS, Tauri, Drizzle, paid model APIs, hosted LLMs or exposed secret keys.
+- Remote backend servers, accounts, cloud saves, multiplayer, subscriptions or real-money mechanics. The local Rust backend is in scope.
+- A second playable web edition, WASM/OPFS persistence, Drizzle, paid model APIs, hosted LLMs or exposed secret keys. A shared WASM core is a later decision; desktop is primary.
 
 The SVG board supplies tactical decisions to the match engine. A simulated result is an outcome in this game, never a claim about a real match.
 
 ---
 
-## 2. FROZEN TECHNICAL DECISIONS
+## 2. NATIVE TECHNICAL DECISIONS
 
-| Area                   | Decision                                                                                         | Rationale / constraint                                              |
-| ---------------------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------- |
-| Application            | Vite + React + TypeScript (`strict` mode)                                                        | Fast local development, static deployment                           |
-| Persistence            | **IndexedDB through Dexie**                                                                      | Simple browser-native data model; transactions and versioned schema |
-| Database upgrade       | Explicit Dexie `version(...).stores(...)` migrations                                             | Never wipe user data during app updates                             |
-| Validation             | Zod for imports, persistence boundaries, configuration                                           | Runtime checks outside TypeScript's compile-time safety             |
-| Routing                | React Router                                                                                     | Explicit campaign-scoped URLs                                       |
-| UI styling             | Tailwind CSS with design tokens/CSS variables                                                    | Dense, consistent dark interface                                    |
-| Accessible components  | Radix primitives where needed                                                                    | Dialogs, menus, select, keyboard interaction                        |
-| Icons/graphics         | Lucide icons; generated SVG crests and pitch                                                     | No licensed image assets required                                   |
-| Data visuals           | Recharts                                                                                         | Age/minutes scatter, wage bars, comparison radar                    |
-| Dense tables           | TanStack Table; add virtualization for big result sets                                           | Sorting/filtering with scalable rendering                           |
-| Forms                  | React Hook Form + Zod resolver                                                                   | Accessible validation and error states                              |
-| UI state               | Local React state; small Zustand stores only for ephemeral cross-screen UI                       | Persistent state lives in Dexie, not duplicate stores               |
-| Background work        | Dedicated Web Worker for expensive simulation, import/normalization and analytics where measured | Avoid blocking primary interactions                                 |
-| Offline install        | `vite-plugin-pwa` + precached app shell/assets                                                   | No runtime CDN dependency                                           |
-| Unit/integration tests | Vitest + React Testing Library                                                                   | Rule, model, command and UI behavior                                |
-| E2E tests              | Playwright                                                                                       | Real browser persistence, import/export, offline workflows          |
-| Accessibility checks   | `axe-core` integration where practical                                                           | Catch regressions beyond manual keyboard testing                    |
-| Formatting/quality     | ESLint + Prettier + TypeScript `tsc --noEmit`                                                    | Consistent agent commits                                            |
-| Package manager        | `pnpm` with committed lockfile                                                                   | Reproducible dependency graph                                       |
-| Deploy                 | Static HTTPS host (e.g. Cloudflare Pages or Vercel static output)                                | No app server; same bundle available for local dev                  |
+| Area                      | Decision                                                                                         | Constraint                                                                                                |
+| ------------------------- | ------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------- |
+| Desktop shell             | Tauri 2; Windows first                                                                           | Retain Vite frontend; cross-platform release claims require actual platform tests                         |
+| UI                        | React + TypeScript, existing router, styles, SVG and tables                                      | No UI rewrite or framework swap                                                                           |
+| Game core                 | Pure Rust `game-core` crate                                                                      | Rules, money, calendar, generation and future simulation; no persistence/Tauri dependencies               |
+| Application layer         | Rust `game-app` crate                                                                            | Typed queries/commands, policies, idempotency, revision checks and transaction orchestration              |
+| Persistence               | SQLite using rusqlite with bundled SQLite and backup support                                     | One Rust-owned connection worker; no frontend SQL API                                                     |
+| Storage layer             | Rust `game-store` crate                                                                          | Scoped repositories, indexes, foreign keys, migrations, import and consistent backups                     |
+| IPC                       | Tauri commands; serde wire DTOs; generated TypeScript using ts-rs                                | Runtime Rust validation is mandatory; generated types alone are not validation                            |
+| Frontend API              | `GameClient` plus native invoke adapter                                                          | Replace concrete Dexie provider/repository use in UI                                                      |
+| Validation                | Rust trust-boundary/domain validation; Zod for browser export and forms                          | Preview and commit share authoritative Rust policy code                                                   |
+| Background work           | Dedicated DB worker; CPU work on blocking/worker tasks                                           | Async alone is insufficient for CPU-bound work; never block the UI or hold transactions during simulation |
+| Progress                  | Typed ordered channels for long operations                                                       | Progress is not authority; only committed results become visible                                          |
+| Native files              | App-local data directory; native dialogs and scoped file access                                  | Stable bundle identifier; distinct dev/test paths; no save DB in install assets                           |
+| Versions                  | Application, SQLite schema, export format, generator, calendar and simulation tracked separately | Preserve supported old behavior or apply an explicit tested migration                                     |
+| Tests                     | Cargo core/SQLite tests; existing Vitest/React tests; native E2E                                 | Mocked invoke/browser tests do not certify a desktop DB                                                   |
+| Desktop E2E               | WebdriverIO with official Tauri service/embedded driver, configured after core integration       | Test-only instrumentation excluded from release builds                                                    |
+| Delivery                  | Native installers; optional signed updater                                                       | Gameplay offline; updates must not silently invalidate saves                                              |
+| Browser compatibility     | Frozen existing app plus migration-export route                                                  | No native fallback to Dexie; no ongoing dual-write synchronization                                        |
+| Data visuals/UI libraries | Keep current frontend; add planned charting/accessibility libraries only in their phase          | Preserve unrelated package versions                                                                       |
 
-**Do not swap IndexedDB for SQLite during v1.** Introduce `src/data/repositories/` and domain-facing repository interfaces so a later persistence migration is possible, but do not build multiple actual storage adapters now.
+Use serde/serde_json, ts-rs and rusqlite in the native workspace. Verify current APIs/features and pin versions at implementation; do not invent package versions. No SQL server, ORM, HTTP service or LLM is required.
 
-Retain the installed dependency graph and committed lockfile. Simulation is pure TypeScript and needs no new runtime dependency in Phase 7. Libraries listed here but not installed remain future-phase choices, not claims of completed implementation.
+### 2.1 Platform, files and save safety
 
-### 2.1 Browser and platform contract
-
-- Primary targets: current stable desktop Chromium, Firefox, and Safari; best-effort modern tablet layouts.
-- Development on `localhost`, production on HTTPS. Installability/offline behavior must be tested in a **production build**, not assumed from Vite dev mode.
-- Browser persistence is not equivalent to cloud backup: storage pressure, privacy modes, clearing site data, and browser policy can remove local data. Expose backup controls prominently.
-- Ask `navigator.storage.persist()` where supported, report actual grant status, and never claim that it guarantees data survival.
-- Handle blocked IndexedDB, unavailable quota, corrupt imports, and storage write failures as recoverable user-visible states.
-- Avoid mandatory service-worker cache of imported datasets or private saves. Store user data in IndexedDB only; precache application resources.
+- Windows is the first tested native target, matching the development environment. Rust/MSVC linker, Windows SDK and WebView2 prerequisites are checked explicitly in NM-G02; missing system installation is a prerequisite, not a reason to rewrite the platform.
+- SQLite path: `appLocalDataDir()/touchline.sqlite3`. Keep application identity stable. Dev/test runs use isolated paths, never production saves.
+- Support all imported legacy and standalone campaign rows. Never assume Chrome/Edge IndexedDB is automatically available in Tauri's WebView.
+- Export from the original browser origin, validate and import into desktop. Preserve the original browser DB and file until the desktop save is verified.
+- Newer unsupported DB/save/engine versions fail with an actionable compatibility state; never silently downgrade, wipe or regenerate.
+- Use a consistent SQLite backup API and tested restore; do not copy a live main DB file while ignoring its journal.
+- Native security uses scoped capabilities/CSP and local bundled content. Do not expose arbitrary SQL, filesystem paths or remote command access to UI content.
+- A playable browser edition/PWA is not required for desktop v1. Keep a simple portfolio/download website separate from native gameplay.
 
 ---
 
@@ -160,10 +158,10 @@ Retain the installed dependency graph and committed lockfile. Simulation is pure
 ### 3.1 Global app structure
 
 ```text
-Welcome / Demo Launcher
+Desktop Welcome / Demo Launcher
   ├─ Play Fictional Demo
   ├─ New Standalone Career (seed, club, Challenge / Sandbox)
-  └─ Import Backup / Dataset (Phase 12)
+  └─ Migrate Browser Save (Native bridge) / Dataset (Phase 12)
 
 Campaign Workspace
   ├─ Command Center — game date, Continue, blockers, inbox, next fixture
@@ -185,7 +183,7 @@ Global Utilities
   └─ Help / Data Provenance
 ```
 
-Existing route slugs may remain for compatibility; the `/matches` route becomes Fixtures & Results for standalone saves and retains the legacy journal for old saves.
+Client-side routes work inside the desktop shell and preserve current slugs. Existing route slugs may remain for compatibility; the `/matches` route becomes Fixtures & Results for standalone saves and retains the legacy journal for old saves.
 
 ### 3.2 Visual system
 
@@ -204,7 +202,7 @@ Existing route slugs may remain for compatibility; the `/matches` route becomes 
 - A pending decision shows evidence and a concrete remedy. A match form cannot disable a board rule.
 - Challenge policies are locked at the command boundary. Sandbox customization is explicit and audited.
 - Prevent duplicate submission; reload on a stale revision. Render results only after successful persistence.
-- Preserve clear loading, empty, error, first-run and unavailable-feature states. During staged implementation, label future features as unavailable rather than pretending they exist.
+- Preserve clear loading, empty, error, first-run and unavailable-feature states. During staged implementation, label future features as unavailable rather than pretending they exist. Never silently use browser storage when a native service is unavailable.
 
 ---
 
@@ -223,8 +221,8 @@ Existing route slugs may remain for compatibility; the `/matches` route becomes 
 9. **Determinism:** explicit seed, versions, ordered inputs and decisions; no network, ambient clock or `Math.random` in domain code.
 10. **Provenance:** distinguish original fictional/imported/user-entered data from generated profiles and simulated outcomes.
 11. **One canonical result:** one completed result per fixture and one appearance per fixture/player. Legacy journal entries never enter standalone standings.
-12. **Atomic progression:** results, appearances, availability, finances and the time pointer commit together for each bounded event.
-13. **Compatibility:** schema migration preserves legacy saves and never silently promotes them to simulated careers.
+12. **Atomic progression:** Rust services commit results, appearances, availability, finances, receipt and time pointer together for each bounded event in SQLite.
+13. **Compatibility:** browser-to-native import and SQLite upgrades preserve legacy/standalone modes, identities and history; migration never silently promotes a manual save.
 
 ### 4.2 Existing entities retained
 
@@ -266,25 +264,44 @@ These are domain contracts, not literal Dexie store declarations. Existing IDs a
 - Keep v1 `Appearance.rating` and simulation ratings on 0–100; a UI may render 68 as 6.8/10 with an explicit scale.
 - xG stays integer milli-units, reusing the existing parse/format convention. Do not change legacy units.
 - Both teams' simulated appearances are canonical. Use read adapters for common player reports, not duplicate manual match rows.
-- Future entities receive migrations in their owning phase; Phase 7 does not prebuild every later table.
+- Future entities receive SQLite migrations in their owning phase; the native bridge ports only the 23 existing game stores and transport metadata.
 - Large world snapshots/results belong in their own stores, not the bounded audit payload.
 
-### 4.4 Repository/API and migration boundary
+### 4.4 Native ownership and storage boundary
 
-`src/domain/**` contains pure calculations and parsing. `src/data/commands/**` loads authoritative state, validates, checks policies and commits. Repositories enforce ownership and relationships; feature components orchestrate without importing Dexie or migrations.
+- `game-core`: domain models, schemas/invariants and pure computations. Port current TypeScript behavior using golden fixtures; all new engine/market/lifecycle work is Rust.
+- `game-store`: SQLite mappings for the 23 current game stores, scoped queries, constraints, migrations and consistent backups. Preserve rows and null/optional semantics.
+- `game-app`: use cases, fresh-state validation, policy preview/commit, optimistic revisions, receipts and atomic business effects.
+- `src-tauri/src`: thin Tauri bootstrap/commands, app paths, file dialogs, ID/time providers and progress transport.
+- `src/platform`: generated DTO types and GameClient native adapter. React never receives a connection or arbitrary SQL capability.
 
-Phase 7 adds `version(2)` after the frozen `version(1).stores(schemaV1)` declaration. Existing campaigns migrate to `mode: legacy` and `rulesMode: sandbox`; no simulation state or invented fixtures are attached to them. Missing mode in old command payloads defaults only to legacy, never standalone.
+Use normalized entity tables with typed IDs, money, dates and queried/indexed fields. JSON columns are allowed for attributes, rule arrays, formations and audit payloads, not one opaque whole-campaign blob. Enforce campaign-scoped references and uniqueness; map enum/field names explicitly.
 
-New standalone creation is a separate command with explicit complete inputs. Legacy match/deal/player-correction/finance commands reject standalone saves. Planned standalone negotiations are the only later path to executing transfers. Challenge constitution writes fail even when called directly.
+The frozen Dexie v1/v2 schemas remain migration sources and test fixtures. SQLite starts its own independent schema version 1; it is not Dexie version 3. Later native schema versions are forward migrations with backup and actual upgrade tests.
 
-### 4.5 Deterministic simulation protocol
+### 4.5 Browser-to-native save contract
 
-- Derive separate random streams from root seed + simulation version + stable logical keys for fixture, market event or development period. Club/player enumeration and unrelated random draws cannot change a match.
-- Seeds never depend on remappable campaign/entity IDs, audit time, animation speed or browser wall time. Persist logical keys and event seeds through export/restore.
-- Compute outside a short write transaction, optionally in a Worker. The command rechecks revision, current date, prerequisites and receipt before applying the trusted result.
-- A receipt key is campaign + event/fixture identity, not a newly generated request ID. Retrying the same logical operation returns or references the persisted outcome; it never draws again.
-- A stale result returns conflict and applies nothing. Worker messages cannot write Dexie or bypass command validation.
-- Saves pin their simulation and generator versions. Unsupported versions open with a clear compatibility state; do not silently rerun history with a new engine.
+The native bridge migration export is a complete versioned campaign snapshot, not the future CSV/JSON dataset importer.
+
+- Envelope: `format='touchline-campaign'`, `formatVersion=1`, `sourceStorage='indexeddb'|'sqlite'`, source-specific `sourceSchemaVersion`, `exportId`, export timestamp, campaign revision and explicit arrays for all 23 game stores.
+- Export one campaign from a consistent readonly IndexedDB transaction. Raw browser schema 1 fixtures normalize only missing mode metadata to legacy/sandbox and supply empty simulation arrays. Existing schema 2 records retain their actual modes.
+- Validate envelope, safe numeric ranges, known versions, record counts/limits, IDs, every relationship and supported simulation/generator versions. Missing fields remain null/absent according to their schema; no invented wages, dates, fixtures or contracts.
+- Import preserves IDs, revisions, seeds, logical keys, receipt fingerprints and audit strings. It never reruns generation or policies to reconstruct saved rows.
+- Import is one SQLite transaction. A separate transport import receipt records source-file digest and outcomes; do not fabricate gameplay audits or increment campaign revision merely to change storage.
+- Same-file retry is harmless, including after the imported game has progressed. A colliding campaign ID with different source content is refused; overwrite and duplicate-as-new with ID remapping are deferred to Phase 12.
+- Browser data is never deleted or modified by desktop import. Verify imported counts/balances and reopen before the user retires the source.
+- NM-G01 adds browser export/fixtures; NM-G03 implements SQLite import, native snapshot export and consistent backups; NM-G06 connects native dialogs/UI. IndexedDB source versions 1/2 and SQLite source version 1 are distinct supported origins. Phase 12 expands formats, remapping and dataset readiness.
+
+### 4.6 Determinism and engine upgrade protocol
+
+- Keep root seeds, generator v1/v2, simulation/calendar version 1 and stable logical keys unchanged across this port.
+- Preserve existing PRNG behavior: wrapping uint32 arithmetic, JS UTF-16 seed hashing, draw order and exact versioned JSON array/string fingerprints. Do not substitute Rust's default random generator, UTF-8 hashing, unordered maps or a differently escaped JSON fingerprint.
+- Golden fixtures cover ASCII/non-ASCII/astral Unicode seeds, boundary dates, prices/floor rounding, policies, complete generated worlds and initialization fingerprints.
+- Persist integer cents in checked i64; IPC/JSON numeric values remain within the JavaScript safe-integer range. Reject overflow and unsafe transport values; do not silently round a save.
+- Derive independent world/fixture/market/development streams from seed + pinned version + stable logical keys, excluding remappable IDs and audit time.
+- Compute outside the short commit transaction; recheck revision, source date/cursor, ownership, policy and logical receipt on write. Matching retries return the original outcome without a new revision or audit.
+- Application update, SQLite schema, save format, generator, calendar and simulation versions are independent. A new binary does not authorize rerunning historical results.
+- Preserve supported engine versions for existing saves or provide an explicit tested forward migration for future events. Never silently switch balance rules or claim Rust alone guarantees save compatibility.
 
 ---
 
@@ -363,14 +380,14 @@ Retain the deterministic 4-league / 72-club / 3,000-player generator framework. 
 - Six existing attributes remain. A separate declared goalkeeper rating in the simulation profile avoids treating outfield finishing as goalkeeper quality.
 - Owned active players receive exactly one complete contract: wage, tier and expiry. Free agents have no active contract.
 - Every club has a finite transfer balance and weekly wage ceiling; initial contracts fit that ceiling. The selected challenge has a feasible starting registration and XI.
-- Standalone calendars start July 1 of an explicit year. Root seeds are user supplied or explicitly generated at the UI boundary and then persisted; audit time does not select world content.
+- Standalone calendars start July 1 of an explicit year. Root seeds are user supplied or explicitly generated at the native application boundary and then persisted; audit time does not select world content.
 - The playable demo has a separate campaign identity from the existing legacy demo. Reset acts on the selected demo only.
-- World computation/validation precedes one atomic creation transaction. No partially initialized save is listed as playable.
+- Rust world computation/validation precedes one atomic SQLite creation transaction. No partially initialized save is listed as playable.
 - Featured gameplay history is produced by the engine or explicitly labeled scripted tutorial state; do not mix authored legacy scores into a competitive table.
 
 ### 6.2 Loader B — local CSV/JSON import (Phase 12)
 
-The existing importer is planned, not implemented at the pivot checkpoint. Retain browser-only parsing, Worker use for large files, field mapping, sample preview, units, row limits, source labels, safe staging and receipts. No hosted proprietary player data or automatic licensing assertions.
+The general dataset importer is planned, not implemented at the pivot checkpoint. Phase 12 uses Rust background parsing and native file selection, retaining field mapping, sample preview, units, row limits, source labels, safe staging and receipts. The bridge's browser-save exporter is a separate compatibility path. No hosted proprietary player data or automatic licensing assertions.
 
 An imported dataset does not necessarily describe a playable world. Before career creation:
 
@@ -401,7 +418,7 @@ Bounded role-targeted development uses age, potential, simulated minutes and dev
 - Calendar v1: July 1–June 30 seasons; summer transfers July 1–August 31; winter transfers January 1–31; league round 1 September 1, then 33 weekly rounds. This is a fictional game calendar, not a real league schedule.
 - Same-day order: user-required decisions and deadline guards → closing/opening window transitions → kickoff/results → post-match recovery/development boundaries. Contract expiry and year-end settlement are handled before next-season initialization.
 - Market ticks and recovery intervals use game dates and stable event keys. A command stops at the first unresolved decision or unsupported handler.
-- In Phase 7, Continue stops at the first league kickoff with `Match simulation arrives in Phase 8.` No fixtures or results exist yet.
+- After the migration bridge, Phase 7 G06 Rust Continue stops at the first league kickoff with `Match simulation arrives in Phase 8.` No fixtures or results exist yet.
 - Phase 8 permits playing all 34 rounds and reviewing the final table; rollover remains unavailable until Phase 10.
 
 ### 7.2 Squad, contracts and development
@@ -447,74 +464,81 @@ Retain age/minutes scatter, wage pyramid, six-attribute radar, transparent arche
 
 No fabricated radar axes or percentiles for missing imported data. Separate goalkeeper-specific evaluation from outfield six-axis comparisons. Cite source records and formula versions; call this Insights or Scouting Signals, not LLM predictions.
 
-### 7.8 Backup, import/export and settings (Phase 12)
+### 7.8 Save migration, backup and dataset import
 
-Export a complete versioned JSON campaign with every legacy/simulation store, keys, versions, pending offers/reservations, fixtures, results, receipts and development/settlement history.
+The prerequisite native bridge delivers browser-to-native import, basic complete native snapshots and consistent SQLite backups before Phase 7 G06. Phase 12 expands portable backup/restore, remapped duplicate campaigns and CSV/JSON dataset imports. Each export covers every store implemented at that point, including keys, versions and receipts; future fixtures/offers/development must be added when introduced.
 
-Restore validates envelope/versions, limits, relationships, campaign ownership and source labels before promoting a new campaign. Remap entity IDs but preserve simulation keys, root/event seeds and the same future outcomes. Failed restore must leave existing saves intact. No destructive overwrite or SQLite export.
+The native bridge import preserves IDs and refuses different-content collisions. Phase 12 restore-as-new remaps IDs while preserving simulation keys, root/event seeds and identical future outcomes. Validate versions, limits, relationships, ownership and source labels before promotion; failed import leaves existing saves intact. Destructive overwrite is out of scope. SQLite backup files are native recovery artifacts, distinct from portable JSON exports.
 
-Retain persistence/quota UX, backup reminders, privacy controls and no telemetry by default. Import/export is not available merely because the data model contains an ImportReceipt.
+Use native save paths, disk/permission errors, backup reminders and recovery controls, with no telemetry by default. Import/export is not available merely because the data model contains an ImportReceipt.
 
 ---
 
 ## 8. TECHNICAL ARCHITECTURE / REPOSITORY SHAPE
 
-Retain existing folders and add shallow modules as needed:
-
 ```text
-src/domain/
-  models/ rules/ finance/ player/ matches/ seed/ validation/
-  simulation/       # state, game calendar, deterministic streams
-  fixtures/         # round-robin schedules, standings
-  market/           # AI needs, valuations, negotiations
-  seasons/          # settlement, development, academy
-  analytics/ commands/
-src/data/
-  db.ts
-  migrations/       # immutable v1 plus explicit v2 and later additions
-  repositories/
-  commands/         # the only gameplay write entry points
-  transactions/
-src/features/
-  campaigns/ dashboard/ squad/ tactics/ transfers/ finance/
-  registration/ matches/ seasons/ scouting/ import-export/ settings/
-src/workers/
-  simulation.worker.ts  # when profiling justifies off-thread execution
-  import.worker.ts
-plans/phase1.md ... phase13.md
-README.md
-ARCHITECTURE.md
-DECISIONS.md
-MASTER_PLAN.md
+src/
+  app/ components/ features/ styles/       # existing React UI
+  platform/
+    game-client.ts                        # application-facing query/command interface
+    native-client.ts                      # typed invoke transport
+    browser-client.ts                     # frozen browser compatibility only
+    generated/                            # generated Rust DTO TypeScript
+  domain/ data/                           # frozen TS oracle + browser exporter during migration
+src-tauri/
+  Cargo.toml                              # workspace and desktop package
+  Cargo.lock
+  rust-toolchain.toml
+  tauri.conf.json
+  capabilities/
+  src/                                    # thin shell, commands, paths and providers
+  crates/
+    game-core/src/                        # pure Rust models and rules
+    game-store/src/                       # SQLite repositories, migration, backup
+    game-app/src/                         # application services and typed DTOs
+  migrations/0001_initial.sql
+  tests/
+scripts/
+  native-check.mjs
+  native-bindings.mjs
+desktop-e2e/
+compatibility/                            # NM-G01 committed JSON golden fixtures
+plans/native-migration/guide1.md ... guide9.md
+plans/phase7/guide6.md ... guide7.md
 ```
 
-### Boundaries
+New directories are planned, not present at the P07-G05 checkpoint. Preserve the frontend build and established styling/routing.
 
-- Domain: pure calculations and schemas; no React, Dexie, browser globals, ambient randomness or clocks.
-- Data: scoped repositories, migrations and transactional commands; no UI.
-- Features: orchestration/UI using domain, repositories and commands; no direct Dexie or duplicated policy math.
-- Shared components: no business logic or persistence imports.
-- Workers: typed serializable inputs/results; share the domain engine and never write authoritative game state.
+### Dependency direction
 
-### Persistence/write protocol
+`React → GameClient → Tauri commands → game-app → game-core / game-store`.
+game-store may use shared core models; game-core imports neither store nor Tauri. No IPC method exposes arbitrary SQL, raw filesystem access or a mutable database object.
 
-1. Validate request and campaign mode.
-2. Load a consistent campaign-scoped snapshot/revision.
-3. Evaluate prerequisites and compute the bounded event outside the write transaction.
-4. Open one short transaction; recheck revision, date, policy, receipt and ownership.
-5. Commit all effects, receipt and audit and increment revision once.
-6. Return persisted state or an actionable failure. A failed event writes nothing.
+### Threading and write protocol
 
-For creation, validate the entire generated world before transactionally inserting a playable campaign. If production measurements require staged initialization, staging must remain unplayable and be recoverable; amend the guide before changing its atomic contract.
+1. Validate request/DTO and load a consistent scoped snapshot with revision.
+2. Perform pure policy/generation/simulation work outside a transaction on a worker appropriate to CPU work.
+3. Send a bounded commit operation to the SQLite connection worker; recheck source revision/date/receipt and critical policy/ownership.
+4. Commit records, financial effects, receipt and audit in one transaction; increment the campaign revision once.
+5. Return the persisted outcome. Progress messages carry no permission to mutate frontend gameplay data.
 
-### Cross-cutting rules
+One worker owns the rusqlite connection and serializes DB operations. Do not hold its connection mutex or a DB transaction while awaiting computation/IPC. Multi-window contention still uses revisions/unique receipts. Cancellation may abort before commit; once commit begins it resolves atomically and UI retrieves the receipt after disconnect/restart.
 
-- Disable duplicate submission, keep UI responsive and expose progress; do not hide saves behind long synchronous work.
-- Use indexed reads and measured pagination/virtualization for large datasets.
-- Keep audits concise; never duplicate a full world snapshot inside an audit payload.
-- Bundle assets and fonts; no mandatory runtime CDN.
-- No private save data in network logs, telemetry or remote services.
-- Schema version, generator version, simulation version and backup format version are distinct and tested independently.
+### Typed contract and test scripts
+
+serde DTOs use documented camelCase fields/tagged results and generated TS bindings via ts-rs. Keep runtime validation in Rust; form Zod schemas do not authorize writes. Return bounded screen projections/paged results, not all 3,000 players on every invoke.
+
+NM-G02 introduces `pnpm tauri dev`, `pnpm tauri build`, `pnpm native:check`, `pnpm native:bindings` and `pnpm native:bindings:check`. Native checks run rustfmt, clippy with warnings denied and locked workspace tests. Binding check generates to a temporary location and compares against committed output without silently rewriting it. NM-G09 adds `pnpm test:desktop` for real packaged application tests.
+
+Existing `pnpm build` remains the frontend build; it is not proof that a desktop installer or Rust database works. Existing Vitest/Playwright tests remain browser/UI compatibility tests; Rust and desktop checks are separate gates.
+
+### Development and release
+
+- Freeze the browser app at G05 plus export/recovery fixes; no new web simulation, service worker or Dexie v3 is required.
+- Desktop uses no Dexie fallback or dual writes. Missing native service is an explicit unavailable state.
+- Pin native toolchain/dependencies and commit Cargo.lock. Install system prerequisites only through normal authorization.
+- Keep logs local and exclude imported private content and debug automation from release artifacts.
+- Measure startup, snapshots, generation, IPC volume and later full-world simulation; do not promise speedups without benchmarks.
 
 ---
 
@@ -598,30 +622,54 @@ The entries below preserve completed guide identities under plan 1.0.0. Their or
 
 **Exit:** Rule bypass is impossible from UI actions; blocked actions do not partially write; completed deals survive refresh.
 
-### PHASE 7 — Standalone simulation foundations (active)
+### PHASE 7 — Standalone foundations, interrupted for native migration
 
-**Outcome:** Legacy saves survive migration; a new complete seeded career initializes and advances to the first kickoff boundary. No match engine, transfer AI, growth or rollover is claimed yet.
+Completed G01–G05 retain their original subjects and implementation evidence:
 
-- `P07-G01` — Completed historical manual journal. Commit: `feat(p07-g01): record played matches`. Preserve unchanged.
-- `P07-G02` — Simulation contracts, mode defaults and additive Dexie v2 migration. Commit: `feat(p07-g02): introduce standalone save contracts`.
-- `P07-G03` — Pure game calendar, named random streams and bounded time previews. Commit: `feat(p07-g03): define deterministic game time`.
-- `P07-G04` — Playable generator v2 with legal squads, contracts, profile inputs and budgets. Commit: `feat(p07-g04): generate playable club worlds`.
-- `P07-G05` — Atomic standalone career creation, new-game UI and legacy/Challenge write guards. Commit: `feat(p07-g05): start standalone careers safely`.
-- `P07-G06` — Audited Continue command and command-center progression through preseason to kickoff. Commit: `feat(p07-g06): advance the standalone game clock`.
-- `P07-G07` — Migration, initialization, mode-isolation and progression browser/integration evidence. Commit: `test(p07-g07): verify standalone foundations`.
+- `P07-G01` — manual journal; `feat(p07-g01): record played matches`.
+- `P07-G02` — Dexie v2 contracts/migration; `feat(p07-g02): introduce standalone save contracts`.
+- `P07-G03` — TS calendar/streams; `feat(p07-g03): define deterministic game time`.
+- `P07-G04` — playable generator v2; `feat(p07-g04): generate playable club worlds`.
+- `P07-G05` — web career creation/guards; `feat(p07-g05): start standalone careers safely`.
 
-**Exit:** Next execution is P07-G02; legacy demo and new playable demo are separate; generator v1 outputs unchanged; no unavailable future handler is bypassed.
+**Mandatory order:** P07-G05 → native migration bridge → P07-G06 → P07-G07 → Phase 8.
+Do not implement Continue before moving the existing G05 application to Rust/SQLite.
+
+#### Native migration bridge — separate prerequisite stage
+
+Authority: `plans/native-migration.md`; executable files: `plans/native-migration/guide1.md` … `guide9.md`. This stage ports the existing application only; it does not add clock progression or later gameplay.
+
+| Guide    | Deliverable                                       | Commit subject                                                   |
+| -------- | ------------------------------------------------- | ---------------------------------------------------------------- |
+| `NM-G01` | Browser migration export and golden fixtures      | `feat(nm-g01): capture browser saves and compatibility fixtures` |
+| `NM-G02` | Tauri workspace, DTOs and GameClient              | `feat(nm-g02): establish the native application boundary`        |
+| `NM-G03` | SQLite persistence, import and consistent backups | `feat(nm-g03): persist migrated campaigns in sqlite`             |
+| `NM-G04` | Rust policies, money, selection and calendar      | `feat(nm-g04): port foundational rules to rust`                  |
+| `NM-G05` | Rust generators and career preparation            | `feat(nm-g05): reproduce seeded worlds in rust`                  |
+| `NM-G06` | Native read API, save migration UI and loaders    | `feat(nm-g06): read campaigns through native services`           |
+| `NM-G07` | Native campaign/squad/tactics/board writes        | `feat(nm-g07): execute career management in rust`                |
+| `NM-G08` | Native legacy match/finance/market parity         | `feat(nm-g08): preserve legacy workflows on sqlite`              |
+| `NM-G09` | Native cutover and compatibility certification    | `test(nm-g09): certify the native migration bridge`              |
+
+**Bridge exit gate:** all existing usable workflows run through Rust/SQLite in a packaged Tauri app; imported/browser snapshots, fresh career parity, native reopen/backup, command guards and direct-call tests pass. Record bridge SHAs/checks in its own plan. Only then resume Phase 7.
+
+#### Resume Phase 7 after NM-G09
+
+- `P07-G06` — Rust Continue/command-center progression to kickoff. Commit: `feat(p07-g06): advance native careers deterministically`.
+- `P07-G07` — Native foundation/clock certification. Commit: `test(p07-g07): verify native standalone foundations`.
+
+**Phase exit:** a native career reaches kickoff exactly once; no match engine yet. Generate Phase 8 plans only after the resumed foundation passes.
 
 ### PHASE 8 — Fixtures and instant match simulation
 
 **Outcome:** Play all 34 matchdays, review both teams' performances and league tables, and reach a final-season review without rollover.
 
-- `P08-G01` — Fixture/result/appearance contracts and versioned persistence.
+- `P08-G01` — Rust fixture/result/appearance contracts and SQLite migrations.
 - `P08-G02` — Four double round-robin calendars and deterministic standings.
 - `P08-G03` — Shared role strength, AI legal selection and automatic substitution policy.
 - `P08-G04` — Pure instant match engine, coherent timeline/xG/ratings and availability effects.
 - `P08-G05` — Atomic round simulation, reports, tables and squad performance adapters.
-- `P08-G06` — Full-round/full-season deterministic integration tests and browser matchday journey.
+- `P08-G06` — Full-round/full-season Rust/SQLite integration tests and native matchday journey.
 
 Future phase plans must assign one imperative commit subject per guide before execution.
 
@@ -649,7 +697,7 @@ Future phase plans must assign one imperative commit subject per guide before ex
 
 ### PHASE 11 — Scouting, comparisons and Moneyball insights
 
-Former unimplemented Phase 8, adjusted to simulation history.
+Former unimplemented Phase 8, adjusted to simulation history. Rust computes authoritative analytics/query projections; React retains charts and interaction.
 
 - `P11-G01` — Transparent archetype scores and missing-data confidence.
 - `P11-G02` — Radar comparisons and scouting reports.
@@ -660,27 +708,29 @@ Former unimplemented Phase 8, adjusted to simulation history.
 
 ### PHASE 12 — Dataset import and portable campaign backup
 
-Former unimplemented Phase 9, expanded for playable-world validation and deterministic restore.
+Former unimplemented Phase 9, expanded for playable-world validation and deterministic restore. Basic snapshot migration/backup already exists from the native bridge; this phase adds remapping, later-entity coverage and dataset import.
 
-- `P12-G01` — Complete versioned backup export, including all simulation stores.
+- `P12-G01` — Extend native-bridge versioned export to every later simulation store.
 - `P12-G02` — Safe restore/remapping, preserving seeds and future outcomes.
-- `P12-G03` — Worker CSV/JSON parsing, limits and malformed-input handling.
+- `P12-G03` — Rust background CSV/JSON parsing, native file selection, limits and malformed-input handling.
 - `P12-G04` — Field mapping, units and explicit simulation-profile completion preview.
 - `P12-G05` — Atomic/staged imported-career creation and readiness validation.
 - `P12-G06` — Cross-version/legacy round trips, deterministic continuation and 25k-row fixtures.
 
-### PHASE 13 — PWA, accessibility, performance and release
+### PHASE 13 — Desktop accessibility, performance and release
 
-Former unimplemented Phase 10 plus simulation profiling and balancing.
+Replaces the planned PWA delivery milestone. No service worker/installability work is required for the desktop game.
 
-- `P13-G01` — Production PWA, precache and offline tests.
-- `P13-G02` — Storage/quota/backup recovery UX.
-- `P13-G03` — Keyboard, contrast, responsive and reduced-motion hardening.
-- `P13-G04` — Profile 3k/25k operations, full-world rounds and long saves; document multi-seed balancing.
-- `P13-G05` — Architecture, gameplay help, licensing, portfolio walkthrough and deployment docs.
-- `P13-G06` — Full CI, production/offline restore journey and release checklist.
+- `P13-G01` — Production installers, stable app identity, icons and platform prerequisites.
+- `P13-G02` — Native save/backup/recovery, migration failure handling and disk/permission UX.
+- `P13-G03` — Keyboard, contrast, responsive window layouts and reduced motion.
+- `P13-G04` — Profile native generation, IPC, 3k/25k operations, rounds, seasons and multi-seed balance.
+- `P13-G05` — Desktop gameplay help, architecture, privacy, signing/update and distribution docs.
+- `P13-G06` — Native CI, signed update compatibility where used, installer/upgrade/restore and release certification.
 
-**Release:** Do not shorten the roadmap by claiming importer, PWA, analytics or game balancing already exist.
+Updater artifacts require signing if updater delivery is enabled. Gameplay remains offline; update checks may be optional. OS signing/notarization and supported-platform claims are tested/documented per target.
+
+**Release:** provide a working desktop demo/download; a playable PWA and WASM port are deferred. Do not claim native, import or gameplay checks passed before implementation.
 
 ---
 
@@ -725,7 +775,7 @@ A phase planner must generate a self-contained file with **all** of these sectio
 
 ## 8. Verification
 
-- Exact commands and manual browser flows; failure cases.
+- Exact native/frontend commands and appropriate desktop/browser flows; failure cases.
 
 ## 9. Risks, mitigations, rollback
 
@@ -830,37 +880,43 @@ A guide should be executable by a fresh AI agent that has the repository and mas
 
 ### 12.1 Mandatory coverage
 
-- Unit: money/rounding, rules, role strength, calendar boundaries, deterministic streams, fixture schedule, match events, availability, valuation, development and missing data.
-- Integration: real v1→v2 migration, rollback, stale revision, logical-operation idempotency, mode guards, two-club settlement, season settlement and isolation.
-- UI: next-action blockers, registration/selection, accessible reports, new-game settings, Challenge locks and legacy compatibility.
-- E2E: create career → select XI → simulate → resolve AI bid → sign player → complete season → settle → export → restore → identical continuation.
-- Fixtures: tiny deterministic worlds, strict-policy clubs, malformed/incomplete imports, actual v1 save rows, production 3k world and 25k import fixture.
+- Rust core: policy/money/rounding, eligibility/selection, pure dates, PRNG/UTF-16 seed parity, generators and all future match/market/development formulas.
+- SQLite integration: actual schema upgrades, constraints, scoped references, rollback, revisions, logical retries, deletion scope and consistent backup/reopen.
+- Migration: actual browser v1/v2 snapshot fixtures, all 23 source stores, null/optional preservation, no regeneration, import collision/retry/fault behavior.
+- Contract/UI: generated DTO freshness, Rust runtime rejection, native adapter errors, mocked GameClient rendering and accessible workflows.
+- Native E2E: packaged application creation/import → reopen → selection/board/legacy writes → Continue → close/relaunch; later phases add match/transfer/season/restore journeys.
+- Existing browser Vitest/Playwright suites remain compatibility evidence during the port. Mocked invoke or browser-only tests do not certify SQLite/native behavior.
 
 ### 12.2 Explicit invariants
 
-1. A 70% sales rule on EUR10m completed sales authorizes EUR7m, not EUR10m.
-2. Age 27 violates enabled default signing age 26; free exemption follows the actual preset.
-3. EUR46k/week violates an enabled EUR45k Key cap; missing wage is never silently zero.
-4. Concurrent deals cannot spend the same balance or reserved funds.
-5. Failed transfers cannot leave ownership, contracts or either club's finance partially changed.
-6. Legacy unknown values remain unknown; generated simulation replacements are separate and labeled.
-7. A fixture/player has one performance row; repeated simulation cannot add minutes again.
-8. Rollover, growth periods, academy intake and each award apply once.
-9. Restore/import failures leave existing saves intact and preserve references.
-10. Every query/write validates campaign ownership and mode.
-11. Generator v1 remains byte-for-byte reproducible; v2 repeats for the same seed/version/logical keys.
-12. Missing scouting axes never become invented measurements.
-13. Each 18-club schedule has 34 rounds/306 fixtures, one game per club per round, one home and one away meeting per pair.
-14. One full-world round produces 36 results or no results. Stale/retried rounds cannot reroll.
-15. Score, goal events, appearances, minutes, bans and fitness effects reconcile.
-16. Club iteration order, UI timing and unrelated random streams do not change fixture outcomes.
-17. AI deals remain affordable, player ownership/contracts remain legal, and compulsory offers are completable.
-18. Prize reinvestment is applied once to the opening season; carryover never includes the same award.
-19. Restore ID remapping preserves the same next match/market/development outcomes.
-20. Challenge guards cannot be bypassed through old manual commands or direct command calls.
-21. Multi-season tests retain enough legal squads and goalkeepers across all clubs; retirement cannot silently hollow out the world.
+1. 70% of EUR10m completed sales yields EUR7m authorized capacity.
+2. Age 27 violates enabled age 26; free exemption follows the preset.
+3. EUR46k/week violates an enabled EUR45k Key cap; unknown is not zero.
+4. Concurrent/stale operations cannot spend the same funds or run an event twice.
+5. Ownership, contracts, money, receipt and audit commit together or not at all.
+6. Imported nullable/optional values, historical IDs and modes survive storage migration.
+7. Fixture/player performance is unique; history never doubles minutes.
+8. Settlement/growth/academy/award periods apply once.
+9. Failed import/restore leaves existing native and browser saves untouched.
+10. All queries/commands validate campaign scope and gameplay mode in Rust.
+11. JS/Rust generator v1/v2 and calendar/PRNG/fingerprints match committed vectors, including Unicode and floor/overflow boundaries.
+12. Missing scouting data never becomes fabricated measurements.
+13. 18-club leagues have 34 rounds/306 fixtures with one home/away meeting per pair.
+14. A full-world round commits 36 results or none; retry cannot reroll.
+15. Scores/events/appearances/availability reconcile.
+16. Enumeration, UI timing, unrelated streams and transport IDs do not alter event outcomes.
+17. AI offers remain affordable and compulsory sales are completable.
+18. Awards are credited to the opening season once and excluded from closing carryover.
+19. Future restore remapping preserves next-event outcomes; initial migration preserves IDs.
+20. Challenge protections cannot be bypassed through native or legacy commands.
+21. Multi-season squads remain viable across all clubs.
+22. Desktop gameplay never writes IndexedDB or accepts arbitrary frontend SQL.
+23. Migration preserves original gameplay revisions/receipts; separate transport receipts track import.
+24. App update, DB schema and engine/rules version transitions are tested independently; old saves never silently regenerate.
 
-### 12.3 Required commands
+### 12.3 Required checks
+
+Before native workspace exists (NM-G01), use existing scripts and focused exporter/vector tests:
 
 ```bash
 pnpm lint
@@ -870,50 +926,61 @@ pnpm build
 pnpm test:e2e
 ```
 
-Use available targeted Vitest/Playwright options for each guide, then the full checks required by its phase. CI covers lint, types, unit/integration and build; phase exit/release includes browser checks. Documentation-only amendments run formatting/link/contract consistency checks; do not claim that planned gameplay tests have run.
+NM-G02 introduces:
+
+```bash
+pnpm native:bindings:check
+pnpm native:check
+pnpm tauri build
+```
+
+NM-G09 introduces `pnpm test:desktop`. Keep Rust formatting/clippy/tests and generated-contract checks in CI. Native prerequisites and packaged-app/manual smoke are recorded honestly; a frontend build or mock cannot replace a failed native check.
+
+For documentation-only changes, run formatting, link/guide/roadmap consistency and preservation checks. No native tests are claimed before native code exists.
 
 ### 12.4 Performance and balancing
 
-Phase 13 records named hardware/browser and reproducible seeds. Measure first initialization, a 36-fixture round, a 1,224-fixture season, long-history reads, 3k searches and 25k imports. Show progress, avoid sustained main-thread blocking and use a Worker when measurements justify it.
+Phase 13 records named hardware/browser-WebView/runtime and fixed seeds. Measure startup/reopen/import, generation, query/IPC volume, a 36-fixture round, 1,224-fixture season, long saves and 25k imports. Use progress and bounded background work; document actual improvements rather than assuming Rust is faster.
 
-Across fixed multiple seeds, report score/xG distributions, home advantage, stronger/weaker squad trends, injury frequency, transfer affordability and annual player growth. Treat these as game-design targets, not verified real football facts. Set thresholds before tuning and do not fabricate universal latency guarantees.
+Report multi-seed scores/xG, injuries, transfers and annual growth against declared gameplay targets, not invented real-football facts.
 
 ### 12.5 Accessibility and privacy
 
-Keyboard users can create/open a career, assign a legal team, resolve blockers, simulate, review reports and export. Essential information does not rely on hover or color. User data stays local unless explicitly exported; static deployment includes no secrets, proprietary databases or network-dependent assets.
+Keyboard users can create/import/open a native save, select a team, resolve blockers, simulate, review reports and export/restore. Saves stay local; no telemetry, secrets or hosted player database. Native file capabilities, local logs and release test instrumentation are reviewed.
 
 ---
 
 ## 13. RISKS AND MITIGATIONS
 
-| Risk                                               | Mitigation                                                                                    |
-| -------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| Pivot destroys existing saves                      | Frozen v1 migration, legacy mode, separate playable demo and upgrade fixtures                 |
-| Old manual commands bypass gameplay                | Command-level mode/Challenge guards and negative integration tests                            |
-| Simulation rerolls on reload/restore               | Versioned logical keys, event seeds, immutable results and receipts                           |
-| Full-world writes partially apply                  | Bounded transactions, revision checks and rollback fault tests                                |
-| Mandatory transfer permanently blocks time         | Binding affordable offers, reserved funds, pre-agreed terms and one compulsory bid per player |
-| Prize or growth is applied twice                   | Settlement/period identities, explicit earning/receiving seasons and retries                  |
-| World becomes unplayable over years                | Legal generation, AI rotation/recruitment, retirement/intake and multi-season tests           |
-| Match loop expands into a full live manager        | Instant results and auto-substitutions only; live ticker deferred                             |
-| Imported identities look like complete player data | Readiness preview, separate generated profiles and source labels                              |
-| Large rounds/imports freeze the browser            | Profile production workloads, typed Worker boundary and indexed reads                         |
-| Browser eviction or broken update loses save       | Backup/restore, quota UX, explicit migration and production update testing                    |
-| AI refers to hosted models                         | Document local deterministic algorithms; no external AI dependency                            |
+| Risk                                               | Mitigation                                                                       |
+| -------------------------------------------------- | -------------------------------------------------------------------------------- |
+| Browser saves are inaccessible from native WebView | Original-origin JSON export, explicit native import; preserve source             |
+| Port changes seeded worlds                         | Exact UTF-16/u32/JSON parity fixtures; keep generator/simulation versions pinned |
+| Rust i64 values lose precision through JS          | Safe-integer transport bounds and checked money arithmetic                       |
+| React still mutates Dexie                          | GameClient conversion, no desktop fallback, dependency-boundary checks           |
+| Core gets coupled to Tauri/SQL                     | Separate core/store/app crates and dependency tests                              |
+| Import reruns history or changes revisions         | Row-preserving transaction and separate transport receipt                        |
+| Live SQLite file copy is inconsistent              | Supported backup API, temp snapshot validation and reopen tests                  |
+| UI freezes or transaction waits on heavy work      | CPU tasks outside DB worker/short transactions                                   |
+| Legacy commands bypass Challenge or lose behavior  | Rust service port, direct-call guards and parity/native tests                    |
+| App update breaks saves                            | Independent schema/engine/save versions, backup and actual upgrade tests         |
+| Native migration becomes one unreviewable rewrite  | NM-G01–NM-G09 bridge commits; preserve old code as oracle until cutover          |
+| Game loop expands into live manager                | Instant results/auto-substitutions; live ticker deferred                         |
+| World/finance/compulsory offers become unplayable  | Existing legality, budget, settlement and multi-season invariants                |
 
-Rollback preserves user data. Revert a bad implementation through a compatible forward fix; do not deploy old code that cannot parse a newer DB, delete a save, or reset published history to avoid an upgrade.
+Rollback uses preserved browser/export files, consistent native backups and compatible forward fixes. Do not wipe sources, downgrade a migrated live DB or reset completed history.
 
 ---
 
 ## 14. SECURITY, LEGAL AND TRUST
 
-- Client-side storage/computation by default; no accounts or app-owned backend.
-- Treat imports/backups/Worker messages as untrusted: bounded sizes, strings and row counts, schema/relationship checks, no HTML evaluation.
+- Local Rust computation and SQLite storage by default; no accounts or remote app-owned backend.
+- Treat imports/backups/IPC requests as untrusted: bounded sizes, strings and row counts, schema/relationship checks, no HTML evaluation.
 - Ship fictional identities, independently designed SVG crests and no commercial player databases or licensed photos.
 - Personal imports remain local; no assertion that personal possession grants redistribution rights.
 - Visible product statement: “Independent fictional football simulation; not affiliated with any football game, club or league.” Legacy saves may retain their historical companion label.
 - Label simulated outcomes, generated profiles, estimates and imported facts distinctly.
-- Service worker caches app assets, not imported private files. No exposed API keys, mandatory hosted LLM or telemetry.
+- Bundle native UI assets locally; scope filesystem/IPC permissions and exclude debug automation from release. No exposed API keys, mandatory hosted LLM or telemetry.
 - Backups can contain personal notes/imported data; provide sharing guidance without sending them anywhere automatically.
 
 ---
@@ -922,7 +989,7 @@ Rollback preserves user data. Revert a bad implementation through a compatible f
 
 At release a reviewer can:
 
-1. Open Play Fictional Demo, choose a club and start a seeded Challenge career.
+1. Install/open the desktop demo, choose a club and start a seeded Challenge career.
 2. Review board rules, finite funds, wage tiers and the game date.
 3. See an unaffordable or age-ineligible proposed signing blocked with evidence.
 4. Advance to a market decision; receive an affordable compulsory prestige bid with an actionable sale.
@@ -932,8 +999,8 @@ At release a reviewer can:
 8. Reload; the same result exists once and time does not advance on its own.
 9. Complete the season, review objectives/development, settle once and see next-season awards and capacity.
 10. Export, restore as a separate campaign and verify the same future outcome from identical decisions.
-11. Go offline after app caching and continue playing.
-12. Open a preserved legacy campaign; its manual history has not been converted into a simulated table.
+11. Go offline and continue playing in the installed desktop application.
+12. Import/open a preserved browser legacy campaign; its manual history and revisions remain intact and have not become a simulated table.
 
 The portfolio story is a playable sporting-director loop whose board rules create meaningful recruitment decisions.
 
@@ -941,8 +1008,8 @@ The portfolio story is a playable sporting-director loop whose board rules creat
 
 ## 16. DEFINITION OF DONE FOR STANDALONE v1
 
-- [ ] Historical Phases 1–6/P07-G01 remain intact; current Phases 7–13 have completed guides and reviewable commits.
-- [ ] New playable career and demo initialize without login, uploads or network APIs.
+- [ ] Historical Phases 1–6/P07-G01–G05 remain intact; native bridge NM-G01–NM-G09, resumed P07-G06/G07 and Phases 8–13 have completed guides and reviewable commits.
+- [ ] Native career/demo initialize without login, dataset uploads or network APIs; Rust/SQLite are authoritative.
 - [ ] Four leagues complete 34 rounds each with coherent fixtures, results and tables.
 - [ ] Selection/roles, availability and automatic substitutions affect documented match inputs.
 - [ ] AI transfers/negotiations obey funds, wages, ownership and board rules.
@@ -952,41 +1019,43 @@ The portfolio story is a playable sporting-director loop whose board rules creat
 - [ ] Save migration, mode isolation, receipts, rollback and deterministic restore have tests.
 - [ ] Moneyball, comparisons and insights trace to canonical labeled data.
 - [ ] Dataset imports validate playable readiness and preserve unknown source fields.
-- [ ] Complete JSON backup/restore and offline PWA work in production.
+- [ ] Browser-save migration, complete native JSON backup/restore and packaged offline gameplay work in production.
 - [ ] Keyboard, responsive, contrast, errors and storage recovery meet release gates.
 - [ ] Documentation distinguishes implemented checkpoints from the final product and records measured performance/balancing.
-- [ ] Static build has no secrets, proprietary player data or mandatory hosted services.
+- [ ] Native build has no secrets, proprietary player data, debug automation or mandatory hosted services.
 
 ### Post-v1 candidates
 
-Live fast-forwardable ticker and in-match changes; cups and promotion/relegation; deeper commercial finances; staff/morale systems; local narrative assistance; native wrapper; consented lawful connectors; cloud sync only under a separate architecture decision.
+Live fast-forwardable ticker and in-match changes; cups and promotion/relegation; deeper commercial finances; staff/morale systems; local narrative assistance; a shared Rust/WASM browser edition; consented lawful connectors; cloud sync only under a separate architecture decision.
 
 ---
 
 ## 17. PLANNING CHANGE CONTROL
 
-This plan is versioned, not silently frozen around the previous product. A material change must:
+Material changes require a master version update, a DECISIONS entry, affected pending guides, compatibility/migration tests and explicit implementation status. Preserve completed guide files and evidence.
 
-1. Explain the motivation and affected outcome.
-2. Amend this master and record the decision/version in `DECISIONS.md`.
-3. Identify affected phases/guides, data migration and tests.
-4. Replace only unimplemented guides; preserve completed commit history and evidence.
-5. Preserve backward compatibility or define and test a formal migration.
-6. Keep future scope separate from current implementation status.
+- DEC-001: plan 1.0.0 → 2.0.0, companion → standalone sim.
+- DEC-002: plan 2.0.0 → 3.0.0 at P07-G05, web/Dexie → native Tauri/Rust/SQLite before match-engine implementation.
+- Keep standalone game design and Phases 8–12 outcomes. Insert a separate migration bridge before pending Phase 7 G06/G07; update release Phase 13 and preserve completed work.
+- The browser remains the migration/export source and test oracle. Desktop is the primary game; a complete second web edition is deferred.
 
-**Pivot decision:** 2026-10-20, plan 1.0.0 → 2.0.0, companion → Standalone Sporting Director Sim. Defaults are instant results, lightweight availability and Board Challenge/Sandbox. See DEC-001.
-
-**Instruction to future agents:** Start with `plans/phase7/guide2.md` after reading this file and the amended phase. Do not restart Phase 1, execute archived companion guides, or add the Phase 8 match engine during Phase 7.
+**Next execution:** `plans/native-migration/guide1.md` after this master, DEC-002 and the bridge plan. P07-G06 is blocked until NM-G09 passes; then implement Rust Continue and P07-G07 certification. Match simulation starts in Phase 8.
 
 ---
 
 ## 18. NON-NORMATIVE TECHNICAL REFERENCES
 
-The following sources explain browser and library constraints. They do not override this plan:
+Primary documentation supports implementation; it does not override the product contracts.
 
-- [Dexie API reference](https://dexie.org/docs/API-Reference) — IndexedDB schema versions, indexes, and transactions.
-- [MDN storage quotas and eviction](https://developer.mozilla.org/en-US/docs/Web/API/Storage_API/Storage_quotas_and_eviction_criteria) — why local storage is not equivalent to backups.
-- [MDN origin private file system](https://developer.mozilla.org/en-US/docs/Web/API/File_System_API/Origin_private_file_system) — optional future SQLite/OPFS exploration, **not a v1 dependency**.
-- [Vite PWA plugin project](https://github.com/vite-pwa/vite-plugin-pwa) — precached static/offline shell support.
+- [Tauri Vite integration](https://v2.tauri.app/start/frontend/vite/) — retain the current frontend build.
+- [Tauri commands](https://v2.tauri.app/develop/calling-rust/) — serde IPC and execution behavior.
+- [Tauri channels](https://v2.tauri.app/develop/calling-frontend/#channels) — ordered progress transport.
+- [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/) — native platform toolchain.
+- [Tauri capabilities](https://v2.tauri.app/security/capabilities/) — native command/plugin access.
+- [Tauri desktop tests](https://v2.tauri.app/develop/tests/webdriver/) — packaged application automation.
+- [Tauri updater](https://v2.tauri.app/plugin/updater/) — signed update artifacts.
+- [rusqlite](https://github.com/rusqlite/rusqlite) — bundled SQLite and backup support.
+- [ts-rs](https://github.com/Aleph-Alpha/ts-rs) — Rust-to-TypeScript DTO generation.
+- [Dexie reference](https://dexie.org/docs/API-Reference) — frozen source IndexedDB and consistent migration exports.
 
 **END OF MASTER IMPLEMENTATION PLAN**

@@ -1,103 +1,112 @@
-# P07-G06 — Advance the standalone game clock
+# P07-G06 — Advance native careers deterministically
 
 ## 1. Context and authority
 
-- Master: `MASTER_PLAN.md` 2.0.0 §§4.5, 7.1 and 8.
-- Parent: `plans/phase7.md` §§5.3, 5.7–5.8.
-- Predecessor: `guide5.md`; find `feat(p07-g05): start standalone careers safely` and verify ancestry.
-- Commit: `feat(p07-g06): advance the standalone game clock`.
+- Master 3.0.0 §§4.6, 7.1, 8 and 9; parent [Phase 7](../phase7.md).
+- Historical predecessor: completed P07-G05 at `df23431abf8807cf61d2d1b63c66d6f7ef6a4cd3`.
+- **Mandatory prerequisite:** [native migration bridge](../native-migration.md) through committed NM-G09 with passed cutover gate.
+- Commit: `feat(p07-g06): advance native careers deterministically`.
+
+This guide remains Continue. It cannot start on the web/Dexie stack or perform the migration itself.
 
 ## 2. Goal and user-observable result
 
-Continue moves a standalone career from July 1 to its summer deadline and then kickoff, with persisted receipts and no automatic wall-clock progression. At kickoff the app explains that match simulation belongs to Phase 8.
+In the migrated native application, Continue advances July 1 → August 31 summer deadline → September 1 kickoff exactly once. State survives close/relaunch. At kickoff the app states `Match simulation arrives in Phase 8.`
 
 ## 3. Preconditions
 
-G05 creation/guards and G03 preview/cursor rules are implemented. Do not add fixtures, results, market ticks, contract expiry, growth, injuries or rollover. No schema redesign or package installation.
+Read bridge §10 and verify actual NM-G09 SHA/checks/gate PASS. Confirm native existing-feature parity, SQLite import/backup/reopen and generated DTOs. A pending/missing gate means do not execute this guide.
+
+Inspect working tree; preserve completed G01–G05 files and browser source data. No new dependency, TS progression engine, Dexie schema, fixture engine or migration redesign.
 
 ## 4. Files to inspect
 
-- Calendar/random APIs and simulation state/receipt repositories.
-- `src/data/transactions/run-command.ts`, campaign revision helpers and error mapping.
-- New standalone creation receipt/fingerprint handling from G05.
-- `src/features/dashboard/CommandCenterPage.tsx` and campaign-summary loader.
-- `src/features/matches/MatchJournalPage.tsx`, `src/app/layout/WorkspaceLayout.tsx` and `src/app/copy.ts`.
-- Existing conflict/command-center tests and match/legacy UI tests.
+- Rust game-core calendar/random and fixed JS compatibility vectors from NM-G04.
+- game-app current command/retry/guard use cases.
+- game-store simulation-state/receipt and optimistic transaction APIs.
+- Thin Tauri command registration and GameClient/generated DTOs.
+- Native Command Center and existing structured error/loading behavior.
+- Bridge native E2E harness, source snapshots and cutover evidence.
+
+These native paths are created by the bridge, not present at the initial G05 code checkpoint.
 
 ## 5. Files to create/modify
 
-| Path                                          | Change                                                                  |
-| --------------------------------------------- | ----------------------------------------------------------------------- |
-| `src/data/commands/advance-time.ts`           | Bounded receipt-aware transition                                        |
-| `src/domain/simulation/progression.ts`        | Shared readiness/operation identity if calendar module needs extraction |
-| Simulation repositories                       | Narrow state/receipt operations as needed                               |
-| Command Center / campaign summary             | Game date, next event, mode and Continue                                |
-| Standalone matches view / copy                | Clear future-phase state, no manual form                                |
-| `src/test/advance-time.test.ts`               | Atomic progression, retries and stale state                             |
-| `src/test/standalone-command-center.test.tsx` | Next action, feedback and reload                                        |
-| `README.md`                                   | Exact kickoff-only milestone                                            |
+- game-core progression preview/operation identity helpers.
+- game-app preview-time/advance-time services.
+- game-store narrow state/receipt atomic commit.
+- Thin Tauri preview/advance commands and generated DTO/GameClient methods.
+- Command Center: Game date, Next event, Continue and kickoff stop.
+- Rust calendar/advance fault/retry tests, UI tests and native progression E2E.
+- README and phase progress evidence.
 
-Input includes campaignId, expectedRevision, expectedDate, expectedLastBoundaryKey, expectedTargetBoundaryKey, IDs and timestamp. The UI passes the preview's boundary identity; it cannot select an arbitrary future date.
+Request includes campaign ID, expected revision, source date/cursor and target boundary identity. It cannot supply an arbitrary future date or precomputed result.
 
 ## 6. Implementation steps
 
-1. Validate input/mode/version and load the campaign, active season and simulation state.
-2. Derive a canonical request fingerprint from critical source/target identity and input revision, excluding fresh audit/action IDs. Operation key uses stable season + target boundary, not actionId.
-3. If an identical logical receipt already exists, return its persisted outcome without another write. A different fingerprint for the same operation cannot be treated as a successful retry. Use an explicit receipt-return path or a narrow transaction-wrapper extension: returning early inside the current `runCommand` update body must not report a fictitious incremented revision.
-4. For a new event, derive the authoritative next boundary and compare input source date/cursor/target. Refuse stale/backwards/unsupported transitions.
-5. Recheck source state, receipt and revision in a short transaction. Write currentDate, lastBoundaryKey and phase, a compact receipt, one audit and one campaign revision increment atomically.
-6. Preserve the expected conflict sentence in UI and existing failure code semantics. A failure leaves every row unchanged.
-7. Implement July 1 → August 31 deadline consumed → September 1 league kickoff. An already-consumed deadline cannot become today's next event again.
-8. At kickoff preview and command both stop with `Match simulation arrives in Phase 8.` Do not treat a disabled button as the only guard.
-9. Add Game date, Next event, mode/preset and Continue to standalone Command Center. Disable during commit, expose validation/conflict/success states and reload persisted state after success.
-10. Hide legacy manual match entry for standalone; keep the route useful with clear not-yet-available fixture/report copy. Do not remove legacy journal forms.
-11. No writes occur on render, polling, mount, reload, page focus or audit-time changes.
-
-Future Phase 9 will add actual offer/deadline decisions through the same readiness policy; do not fabricate bids or import legacy open offers into this new career.
+1. Load authoritative standalone campaign, active season and clock; validate supported versions and current ownership/mode.
+2. Use the ported pure preview. July 1/no cursor targets summer deadline; consumed August 31 targets kickoff; consumed September 1 league state is blocked.
+3. Define a stable operation key from logical season/boundary. Fingerprint critical source date/cursor, target and input revision; exclude fresh request/action/audit IDs and timestamps.
+4. Matching logical receipt returns the existing operation reference and actual persisted revision without changing state. On retry after later progress, refresh/read current clock; never present the old target as a rollback. A different fingerprint for the same operation is not a harmless retry.
+5. For a new event, compare expected source/target with the authoritative next boundary. Stale/conflicting/unsupported/backwards input fails.
+6. Recheck source/revision/receipt in the short DB-worker transaction. Write clock date/cursor/phase, receipt, audit and one revision increment together. Returning a prior receipt must not report a fictitious increment.
+7. No match/player/contract/registration/money changes occur. At kickoff UI and direct service both stop with the exact Phase 8 message.
+8. Wire GameClient native preview/advance, disable duplicate submission, show structured failure/stale-state remedy and refresh after persisted success.
+9. Never advance on mount, polling, focus, relaunch or wall-clock time. Preserve migrated legacy workflows and standalone manual-write guards.
 
 ## 7. Tests to add/change
 
-- July 1 → August 31 → September 1, with correct cursor/phase, one receipt/audit/revision per new event.
-- Replay the first request after later progress: return the first receipt, do not move time backward or forward again.
-- Same key but different critical inputs fails; altered fresh actionId does not produce another event.
-- Two concurrent next-event submissions cannot both advance; stale revision and wrong source/target produce no mutation.
-- Inject transaction failure and confirm state/cursor/audit/receipt/revision all roll back.
-- Different real timestamps/reloads do not change the game date or event seed.
-- Kickoff direct command refuses and writes nothing; no players/contracts/money/matches change during foundation progression.
-- Standalone/legacy UI and campaign isolation remain correct.
+- Both transitions, cursor/phase, stable keys/seeds and one audit/receipt/revision per new event.
+- Replay the first request after the second: original receipt, no state regression or extra event.
+- Altered fresh transport IDs do not produce another operation; altered critical fingerprint/stale source fails.
+- Concurrent same-event calls produce one effect, whether another call returns a replay or conflict.
+- Inject transaction failure: no partial clock/cursor/revision/audit/receipt.
+- UI reload and actual native close/relaunch preserve time. Different audit time has no gameplay effect.
+- Kickoff direct service refuses; other entity/finance/history rows stay unchanged.
+- Legacy/standalone and campaign isolation remain intact.
 
 ## 8. Verification commands
 
+The bridge must already have introduced these scripts:
+
 ```bash
-pnpm exec vitest run src/test/advance-time.test.ts src/test/standalone-command-center.test.tsx
+pnpm native:bindings:check
+pnpm native:check
 pnpm lint
 pnpm typecheck
 pnpm test
 pnpm build
-pnpm test:e2e
+pnpm tauri build
+pnpm test:desktop
 ```
+
+Run focused Rust/UI progression tests first. Browser compatibility checks remain separate when touched. No mocked invoke test can replace actual SQLite/native checks.
 
 ## 9. Manual acceptance check
 
-Create a standalone career at July 1, 2026. Click Continue once and confirm August 31; reload; click again and confirm September 1. Reload and wait without clicking: time stays unchanged. Confirm kickoff message, no further progression and no fabricated fixtures/results. Switch to legacy and verify its journal works.
+1. Open/create native Balanced Challenge career at July 1, 2026.
+2. Continue to August 31; close/relaunch; confirm same date and consumed deadline.
+3. Continue to September 1; close/relaunch; verify kickoff stop and no further advancement.
+4. Replay a prior request in integration/native tests; time must remain at the persisted latest date.
+5. Switch to migrated legacy save and verify manual history. No fixtures, offers or growth appeared.
 
 ## 10. Definition of done
 
-- [ ] Preview/command/button eligibility share the same rules.
-- [ ] Cursor and receipts prevent repeated same-day or retry progression.
-- [ ] Conflict and rollback leave no partial state.
-- [ ] Kickoff is a hard boundary, including direct calls.
-- [ ] UI and README accurately describe this milestone.
-- [ ] Required checks pass.
+- [ ] NM-G09 gate verified before implementation.
+- [ ] Rust preview/command/UI agree; no TS/Dexie authority.
+- [ ] Retry/concurrency/rollback/native relaunch checks pass.
+- [ ] Kickoff is a guarded hard stop.
+- [ ] No new match/market/lifecycle or migration work concealed here.
+- [ ] README and Phase 7 evidence match actual implementation.
 
 ## 11. Commit instructions
 
 ```text
-feat(p07-g06): advance the standalone game clock
+feat(p07-g06): advance native careers deterministically
 ```
 
-Record actual SHA/evidence in phase §10. Stage only related files; leave later-guide work untouched.
+Stage only this guide's files and progress row. Record actual SHA/checks; do not overwrite bridge evidence or completed guide files.
 
 ## 12. Handoff
 
-G07 verifies the foundation across migration, creation, progression and browser reload. Phase 8 must add the match handler and later schema migration; this guide must not skip unimplemented events to show a pretend playable season.
+P07-G07 certifies the whole native foundation with progression. Phase 8 still requires its own plan/guides and Rust fixture/result engine; do not bypass the kickoff stop.
