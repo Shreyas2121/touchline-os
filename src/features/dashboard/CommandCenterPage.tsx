@@ -11,6 +11,7 @@ import { listAuditEvents } from '../../data/repositories/audit-events'
 import { getActiveConstitution } from '../../data/repositories/constitutions'
 import { listContractsByClub } from '../../data/repositories/contracts'
 import { listLedgerEntries } from '../../data/repositories/ledger-entries'
+import { listOffers } from '../../data/repositories/offers'
 import { getActiveSeason } from '../../data/repositories/seasons'
 import { formatCapacity, transferCapacity } from '../../domain/finance/capacity'
 import {
@@ -28,6 +29,7 @@ type Summary = {
   activity?: readonly { id: string; summary: string }[]
   capacity?: string
   wages?: string
+  activeBids?: number
   missing?: boolean
   failed?: boolean
   chooseClub?: string
@@ -57,7 +59,7 @@ export function CommandCenterPage() {
           return
         }
         const season = await getActiveSeason(database, campaign.id)
-        const [club, players, constitution, contracts, entries] =
+        const [club, players, constitution, contracts, entries, offers] =
           await Promise.all([
             getClub(database, campaign.id, campaign.managedClubId),
             listPlayersByClub(database, campaign.id, campaign.managedClubId),
@@ -71,7 +73,15 @@ export function CommandCenterPage() {
                   campaign.managedClubId,
                 )
               : Promise.resolve([]),
+            season
+              ? listOffers(database, campaign.id, season.id)
+              : Promise.resolve([]),
           ])
+        const managedPlayerIds = new Set(players.map((player) => player.id))
+        const activeBids = offers.filter(
+          (offer) =>
+            offer.status === 'open' && managedPlayerIds.has(offer.playerId),
+        ).length
         const rule = constitution?.rules.find(
           (item) => item.id === 'SELL_TO_BUY',
         )
@@ -95,6 +105,7 @@ export function CommandCenterPage() {
                   wageCommitment(contracts, campaign.managedClubId),
                 )
               : 'Unknown',
+            activeBids,
           })
       } catch {
         if (active) setSummary({ campaignId, failed: true })
@@ -129,6 +140,7 @@ export function CommandCenterPage() {
           { label: 'Squad age', value: squadAgeSummary(summary.ages ?? []) },
           { label: 'Transfer capacity', value: summary.capacity ?? 'Unknown' },
           { label: 'Weekly wages', value: summary.wages ?? 'Unknown' },
+          { label: 'Active bids', value: String(summary.activeBids ?? 0) },
           { label: 'Registration', value: 'Unknown' },
         ]}
       />

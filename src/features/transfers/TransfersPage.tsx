@@ -9,12 +9,15 @@ import { getClub, listClubs } from '../../data/repositories/clubs'
 import { getActiveConstitution } from '../../data/repositories/constitutions'
 import { listContractsByClub } from '../../data/repositories/contracts'
 import { listLedgerEntries } from '../../data/repositories/ledger-entries'
+import { listOffers } from '../../data/repositories/offers'
 import { listPlayers } from '../../data/repositories/players'
 import { getActiveSeason } from '../../data/repositories/seasons'
 import { listShortlist } from '../../data/repositories/shortlist'
+import { listTransfers } from '../../data/repositories/transfers'
 import { transferCapacity } from '../../domain/finance/capacity'
 import { wageCommitment } from '../../domain/finance/wages'
 import { dateOnlySchema, type DateOnly } from '../../domain/models/dates'
+import { formatMoneyEuros } from '../../domain/models/money'
 import {
   entityIdSchema,
   type Campaign,
@@ -23,10 +26,13 @@ import {
   type Contract,
   type EntityId,
   type LedgerEntry,
+  type Offer,
   type Player,
   type Season,
   type ShortlistItem,
+  type Transfer,
 } from '../../domain/validation/schemas'
+import { OfferInbox } from './OfferInbox'
 import { PlayerSearch } from './PlayerSearch'
 import { ScenarioPreview } from './ScenarioPreview'
 
@@ -41,6 +47,8 @@ type State = {
   contracts?: Contract[]
   constitution?: Constitution
   entries?: LedgerEntry[]
+  offers?: Offer[]
+  transfers?: Transfer[]
   failed?: boolean
   missing?: boolean
   chooseClub?: string
@@ -85,6 +93,8 @@ export function TransfersPage() {
           contracts,
           constitution,
           entries,
+          offers,
+          transfers,
         ] = await Promise.all([
           getClub(database, campaign.id, campaign.managedClubId),
           listClubs(database, campaign.id),
@@ -98,6 +108,8 @@ export function TransfersPage() {
             season.id,
             campaign.managedClubId,
           ),
+          listOffers(database, campaign.id, season.id),
+          listTransfers(database, campaign.id, season.id),
         ])
         if (active)
           setState({
@@ -111,6 +123,8 @@ export function TransfersPage() {
             contracts,
             constitution,
             entries,
+            offers,
+            transfers,
           })
       } catch {
         if (active) setState({ campaignId, failed: true })
@@ -184,6 +198,72 @@ export function TransfersPage() {
           setReload((value) => value + 1)
         }}
       />
+      <OfferInbox
+        key={campaign.id}
+        campaignId={campaign.id}
+        seasonId={season.id}
+        revision={campaign.revision}
+        managedClub={state.club}
+        players={players}
+        clubs={state.clubs ?? []}
+        offers={state.offers ?? []}
+        constitution={constitution}
+        initialDate={initialDate}
+        onSaved={() => setReload((value) => value + 1)}
+      />
+      <CompletedDeals transfers={state.transfers ?? []} players={players} />
     </div>
+  )
+}
+
+function dealKind(kind: Transfer['kind']): string {
+  if (kind === 'sale') return 'Sale'
+  if (kind === 'purchase') return 'Purchase'
+  return 'Free'
+}
+
+function CompletedDeals({
+  transfers,
+  players,
+}: {
+  transfers: readonly Transfer[]
+  players: readonly Player[]
+}) {
+  const deals = transfers.slice().sort((left, right) => {
+    if (left.effectiveOn !== right.effectiveOn)
+      return left.effectiveOn < right.effectiveOn ? -1 : 1
+    return left.id < right.id ? -1 : left.id > right.id ? 1 : 0
+  })
+  return (
+    <section aria-label="Completed deals" className="space-y-3">
+      <h2>Completed deals</h2>
+      {deals.length === 0 ? (
+        <p>No completed deals for this season.</p>
+      ) : (
+        <table className="w-full text-left">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Player</th>
+              <th>Kind</th>
+              <th>Fee</th>
+            </tr>
+          </thead>
+          <tbody>
+            {deals.map((transfer) => (
+              <tr key={transfer.id}>
+                <td>{transfer.effectiveOn}</td>
+                <td>
+                  {players.find((player) => player.id === transfer.playerId)
+                    ?.name ?? transfer.playerId}
+                </td>
+                <td>{dealKind(transfer.kind)}</td>
+                <td>{formatMoneyEuros(transfer.feeCents)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </section>
   )
 }
