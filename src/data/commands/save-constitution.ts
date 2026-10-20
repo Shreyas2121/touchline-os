@@ -23,6 +23,7 @@ import {
   listLedgerEntries,
 } from '../repositories/ledger-entries'
 import { getActiveSeason } from '../repositories/seasons'
+import { rejectChallengeConstitution } from './guards'
 import { rejectCommand, runCommand } from '../transactions/run-command'
 
 export const saveConstitutionInputSchema = z.strictObject({
@@ -146,6 +147,7 @@ export function saveConstitution(
     async (revision) => {
       const campaign = await getCampaign(database, data.campaignId)
       if (!campaign) rejectCommand('NOT_FOUND', 'Campaign not found.')
+      rejectChallengeConstitution(campaign)
       const season = await getActiveSeason(database, campaign.id)
       if (!season)
         throw new PersistenceError('SCOPE', 'Season is not the active season.')

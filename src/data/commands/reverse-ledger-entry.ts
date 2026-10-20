@@ -16,6 +16,7 @@ import {
   getLedgerEntry,
   insertLedgerEntry,
 } from '../repositories/ledger-entries'
+import { rejectStandaloneWrite } from './guards'
 import { rejectCommand, runCommand } from '../transactions/run-command'
 
 export const reverseLedgerEntryInputSchema = z.strictObject({
@@ -57,6 +58,7 @@ export function reverseLedgerEntry(
     async (revision) => {
       const campaign = await getCampaign(database, data.campaignId)
       if (!campaign) rejectCommand('NOT_FOUND', 'Campaign not found.')
+      rejectStandaloneWrite(campaign, 'ledger')
       const target = await getLedgerEntry(database, campaign.id, data.entryId)
       if (!target) rejectCommand('NOT_FOUND', 'Ledger entry not found.')
       const rows = await database.ledgerEntries

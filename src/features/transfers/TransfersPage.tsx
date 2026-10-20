@@ -4,6 +4,10 @@ import { SectionPage } from '../../app/pages/SectionPage'
 import { useDatabase } from '../../app/providers/database'
 import { systemClock } from '../../data/clock'
 import { listAuditEvents } from '../../data/repositories/audit-events'
+import {
+  awaitsClubChoice,
+  negotiationUnavailable,
+} from '../../domain/simulation/career'
 import { getCampaign } from '../../data/repositories/campaigns'
 import { getClub, listClubs } from '../../data/repositories/clubs'
 import { getActiveConstitution } from '../../data/repositories/constitutions'
@@ -76,10 +80,7 @@ export function TransfersPage() {
           return
         }
         const audits = await listAuditEvents(database, campaign.id)
-        if (
-          campaign.seed !== null &&
-          !audits.some((audit) => audit.actionType === 'campaign.select-club')
-        ) {
+        if (awaitsClubChoice(campaign, audits)) {
           if (active) setState({ campaignId, chooseClub: campaign.id })
           return
         }
@@ -175,42 +176,48 @@ export function TransfersPage() {
         }}
       />
       {notice ? <p role="status">{notice}</p> : null}
-      <ScenarioPreview
-        key={selected?.id ?? 'none'}
-        player={selected}
-        season={season}
-        constitution={constitution}
-        snapshot={{
-          revision: campaign.revision,
-          remainingCapacityCents: constitution
-            ? breakdown.remainingCents
-            : null,
-        }}
-        wages={wages}
-        contracts={state.contracts ?? []}
-        clubs={state.clubs ?? []}
-        managedClubId={campaign.managedClubId}
-        revision={campaign.revision}
-        initialDate={initialDate}
-        onRecorded={() => {
-          setNotice('Recorded the transfer.')
-          setSelectedId(null)
-          setReload((value) => value + 1)
-        }}
-      />
-      <OfferInbox
-        key={campaign.id}
-        campaignId={campaign.id}
-        seasonId={season.id}
-        revision={campaign.revision}
-        managedClub={state.club}
-        players={players}
-        clubs={state.clubs ?? []}
-        offers={state.offers ?? []}
-        constitution={constitution}
-        initialDate={initialDate}
-        onSaved={() => setReload((value) => value + 1)}
-      />
+      {campaign.mode === 'standalone' ? (
+        <p>{negotiationUnavailable}</p>
+      ) : (
+        <>
+          <ScenarioPreview
+            key={selected?.id ?? 'none'}
+            player={selected}
+            season={season}
+            constitution={constitution}
+            snapshot={{
+              revision: campaign.revision,
+              remainingCapacityCents: constitution
+                ? breakdown.remainingCents
+                : null,
+            }}
+            wages={wages}
+            contracts={state.contracts ?? []}
+            clubs={state.clubs ?? []}
+            managedClubId={campaign.managedClubId}
+            revision={campaign.revision}
+            initialDate={initialDate}
+            onRecorded={() => {
+              setNotice('Recorded the transfer.')
+              setSelectedId(null)
+              setReload((value) => value + 1)
+            }}
+          />
+          <OfferInbox
+            key={campaign.id}
+            campaignId={campaign.id}
+            seasonId={season.id}
+            revision={campaign.revision}
+            managedClub={state.club}
+            players={players}
+            clubs={state.clubs ?? []}
+            offers={state.offers ?? []}
+            constitution={constitution}
+            initialDate={initialDate}
+            onSaved={() => setReload((value) => value + 1)}
+          />
+        </>
+      )}
       <CompletedDeals transfers={state.transfers ?? []} players={players} />
     </div>
   )

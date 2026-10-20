@@ -88,6 +88,8 @@ export function ChooseClubPage() {
   if (!data || data.id !== campaignId)
     return <p role="status">{message || loadingCampaign}</p>
   if (!data.campaign) return null
+  if (data.campaign.mode === 'standalone')
+    return <Navigate to={`/app/${data.campaign.id}/command-center`} replace />
   if (data.campaign.seed === null)
     return <Navigate to={`/app/${data.campaign.id}/command-center`} replace />
   return (

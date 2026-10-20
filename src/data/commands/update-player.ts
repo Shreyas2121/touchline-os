@@ -14,6 +14,7 @@ import { PersistenceError } from '../errors'
 import { getCampaign, updateCampaign } from '../repositories/campaigns'
 import { getPlayer, updateStoredPlayer } from '../repositories/players'
 import { getActiveSeason } from '../repositories/seasons'
+import { rejectStandaloneWrite } from './guards'
 import { rejectCommand, runCommand } from '../transactions/run-command'
 
 export const updatePlayerInputSchema = z.strictObject({
@@ -85,6 +86,7 @@ export function updatePlayer(
       })
       const campaign = await getCampaign(database, data.campaignId)
       if (!campaign) rejectCommand('NOT_FOUND', 'Campaign not found.')
+      rejectStandaloneWrite(campaign, 'player')
       await updateStoredPlayer(database, data.campaignId, player)
       await updateCampaign(
         database,

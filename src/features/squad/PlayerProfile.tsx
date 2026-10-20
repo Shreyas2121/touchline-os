@@ -20,6 +20,10 @@ import {
   displayAge,
   sourceLabel,
 } from '../../domain/player/squad-view'
+import {
+  contractEditUnavailable,
+  playerEditUnavailable,
+} from '../../domain/simulation/career'
 import type {
   AuditEvent,
   Contract,
@@ -57,6 +61,7 @@ type ProfileProps = {
   player: Player
   season?: Season
   revision: number
+  readOnly?: boolean
   onSaved: (revision: number) => void
 }
 
@@ -64,6 +69,7 @@ export function PlayerProfile({
   player,
   season,
   revision,
+  readOnly = false,
   onSaved,
 }: ProfileProps) {
   const database = useDatabase()
@@ -124,8 +130,9 @@ export function PlayerProfile({
       </p>
       <p>{formatMoneyUnknown(player.marketValueCents)}</p>
       <p>
-        Source stays {sourceLabel(player.source)}. This correction is recorded
-        in activity.
+        {readOnly
+          ? `${playerEditUnavailable} ${contractEditUnavailable}`
+          : `Source stays ${sourceLabel(player.source)}. This correction is recorded in activity.`}
       </p>
       {player.isNewgen && <p>Newgen</p>}
       <dl aria-label="Attributes">
@@ -144,22 +151,26 @@ export function PlayerProfile({
           onSaved={onSaved}
         />
       )}
-      <ContractForm
-        player={player}
-        revision={revision}
-        onSaved={onSaved}
-        setMessage={setMessage}
-      />
+      {readOnly ? null : (
+        <ContractForm
+          player={player}
+          revision={revision}
+          onSaved={onSaved}
+          setMessage={setMessage}
+        />
+      )}
       {details && details.revision === revision && !details.failed && (
         <ContractList contracts={details.contracts} />
       )}
-      <CorrectionForm
-        key={JSON.stringify(player)}
-        player={player}
-        revision={revision}
-        onSaved={onSaved}
-        setMessage={setMessage}
-      />
+      {readOnly ? null : (
+        <CorrectionForm
+          key={JSON.stringify(player)}
+          player={player}
+          revision={revision}
+          onSaved={onSaved}
+          setMessage={setMessage}
+        />
+      )}
       {message && <p role="status">{message}</p>}
       {!details || details.revision !== revision ? (
         <p>Loading player details.</p>

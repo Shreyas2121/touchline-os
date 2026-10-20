@@ -4,11 +4,13 @@ import { loadingCampaign } from '../../app/copy'
 import { SectionPage } from '../../app/pages/SectionPage'
 import { useDatabase } from '../../app/providers/database'
 import { listAuditEvents } from '../../data/repositories/audit-events'
+import { awaitsClubChoice } from '../../domain/simulation/career'
 import { getCampaign } from '../../data/repositories/campaigns'
 import { getActiveConstitution } from '../../data/repositories/constitutions'
 import { listPlayersByClub } from '../../data/repositories/players'
 import { listRegistrations } from '../../data/repositories/registrations'
 import { getActiveSeason } from '../../data/repositories/seasons'
+import { listPlayerSimulationStates } from '../../data/repositories/simulation'
 import {
   entityIdSchema,
   type Constitution,
@@ -25,6 +27,10 @@ type State = {
   players?: Player[]
   constitution?: Constitution
   registrations?: Registration[]
+  eligibility?: ReadonlyMap<
+    string,
+    { homegrownClub: boolean; homegrownNation: boolean }
+  >
   missing?: boolean
   failed?: boolean
   chooseClub?: string
@@ -50,17 +56,15 @@ export function RegistrationPage() {
           return
         }
         const audits = await listAuditEvents(database, campaign.id)
-        if (
-          campaign.seed !== null &&
-          !audits.some((audit) => audit.actionType === 'campaign.select-club')
-        ) {
+        if (awaitsClubChoice(campaign, audits)) {
           if (active) setState({ campaignId, chooseClub: campaign.id })
           return
         }
-        const [season, constitution, players] = await Promise.all([
+        const [season, constitution, players, profiles] = await Promise.all([
           getActiveSeason(database, campaign.id),
           getActiveConstitution(database, campaign.id),
           listPlayersByClub(database, campaign.id, campaign.managedClubId),
+          listPlayerSimulationStates(database, campaign.id),
         ])
         const rule = constitution?.rules.find(
           (item) => item.id === 'REGISTRATION_QUOTA',
@@ -82,6 +86,19 @@ export function RegistrationPage() {
             players,
             constitution,
             registrations,
+            eligibility: new Map(
+              profiles
+                .filter((profile) =>
+                  players.some((player) => player.id === profile.playerId),
+                )
+                .map((profile) => [
+                  profile.playerId,
+                  {
+                    homegrownClub: profile.homegrownClub,
+                    homegrownNation: profile.homegrownNation,
+                  },
+                ]),
+            ),
           })
       } catch {
         if (active) setState({ campaignId, failed: true })
@@ -123,6 +140,7 @@ export function RegistrationPage() {
             players={state.players ?? []}
             constitution={state.constitution}
             registrations={state.registrations ?? []}
+            eligibility={state.eligibility}
             revision={state.revision}
             onEdit={() => setNotice(null)}
             onSaved={() => {

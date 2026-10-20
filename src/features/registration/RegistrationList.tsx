@@ -7,6 +7,7 @@ import { systemClock } from '../../data/clock'
 import { saveRegistration } from '../../data/commands/save-registration'
 import { createEntityId } from '../../data/ids'
 import { dateOnlySchema } from '../../domain/models/dates'
+import { unsavedRegistrationDraft } from '../../domain/player/registration-draft'
 import { displayAge } from '../../domain/player/squad-view'
 import { evaluateAction } from '../../domain/rules/evaluate-action'
 import type { RuleReport } from '../../domain/rules/types'
@@ -38,9 +39,16 @@ function emptyDraft(): Draft {
   }
 }
 
-function draftFor(player: Player, rows: readonly Registration[]): Draft {
+function draftFor(
+  player: Player,
+  rows: readonly Registration[],
+  eligibility: ReadonlyMap<
+    string,
+    { homegrownClub: boolean; homegrownNation: boolean }
+  >,
+): Draft {
   const row = rows.find((item) => item.playerId === player.id)
-  if (!row) return emptyDraft()
+  if (!row) return unsavedRegistrationDraft(player, eligibility.get(player.id))
   return {
     status: row.status,
     homegrownClub: row.homegrownClub,
@@ -52,11 +60,20 @@ function draftFor(player: Player, rows: readonly Registration[]): Draft {
 function draftsFor(
   players: readonly Player[],
   rows: readonly Registration[],
+  eligibility: ReadonlyMap<
+    string,
+    { homegrownClub: boolean; homegrownNation: boolean }
+  >,
 ): Record<string, Draft> {
   return Object.fromEntries(
-    players.map((player) => [player.id, draftFor(player, rows)]),
+    players.map((player) => [player.id, draftFor(player, rows, eligibility)]),
   )
 }
+
+const noEligibility = new Map<
+  string,
+  { homegrownClub: boolean; homegrownNation: boolean }
+>()
 
 export function RegistrationList({
   campaignId,
@@ -64,6 +81,7 @@ export function RegistrationList({
   players,
   constitution,
   registrations,
+  eligibility = noEligibility,
   revision,
   onSaved,
   onEdit,
@@ -73,6 +91,10 @@ export function RegistrationList({
   players: readonly Player[]
   constitution?: Constitution
   registrations: readonly Registration[]
+  eligibility?: ReadonlyMap<
+    string,
+    { homegrownClub: boolean; homegrownNation: boolean }
+  >
   revision: number
   onSaved: (revision: number) => void
   onEdit: () => void
@@ -81,7 +103,9 @@ export function RegistrationList({
   const squad = [...players].sort((left, right) =>
     left.name.localeCompare(right.name, 'en'),
   )
-  const [drafts, setDrafts] = useState(() => draftsFor(players, registrations))
+  const [drafts, setDrafts] = useState(() =>
+    draftsFor(players, registrations, eligibility),
+  )
   const [report, setReport] = useState<RuleReport | null>(null)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)

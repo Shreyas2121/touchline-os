@@ -40,6 +40,7 @@ import { listLineups, updateLineup } from '../repositories/lineups'
 import { getPlayer, updateStoredPlayer } from '../repositories/players'
 import { getActiveSeason } from '../repositories/seasons'
 import { insertTransfer } from '../repositories/transfers'
+import { rejectStandaloneWrite } from './guards'
 import { rejectCommand, runCommand } from '../transactions/run-command'
 
 const directionSchema = z.enum(['purchase', 'free-in', 'sale', 'free-out'])
@@ -132,6 +133,7 @@ export function recordTransfer(
     async (revision) => {
       const campaign = await getCampaign(database, data.campaignId)
       if (!campaign) rejectCommand('NOT_FOUND', 'Campaign not found.')
+      rejectStandaloneWrite(campaign, 'negotiation')
       const season = await getActiveSeason(database, campaign.id)
       if (!season || season.id !== data.seasonId)
         throw new PersistenceError('SCOPE', 'Season is not the active season.')

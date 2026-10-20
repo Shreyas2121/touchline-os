@@ -4,6 +4,8 @@ import { loadingCampaign } from '../../app/copy'
 import { SectionPage } from '../../app/pages/SectionPage'
 import { useDatabase } from '../../app/providers/database'
 import { listAuditEvents } from '../../data/repositories/audit-events'
+import { awaitsClubChoice } from '../../domain/simulation/career'
+import { matchSimulationUnavailable } from '../../domain/simulation/calendar'
 import { getCampaign } from '../../data/repositories/campaigns'
 import { listLineups } from '../../data/repositories/lineups'
 import { listMatches } from '../../data/repositories/matches'
@@ -28,6 +30,7 @@ type State = {
   matches?: MatchRecord[]
   missing?: boolean
   failed?: boolean
+  standalone?: boolean
   chooseClub?: string
 }
 
@@ -49,10 +52,7 @@ export function MatchJournalPage() {
           return
         }
         const audits = await listAuditEvents(database, campaign.id)
-        if (
-          campaign.seed !== null &&
-          !audits.some((audit) => audit.actionType === 'campaign.select-club')
-        ) {
+        if (awaitsClubChoice(campaign, audits)) {
           if (active) setState({ campaignId, chooseClub: campaign.id })
           return
         }
@@ -74,6 +74,7 @@ export function MatchJournalPage() {
             players,
             lineups,
             matches,
+            standalone: campaign.mode === 'standalone',
           })
       } catch {
         if (active) setState({ campaignId, failed: true })
@@ -101,18 +102,22 @@ export function MatchJournalPage() {
       <SectionPage sectionId="matches" />
       {state.season && state.revision !== undefined ? (
         <>
-          <MatchForm
-            key={state.revision}
-            campaignId={entityIdSchema.parse(campaignId)}
-            seasonId={state.season.id}
-            revision={state.revision}
-            players={state.players ?? []}
-            lineups={state.lineups ?? []}
-            onSaved={() => {
-              setNotice('Recorded the match.')
-              setReload((current) => current + 1)
-            }}
-          />
+          {state.standalone ? (
+            <p>{matchSimulationUnavailable}</p>
+          ) : (
+            <MatchForm
+              key={state.revision}
+              campaignId={entityIdSchema.parse(campaignId)}
+              seasonId={state.season.id}
+              revision={state.revision}
+              players={state.players ?? []}
+              lineups={state.lineups ?? []}
+              onSaved={() => {
+                setNotice('Recorded the match.')
+                setReload((current) => current + 1)
+              }}
+            />
+          )}
           {notice ? <p role="status">{notice}</p> : null}
           {(state.matches ?? []).length === 0 ? (
             <p>No matches are recorded.</p>

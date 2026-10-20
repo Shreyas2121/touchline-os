@@ -11,6 +11,7 @@ import {
 import type { TouchlineDatabase } from '../db'
 import { getCampaign, updateCampaign } from '../repositories/campaigns'
 import { insertPlayer } from '../repositories/players'
+import { rejectStandaloneWrite } from './guards'
 import { runCommand, type RunCommandOptions } from '../transactions/run-command'
 
 export const addPlayerInputSchema = z.strictObject({
@@ -81,6 +82,7 @@ export function addPlayer(
       })
       const current = await getCampaign(database, parsed.campaignId)
       if (current === undefined) throw new Error('Campaign not found.')
+      rejectStandaloneWrite(current, 'player')
       const campaign = campaignSchema.parse({
         ...current,
         updatedAt: parsed.now,

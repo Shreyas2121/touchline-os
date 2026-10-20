@@ -11,6 +11,7 @@ import type { TouchlineDatabase } from '../db'
 import { PersistenceError } from '../errors'
 import { getCampaign, updateCampaign } from '../repositories/campaigns'
 import { getClub } from '../repositories/clubs'
+import { rejectStandaloneWrite } from './guards'
 import { runCommand } from '../transactions/run-command'
 
 const inputSchema = z.strictObject({
@@ -48,6 +49,7 @@ export function selectManagedClub(
         throw new PersistenceError('SCOPE', 'Club is not in this campaign.')
       const current = await getCampaign(database, command.campaignId)
       if (!current) throw new Error('Campaign not found.')
+      rejectStandaloneWrite(current, 'club')
       const campaign = campaignSchema.parse({
         ...current,
         managedClubId: club.id,

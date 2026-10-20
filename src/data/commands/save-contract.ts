@@ -20,6 +20,7 @@ import {
 } from '../repositories/contracts'
 import { getPlayer } from '../repositories/players'
 import { getActiveSeason } from '../repositories/seasons'
+import { rejectStandaloneWrite } from './guards'
 import { rejectCommand, runCommand } from '../transactions/run-command'
 
 export const saveContractInputSchema = z.strictObject({
@@ -66,6 +67,7 @@ export function saveContract(
     async (revision) => {
       const campaign = await getCampaign(database, data.campaignId)
       if (!campaign) rejectCommand('NOT_FOUND', 'Campaign not found.')
+      rejectStandaloneWrite(campaign, 'contract')
       const player = await getPlayer(database, campaign.id, data.playerId)
       if (!player) rejectCommand('NOT_FOUND', 'Player not found.')
       if (player.clubId !== campaign.managedClubId)

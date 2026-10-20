@@ -8,12 +8,15 @@ import { getCampaign } from '../../data/repositories/campaigns'
 import { getClub } from '../../data/repositories/clubs'
 import { listPlayersByClub } from '../../data/repositories/players'
 import { listAuditEvents } from '../../data/repositories/audit-events'
+import { awaitsClubChoice } from '../../domain/simulation/career'
 import { getActiveConstitution } from '../../data/repositories/constitutions'
 import { listContractsByClub } from '../../data/repositories/contracts'
 import { listLedgerEntries } from '../../data/repositories/ledger-entries'
 import { listOffers } from '../../data/repositories/offers'
 import { listRegistrations } from '../../data/repositories/registrations'
 import { getActiveSeason } from '../../data/repositories/seasons'
+import { getSimulationState } from '../../data/repositories/simulation'
+import { matchSimulationUnavailable } from '../../domain/simulation/calendar'
 import { formatCapacity, transferCapacity } from '../../domain/finance/capacity'
 import {
   formatWageCommitment,
@@ -33,6 +36,7 @@ type Summary = {
   activeBids?: number
   expiringContracts?: number
   registration?: string
+  gameDate?: string
   missing?: boolean
   failed?: boolean
   chooseClub?: string
@@ -54,10 +58,7 @@ export function CommandCenterPage() {
           return
         }
         const audits = await listAuditEvents(database, campaign.id)
-        if (
-          campaign.seed !== null &&
-          !audits.some((audit) => audit.actionType === 'campaign.select-club')
-        ) {
+        if (awaitsClubChoice(campaign, audits)) {
           if (active) setSummary({ campaignId, chooseClub: campaign.id })
           return
         }
@@ -120,6 +121,10 @@ export function CommandCenterPage() {
                 prizeReinvestmentPct: rule?.prizeReinvestmentPct ?? 0,
               }).remainingCents
             : null
+        const clock =
+          campaign.mode === 'standalone'
+            ? await getSimulationState(database, campaign.id)
+            : undefined
         if (active)
           setSummary({
             campaignId,
@@ -136,6 +141,7 @@ export function CommandCenterPage() {
             activeBids,
             expiringContracts,
             registration,
+            gameDate: clock?.currentDate,
           })
       } catch {
         if (active) setSummary({ campaignId, failed: true })
@@ -163,6 +169,9 @@ export function CommandCenterPage() {
   return (
     <>
       <SectionPage sectionId="command-center" />
+      {summary.gameDate ? (
+        <p>{`Game date ${summary.gameDate}. ${matchSimulationUnavailable}`}</p>
+      ) : null}
       <h2>{summary.clubName}</h2>
       <KpiRibbon
         items={[

@@ -12,10 +12,12 @@ import type { Campaign, LedgerEntry } from '../../domain/validation/schemas'
 export function LedgerTable({
   entries,
   campaign,
+  allowReverse = true,
   onSaved,
 }: {
   entries: readonly LedgerEntry[]
   campaign: Campaign
+  allowReverse?: boolean
   onSaved: () => void
 }) {
   const database = useDatabase()
@@ -86,26 +88,28 @@ export function LedgerTable({
               <td>{formatMoneyEuros(entry.amountCents)}</td>
               <td>{entry.note ?? '—'}</td>
               <td>
-                {entry.kind !== 'reversal' && !reversed.has(entry.id) && (
-                  <Button
-                    disabled={busy}
-                    onClick={(event) => {
-                      trigger.current = event.currentTarget
-                      setTarget(entry)
-                      setNote('')
-                      setMessage('')
-                    }}
-                  >
-                    Reverse {displayLedgerKind(entry.kind)}
-                  </Button>
-                )}
+                {allowReverse &&
+                  entry.kind !== 'reversal' &&
+                  !reversed.has(entry.id) && (
+                    <Button
+                      disabled={busy}
+                      onClick={(event) => {
+                        trigger.current = event.currentTarget
+                        setTarget(entry)
+                        setNote('')
+                        setMessage('')
+                      }}
+                    >
+                      Reverse {displayLedgerKind(entry.kind)}
+                    </Button>
+                  )}
               </td>
             </tr>
           ))}
         </tbody>
       </table>
       {entries.length === 0 && <p>No ledger entries for this season.</p>}
-      {target && (
+      {allowReverse && target && (
         <section
           role="region"
           aria-label="Reverse ledger entry"

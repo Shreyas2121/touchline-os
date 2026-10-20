@@ -22,6 +22,7 @@ import {
   GENERATOR_VERSION,
 } from '../../domain/seed/generate-world'
 import { entityIdSchema, type Campaign } from '../../domain/validation/schemas'
+import { NewCareerForm } from './NewCareerForm'
 import type { ConstitutionPresetName } from '../../domain/rules/presets'
 
 type Panel =
@@ -272,6 +273,7 @@ export function CampaignManager() {
 
   return (
     <div className="space-y-4">
+      <NewCareerForm onStarted={() => void reload()} />
       <div className="flex flex-wrap gap-2">
         <Button
           disabled={busy || campaigns === null}

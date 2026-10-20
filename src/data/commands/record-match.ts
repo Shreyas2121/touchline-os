@@ -16,6 +16,7 @@ import { getCampaign, updateCampaign } from '../repositories/campaigns'
 import { insertMatch } from '../repositories/matches'
 import { listPlayersByClub } from '../repositories/players'
 import { getActiveSeason } from '../repositories/seasons'
+import { rejectStandaloneWrite } from './guards'
 import { rejectCommand, runCommand } from '../transactions/run-command'
 
 const appearanceInputSchema = z.strictObject({
@@ -82,6 +83,7 @@ export function recordMatch(
     async (revision) => {
       const campaign = await getCampaign(database, data.campaignId)
       if (!campaign) rejectCommand('NOT_FOUND', 'Campaign not found.')
+      rejectStandaloneWrite(campaign, 'match')
       const season = await getActiveSeason(database, campaign.id)
       if (!season || season.id !== data.seasonId)
         throw new PersistenceError('SCOPE', 'Season is not the active season.')

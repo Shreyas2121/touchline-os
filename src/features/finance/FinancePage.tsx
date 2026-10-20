@@ -11,6 +11,10 @@ import { postLedgerEntry } from '../../data/commands/post-ledger-entry'
 import { getCampaign } from '../../data/repositories/campaigns'
 import { getClub } from '../../data/repositories/clubs'
 import { listAuditEvents } from '../../data/repositories/audit-events'
+import {
+  awaitsClubChoice,
+  manualLedgerUnavailable,
+} from '../../domain/simulation/career'
 import { getActiveConstitution } from '../../data/repositories/constitutions'
 import { listContractsByClub } from '../../data/repositories/contracts'
 import { listLedgerEntries } from '../../data/repositories/ledger-entries'
@@ -174,10 +178,7 @@ export function FinancePage() {
           return
         }
         const audits = await listAuditEvents(database, campaign.id)
-        if (
-          campaign.seed !== null &&
-          !audits.some((audit) => audit.actionType === 'campaign.select-club')
-        ) {
+        if (awaitsClubChoice(campaign, audits)) {
           if (active) setState({ campaignId, chooseClub: campaign.id })
           return
         }
@@ -259,17 +260,22 @@ export function FinancePage() {
         clubId={campaign.managedClubId}
         constitution={constitution}
       />
-      <PrizeForm
-        key={`prize-${campaignId}`}
-        campaign={campaign}
-        season={season}
-        onSaved={onSaved}
-        initialDate={effectiveDate}
-      />
+      {campaign.mode === 'standalone' ? (
+        <p>{manualLedgerUnavailable}</p>
+      ) : (
+        <PrizeForm
+          key={`prize-${campaignId}`}
+          campaign={campaign}
+          season={season}
+          onSaved={onSaved}
+          initialDate={effectiveDate}
+        />
+      )}
       <LedgerTable
         key={`ledger-${campaignId}`}
         entries={state.entries ?? []}
         campaign={campaign}
+        allowReverse={campaign.mode !== 'standalone'}
         onSaved={onSaved}
       />
       {constitution && (

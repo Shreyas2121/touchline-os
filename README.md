@@ -2,7 +2,7 @@
 
 Touchline OS is being developed as an offline-first **Standalone Sporting Director Sim**: build squads, negotiate transfers, follow board philosophies and simulate a fictional football world.
 
-The current code is complete through **Phase 7 Guide 1**, the former companion match journal. Standalone migration, world initialization and game time are planned next; match simulation is not implemented yet. See [MASTER_PLAN.md](MASTER_PLAN.md), [Phase 7](plans/phase7.md) and [the pivot decision](DECISIONS.md). The next implementation guide is [P07-G02](plans/phase7/guide2.md).
+The current code is complete through **Phase 7 Guide 5**. A new standalone career starts on 1 July with a generated club world, one chosen club, and either Challenge or Sandbox board rules. Challenge rules stay locked. Legacy companion campaigns can still record manual matches, offers, and ledger entries. Match simulation, transfer negotiation, and Continue are not implemented yet. See [MASTER_PLAN.md](MASTER_PLAN.md), [Phase 7](plans/phase7.md) and [the pivot decision](DECISIONS.md). The next implementation guide is [P07-G06](plans/phase7/guide6.md).
 
 ## Non-goals
 

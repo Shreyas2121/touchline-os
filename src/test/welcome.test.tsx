@@ -20,6 +20,11 @@ describe('welcome', () => {
     expect(
       screen.getByRole('button', { name: 'Try fictional demo' }),
     ).toBeInTheDocument()
+    expect(screen.getByLabelText('Start year')).toHaveValue(2026)
+    expect(screen.getByRole('radio', { name: 'Challenge' })).toBeChecked()
+    expect(
+      screen.getByRole('button', { name: 'Open playable demo' }),
+    ).toBeInTheDocument()
   })
 
   it('offers creation and explains that import is unavailable', async () => {

@@ -13,6 +13,10 @@ import { createEntityId } from '../../data/ids'
 import { saveConstitution } from '../../data/commands/save-constitution'
 import { getCampaign } from '../../data/repositories/campaigns'
 import { listAuditEvents } from '../../data/repositories/audit-events'
+import {
+  awaitsClubChoice,
+  challengeRulesLocked,
+} from '../../domain/simulation/career'
 import { getActiveConstitution } from '../../data/repositories/constitutions'
 import { getActiveSeason } from '../../data/repositories/seasons'
 import {
@@ -163,6 +167,20 @@ function ConstitutionForm({
     constitutionPreset('balanced').map((item) =>
       constitution.rules.find((rule) => rule.id === item.id)!,
     )
+  if (campaign.mode === 'standalone' && campaign.rulesMode === 'challenge') {
+    return (
+      <section aria-label="Challenge rules" className="space-y-2">
+        <p>{challengeRulesLocked}</p>
+        <ul>
+          {(ordered || []).map((rule) => (
+            <li key={rule.id}>
+              {descriptions[rule.id]} {rule.enabled ? 'On.' : 'Off.'}
+            </li>
+          ))}
+        </ul>
+      </section>
+    )
+  }
   return (
     <form
       noValidate
@@ -302,10 +320,7 @@ export function ConstitutionPage() {
           return
         }
         const audits = await listAuditEvents(database, campaign.id)
-        if (
-          campaign.seed !== null &&
-          !audits.some((audit) => audit.actionType === 'campaign.select-club')
-        ) {
+        if (awaitsClubChoice(campaign, audits)) {
           if (active) setState({ campaignId, chooseClub: campaign.id })
           return
         }

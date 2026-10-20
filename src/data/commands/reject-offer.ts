@@ -17,6 +17,7 @@ import { listConstitutions } from '../repositories/constitutions'
 import { getOffer, updateOffer } from '../repositories/offers'
 import { getPlayer } from '../repositories/players'
 import { getActiveSeason } from '../repositories/seasons'
+import { rejectStandaloneWrite } from './guards'
 import { rejectCommand, runCommand } from '../transactions/run-command'
 
 export const rejectOfferInputSchema = z.strictObject({
@@ -61,6 +62,7 @@ export function rejectOffer(
     async (revision) => {
       const campaign = await getCampaign(database, data.campaignId)
       if (!campaign) rejectCommand('NOT_FOUND', 'Campaign not found.')
+      rejectStandaloneWrite(campaign, 'negotiation')
       const offer = await getOffer(database, campaign.id, data.offerId)
       if (!offer) rejectCommand('NOT_FOUND', 'Offer not found.')
       if (offer.status !== 'open')

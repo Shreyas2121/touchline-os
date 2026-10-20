@@ -7,6 +7,7 @@ import { CrestSvg } from '../../components/graphics/CrestSvg'
 import { getCampaign } from '../../data/repositories/campaigns'
 import { getClub } from '../../data/repositories/clubs'
 import { listAuditEvents } from '../../data/repositories/audit-events'
+import { awaitsClubChoice } from '../../domain/simulation/career'
 import { crestSpec } from '../../domain/graphics/crest'
 import { listPlayersByClub } from '../../data/repositories/players'
 import { getActiveSeason } from '../../data/repositories/seasons'
@@ -45,10 +46,7 @@ export function TacticsPage() {
           return
         }
         const audits = await listAuditEvents(database, campaign.id)
-        if (
-          campaign.seed !== null &&
-          !audits.some((audit) => audit.actionType === 'campaign.select-club')
-        ) {
+        if (awaitsClubChoice(campaign, audits)) {
           if (active) setState({ campaignId, chooseClub: campaign.id })
           return
         }

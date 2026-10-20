@@ -18,6 +18,7 @@ import {
   listLedgerEntries,
 } from '../repositories/ledger-entries'
 import { getActiveSeason } from '../repositories/seasons'
+import { rejectStandaloneWrite } from './guards'
 import { rejectCommand, runCommand } from '../transactions/run-command'
 
 export const postLedgerEntryInputSchema = z.strictObject({
@@ -62,6 +63,7 @@ export function postLedgerEntry(
     async (revision) => {
       const campaign = await getCampaign(database, data.campaignId)
       if (!campaign) rejectCommand('NOT_FOUND', 'Campaign not found.')
+      rejectStandaloneWrite(campaign, 'ledger')
       const season = await getActiveSeason(database, campaign.id)
       if (
         !season ||

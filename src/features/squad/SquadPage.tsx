@@ -6,6 +6,7 @@ import { useDatabase } from '../../app/providers/database'
 import { getCampaign } from '../../data/repositories/campaigns'
 import { getClub } from '../../data/repositories/clubs'
 import { listAuditEvents } from '../../data/repositories/audit-events'
+import { awaitsClubChoice } from '../../domain/simulation/career'
 import { listContractsByClub } from '../../data/repositories/contracts'
 import { listPlayersByClub } from '../../data/repositories/players'
 import { getActiveSeason } from '../../data/repositories/seasons'
@@ -28,6 +29,7 @@ type SquadState = {
   failed?: boolean
   chooseClub?: string
   revision?: number
+  readOnly?: boolean
   club?: Club
 }
 export function SquadPage() {
@@ -55,10 +57,7 @@ export function SquadPage() {
           return
         }
         const audits = await listAuditEvents(database, campaign.id)
-        if (
-          campaign.seed !== null &&
-          !audits.some((audit) => audit.actionType === 'campaign.select-club')
-        ) {
+        if (awaitsClubChoice(campaign, audits)) {
           if (active) setState({ campaignId, chooseClub: campaign.id })
           return
         }
@@ -75,6 +74,7 @@ export function SquadPage() {
             players: club ? players : [],
             contracts,
             revision: campaign.revision,
+            readOnly: campaign.mode === 'standalone',
             club,
           })
       } catch {
@@ -110,6 +110,7 @@ export function SquadPage() {
         contracts={state.contracts ?? []}
         season={state.season}
         revision={state.revision ?? 0}
+        readOnly={state.readOnly === true}
         onSaved={onSaved}
       />
     </>
