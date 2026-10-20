@@ -240,7 +240,7 @@ Main risks: origin mismatch, changed Unicode/seed algorithm, unsafe i64/JS trans
 
 | Guide    | Commit  | Checks  |
 | -------- | ------- | ------- |
-| `NM-G01` | Recorded after this implementation commit | `pnpm lint`, `pnpm typecheck`, `pnpm test` (51 files / 676 passed), `pnpm build` via the e2e server, and `pnpm test:e2e` (7 passed). Export reads one campaign in a readonly transaction, keeps revision and audits unchanged, and rejects malformed, unsafe, and cross-campaign snapshots. Synthetic indexeddb v1/v2 fixtures and TypeScript determinism vectors are committed. No Rust or native check exists yet. |
+| `NM-G01` | `b4e9e0931ca02d7d91928159c32cf3c63b9165a4` | `pnpm lint`, `pnpm typecheck`, `pnpm test` (51 files / 676 passed), `pnpm build` via the e2e server, and `pnpm test:e2e` (7 passed). Export reads one campaign in a readonly transaction, keeps revision and audits unchanged, and rejects malformed, unsafe, and cross-campaign snapshots. Synthetic indexeddb v1/v2 fixtures and TypeScript determinism vectors are committed. Chromium exported a Harbor campaign at `http://127.0.0.1:4173`, reloaded, and left the save in place. No Rust or native check exists yet. |
 | `NM-G02` | Pending | Not run |
 | `NM-G03` | Pending | Not run |
 | `NM-G04` | Pending | Not run |
