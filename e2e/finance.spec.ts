@@ -122,7 +122,7 @@ test('Balanced finances persist while action previews record nothing', async ({
   await expect(kpi(page, 'Transfer capacity')).toHaveText('€5,000,000.00')
   await expect(ledger).not.toContainText('Incoming fee')
 
-  await page.getByRole('link', { name: 'Transfers', exact: true }).click()
+  await page.getByRole('link', { name: 'Registration', exact: true }).click()
   await expect(page.getByText(previewBanner)).toBeVisible()
   await page.getByRole('link', { name: 'Squad', exact: true }).click()
   await expect(page.getByText(previewBanner)).toHaveCount(0)

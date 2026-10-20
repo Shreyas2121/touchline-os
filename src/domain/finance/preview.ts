@@ -55,3 +55,35 @@ export function previewAction(input: {
     afterWages,
   }
 }
+
+export function previewOutgoingSale(input: {
+  feeCents: number
+  salesReinvestmentPct: number
+  snapshot: PolicySnapshot
+  wages: { knownCents: number; unknownCount: number }
+  activeWageCents: number | null
+}): PreviewResult {
+  const { feeCents, salesReinvestmentPct, snapshot, wages, activeWageCents } =
+    input
+  const remaining = snapshot.remainingCapacityCents
+  const credit = Math.floor((feeCents * salesReinvestmentPct) / 100)
+  const afterWages =
+    activeWageCents === null || wages.knownCents < activeWageCents
+      ? 'Unknown'
+      : formatWageCommitment({
+          knownCents: wages.knownCents - activeWageCents,
+          unknownCount: wages.unknownCount,
+        })
+  return {
+    report: {
+      allowed: true,
+      verdicts: [],
+      snapshotRevision: snapshot.revision,
+    },
+    beforeCapacity: formatCapacity(remaining),
+    afterCapacity:
+      remaining === null ? 'Unknown' : formatCapacity(remaining + credit),
+    beforeWages: formatWageCommitment(wages),
+    afterWages,
+  }
+}

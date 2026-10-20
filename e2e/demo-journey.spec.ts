@@ -103,6 +103,6 @@ test('demo choice, refresh, campaign switching and reset preserve campaign isola
     page.getByRole('heading', { name: 'Choose a constitution', exact: true }),
   ).toBeVisible()
   await expect(page.getByText(previewBanner)).toHaveCount(0)
-  await page.getByRole('link', { name: 'Transfers', exact: true }).click()
+  await page.getByRole('link', { name: 'Registration', exact: true }).click()
   await expect(page.getByText(previewBanner)).toBeVisible()
 })

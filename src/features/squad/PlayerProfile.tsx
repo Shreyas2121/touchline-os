@@ -4,10 +4,12 @@ import { useDatabase } from '../../app/providers/database'
 import { Button } from '../../components/ui/Button'
 import { systemClock } from '../../data/clock'
 import { createEntityId } from '../../data/ids'
+import { saveShortlistItem } from '../../data/commands/save-shortlist-item'
 import { updatePlayer } from '../../data/commands/update-player'
 import { saveDevelopmentNote } from '../../data/commands/save-development-note'
 import { getDevelopmentPlan } from '../../data/repositories/development-plans'
 import { listAuditEvents } from '../../data/repositories/audit-events'
+import { listShortlist } from '../../data/repositories/shortlist'
 import { parseDateOnly } from '../../domain/models/dates'
 import { formatMoneyUnknown, parseMoneyCents } from '../../domain/models/money'
 import { positions } from '../../domain/models/positions'
@@ -21,6 +23,7 @@ import type {
   DevelopmentPlan,
   Player,
   Season,
+  ShortlistItem,
 } from '../../domain/validation/schemas'
 
 const attributes = [
@@ -50,6 +53,7 @@ export function PlayerProfile({
     revision: number
     plan?: DevelopmentPlan
     history: AuditEvent[]
+    shortlist?: ShortlistItem
     failed?: boolean
   } | null>(null)
   const [message, setMessage] = useState('')
@@ -57,7 +61,7 @@ export function PlayerProfile({
     let active = true
     async function load() {
       try {
-        const [plan, audits] = await Promise.all([
+        const [plan, audits, shortlist] = await Promise.all([
           season
             ? getDevelopmentPlan(
                 database,
@@ -67,11 +71,13 @@ export function PlayerProfile({
               )
             : Promise.resolve(undefined),
           listAuditEvents(database, player.campaignId),
+          listShortlist(database, player.campaignId),
         ])
         if (active)
           setDetails({
             revision,
             plan,
+            shortlist: shortlist.find((item) => item.playerId === player.id),
             history: audits
               .filter((audit) => audit.payload.playerId === player.id)
               .slice(0, 20),
@@ -108,6 +114,14 @@ export function PlayerProfile({
           </div>
         ))}
       </dl>
+      {details && details.revision === revision && !details.failed && (
+        <ShortlistButton
+          player={player}
+          revision={revision}
+          item={details.shortlist}
+          onSaved={onSaved}
+        />
+      )}
       <p>Contracts are not recorded in this build.</p>
       <CorrectionForm
         key={JSON.stringify(player)}
@@ -149,6 +163,68 @@ export function PlayerProfile({
         </>
       )}
     </section>
+  )
+}
+
+function ShortlistButton({
+  player,
+  revision,
+  item,
+  onSaved,
+}: {
+  player: Player
+  revision: number
+  item?: ShortlistItem
+  onSaved: (revision: number) => void
+}) {
+  const database = useDatabase()
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const open = item?.status === 'open'
+  async function add() {
+    if (busy || open) return
+    setBusy(true)
+    setError('')
+    try {
+      const result = await saveShortlistItem(database, {
+        campaignId: player.campaignId,
+        itemId: item?.id ?? createEntityId(),
+        playerId: player.id,
+        expectedRevision: revision,
+        now: systemClock(),
+        auditEventId: createEntityId(),
+        actionId: createEntityId(),
+        priority: 3,
+        notes: null,
+        status: 'open',
+      })
+      if (!result.ok) {
+        setError(result.code === 'CONFLICT' ? staleSave : result.message)
+        return
+      }
+      onSaved(result.revision)
+    } catch {
+      setError('The shortlist could not be saved. Try again.')
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <div>
+      <Button
+        disabled={busy || open}
+        onClick={() => {
+          void add()
+        }}
+      >
+        {open
+          ? 'On the shortlist'
+          : item
+            ? 'Reopen shortlist'
+            : 'Add to shortlist'}
+      </Button>
+      {error && <p role="alert">{error}</p>}
+    </div>
   )
 }
 

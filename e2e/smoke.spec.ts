@@ -91,7 +91,7 @@ test('persistent campaign shell smoke', async ({ page }) => {
   await expect(page.getByText('Version 1', { exact: true })).toBeVisible()
   await expect(page.getByText(previewBanner)).toHaveCount(0)
   await expect(page.getByText('SELL_TO_BUY')).toBeVisible()
-  await page.getByRole('link', { name: 'Transfers', exact: true }).click()
+  await page.getByRole('link', { name: 'Registration', exact: true }).click()
   await expect(page.getByText(previewBanner)).toBeVisible()
 
   await page.evaluate(() => {

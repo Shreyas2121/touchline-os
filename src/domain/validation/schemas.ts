@@ -478,6 +478,8 @@ export const auditEventSchema = z.strictObject({
     'campaign.restore',
     'campaign.delete',
     'campaign.select-club',
+    'shortlist.save',
+    'shortlist.close',
   ]),
   createdAt: timestampUtcSchema,
   summary: boundedText(limits.noteMax),

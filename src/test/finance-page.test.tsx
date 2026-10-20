@@ -300,9 +300,9 @@ describe('finance and constitution screens', () => {
       expect(await screen.findByRole('alert')).toHaveTextContent(message)
     },
   )
-  it('keeps the preview banner on Transfers', async () => {
+  it('keeps the preview banner on Registration', async () => {
     await createCampaign(database(), harborInput)
-    renderAt('/app/campaign-a/transfers')
+    renderAt('/app/campaign-a/registration')
     expect(await screen.findByText(previewBanner)).toBeInTheDocument()
   })
 })
