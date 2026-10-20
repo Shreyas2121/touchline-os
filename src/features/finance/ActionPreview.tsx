@@ -273,7 +273,7 @@ export function ActionPreview({
       )}
       <div className="flex flex-wrap items-center gap-3">
         <Button disabled>Record this action</Button>
-        <p>Transfers and contracts are not recorded in this build.</p>
+        <p>Choose a player on Transfers to record a move.</p>
       </div>
     </section>
   )

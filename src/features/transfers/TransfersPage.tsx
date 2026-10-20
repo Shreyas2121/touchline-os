@@ -52,6 +52,7 @@ export function TransfersPage() {
   const [state, setState] = useState<State | null>(null)
   const [reload, setReload] = useState(0)
   const [selectedId, setSelectedId] = useState<EntityId | null>(null)
+  const [notice, setNotice] = useState('')
   const [initialDate] = useState<DateOnly>(() =>
     dateOnlySchema.parse(systemClock().slice(0, 10)),
   )
@@ -154,8 +155,12 @@ export function TransfersPage() {
         campaignId={campaign.id}
         revision={campaign.revision}
         onSaved={() => setReload((value) => value + 1)}
-        onPreview={setSelectedId}
+        onPreview={(playerId) => {
+          setNotice('')
+          setSelectedId(playerId)
+        }}
       />
+      {notice ? <p role="status">{notice}</p> : null}
       <ScenarioPreview
         key={selected?.id ?? 'none'}
         player={selected}
@@ -169,8 +174,15 @@ export function TransfersPage() {
         }}
         wages={wages}
         contracts={state.contracts ?? []}
+        clubs={state.clubs ?? []}
         managedClubId={campaign.managedClubId}
+        revision={campaign.revision}
         initialDate={initialDate}
+        onRecorded={() => {
+          setNotice('Recorded the transfer.')
+          setSelectedId(null)
+          setReload((value) => value + 1)
+        }}
       />
     </div>
   )

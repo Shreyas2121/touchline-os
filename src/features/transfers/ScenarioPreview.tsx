@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
+import { staleSave } from '../../app/copy'
+import { useDatabase } from '../../app/providers/database'
 import { Button } from '../../components/ui/Button'
 import { StatusPill } from '../../components/ui/StatusPill'
+import { systemClock } from '../../data/clock'
+import { recordTransfer } from '../../data/commands/record-transfer'
+import { createEntityId } from '../../data/ids'
 import {
   previewAction,
   previewOutgoingSale,
@@ -12,6 +17,7 @@ import { invalidMoneyMessage, parseMoneyCents } from '../../domain/models/money'
 import { displayAge } from '../../domain/player/squad-view'
 import type { PolicySnapshot, SquadTierChoice } from '../../domain/rules/types'
 import type {
+  Club,
   Constitution,
   Contract,
   Player,
@@ -21,7 +27,7 @@ import type {
 const controlClass =
   'touchline-focus rounded border border-[var(--border)] bg-[var(--surface-1)] px-2 py-1'
 
-type Move = 'purchase' | 'free' | 'sale'
+type Move = 'purchase' | 'free' | 'sale' | 'free-out'
 
 function activeWageCents(
   contracts: readonly Contract[],
@@ -69,8 +75,11 @@ export function ScenarioPreview({
   snapshot,
   wages,
   contracts,
+  clubs,
   managedClubId,
+  revision,
   initialDate,
+  onRecorded,
 }: {
   player: Player | null
   season: Season
@@ -78,33 +87,64 @@ export function ScenarioPreview({
   snapshot: PolicySnapshot
   wages: { knownCents: number; unknownCount: number }
   contracts: readonly Contract[]
+  clubs: readonly Club[]
   managedClubId: string
+  revision: number
   initialDate: DateOnly
+  onRecorded: () => void
 }) {
+  const database = useDatabase()
   const [move, setMove] = useState<Move>('purchase')
   const [fee, setFee] = useState('')
   const [wage, setWage] = useState('')
   const [tier, setTier] = useState<SquadTierChoice | ''>('')
   const [effectiveOn, setEffectiveOn] = useState<string>(initialDate)
+  const [destination, setDestination] = useState('')
+  const [acknowledged, setAcknowledged] = useState(false)
   const [error, setError] = useState('')
+  const [recordError, setRecordError] = useState('')
+  const [busy, setBusy] = useState(false)
   const [result, setResult] = useState<PreviewResult | null>(null)
   const resultRegion = useRef<HTMLDivElement>(null)
+  const outgoing = move === 'sale' || move === 'free-out'
+  const warned =
+    result?.report.verdicts.some((verdict) => verdict.severity === 'WARN') ??
+    false
+  const blocked =
+    !result ||
+    result.report.verdicts.some((verdict) => verdict.severity === 'BLOCK')
+  const canRecord =
+    player !== null &&
+    result !== null &&
+    !blocked &&
+    (move !== 'sale' || destination !== '') &&
+    (!warned || acknowledged) &&
+    !busy
+  const destinations = clubs
+    .filter((club) => club.id !== managedClubId)
+    .slice()
+    .sort((left, right) => left.name.localeCompare(right.name, 'en'))
   useEffect(() => {
     if (result) resultRegion.current?.focus()
   }, [result])
+  function edited() {
+    setResult(null)
+    setAcknowledged(false)
+    setRecordError('')
+  }
   function preview() {
     if (!player) return
     setError('')
+    setRecordError('')
     try {
-      const weeklyWageCents =
-        move === 'sale' ? null : wage.trim() ? money(wage) : null
+      const weeklyWageCents = outgoing ? null : wage.trim() ? money(wage) : null
       const squadTier = tier || null
-      const feeCents = move === 'free' ? 0 : money(fee)
+      const feeCents = move === 'free' || move === 'free-out' ? 0 : money(fee)
       const date = parseDateOnly(effectiveOn)
       if (!date.ok) throw new Error(date.message)
       const ageDisplay = displayAge(player, season)
       const age = ageDisplay.kind === 'unknown' ? null : ageDisplay.years
-      if (move === 'sale') {
+      if (outgoing) {
         const rule = constitution?.rules.find(
           (item) => item.id === 'SELL_TO_BUY',
         )
@@ -123,10 +163,12 @@ export function ScenarioPreview({
             ),
           }),
         )
+        setAcknowledged(false)
         return
       }
       if (!constitution) {
         setResult(unruledIncoming({ snapshot, wages, weeklyWageCents }))
+        setAcknowledged(false)
         return
       }
       setResult(
@@ -145,6 +187,7 @@ export function ScenarioPreview({
           wages,
         }),
       )
+      setAcknowledged(false)
     } catch (cause) {
       setResult(null)
       setError(
@@ -152,6 +195,58 @@ export function ScenarioPreview({
           ? cause.message
           : 'The action could not be previewed.',
       )
+    }
+  }
+  async function record() {
+    if (!player || !canRecord) return
+    setBusy(true)
+    setRecordError('')
+    setError('')
+    let saved = false
+    try {
+      const date = parseDateOnly(effectiveOn)
+      if (!date.ok) throw new Error(date.message)
+      const feeCents = move === 'free' || move === 'free-out' ? 0 : money(fee)
+      const weeklyWageCents = outgoing ? null : wage.trim() ? money(wage) : null
+      const outcome = await recordTransfer(database, {
+        campaignId: player.campaignId,
+        expectedRevision: revision,
+        now: systemClock(),
+        seasonId: season.id,
+        playerId: player.id,
+        effectiveOn: date.value,
+        direction: move === 'free' ? 'free-in' : move,
+        feeCents,
+        weeklyWageCents,
+        squadTier: outgoing ? null : tier || null,
+        startsOn: null,
+        expiresOn: null,
+        destinationClubId: move === 'sale' ? destination : null,
+        transferId: createEntityId(),
+        ledgerEntryId:
+          move === 'purchase' || move === 'sale' ? createEntityId() : null,
+        contractId:
+          move === 'purchase' || move === 'free' ? createEntityId() : null,
+        auditEventId: createEntityId(),
+        actionId: createEntityId(),
+        acknowledgedWarnings: acknowledged,
+      })
+      if (!outcome.ok) {
+        setRecordError(
+          outcome.code === 'CONFLICT' ? staleSave : outcome.message,
+        )
+        return
+      }
+      saved = true
+      onRecorded()
+    } catch (cause) {
+      setRecordError(
+        cause instanceof Error
+          ? cause.message
+          : 'The transfer could not be recorded.',
+      )
+    } finally {
+      if (!saved) setBusy(false)
     }
   }
   return (
@@ -178,53 +273,78 @@ export function ScenarioPreview({
                 value={move}
                 onChange={(event) => {
                   setMove(event.target.value as Move)
-                  setResult(null)
-                  setError('')
+                  edited()
                 }}
               >
                 <option value="purchase">Incoming purchase</option>
                 <option value="free">Incoming free signing</option>
                 <option value="sale">Outgoing sale</option>
+                <option value="free-out">Outgoing free departure</option>
               </select>
             </div>
             <div className="flex flex-wrap gap-3">
-              {move !== 'free' && (
+              {move !== 'free' && move !== 'free-out' && (
                 <label>
                   Fee{' '}
                   <input
                     className={controlClass}
                     inputMode="decimal"
                     value={fee}
-                    onChange={(event) => setFee(event.target.value)}
+                    onChange={(event) => {
+                      setFee(event.target.value)
+                      edited()
+                    }}
                   />
                 </label>
               )}
-              {move !== 'sale' && (
+              {!outgoing && (
                 <label>
                   Weekly wage{' '}
                   <input
                     className={controlClass}
                     inputMode="decimal"
                     value={wage}
-                    onChange={(event) => setWage(event.target.value)}
+                    onChange={(event) => {
+                      setWage(event.target.value)
+                      edited()
+                    }}
                   />
                 </label>
               )}
-              {move !== 'sale' && (
+              {!outgoing && (
                 <div>
                   <label htmlFor="scenario-tier">Tier</label>{' '}
                   <select
                     id="scenario-tier"
                     className={controlClass}
                     value={tier}
-                    onChange={(event) =>
+                    onChange={(event) => {
                       setTier(event.target.value as SquadTierChoice | '')
-                    }
+                      edited()
+                    }}
                   >
                     <option value=""></option>
                     <option value="key">Key</option>
                     <option value="rotation">Rotation</option>
                     <option value="youth">Youth</option>
+                  </select>
+                </div>
+              )}
+              {move === 'sale' && (
+                <div>
+                  <label htmlFor="scenario-destination">Destination club</label>{' '}
+                  <select
+                    id="scenario-destination"
+                    className={controlClass}
+                    value={destination}
+                    onChange={(event) => setDestination(event.target.value)}
+                  >
+                    <option value=""></option>
+                    {destinations.map((club) => (
+                      <option key={club.id} value={club.id}>
+                        {club.name}
+                      </option>
+                    ))}
                   </select>
                 </div>
               )}
@@ -234,7 +354,10 @@ export function ScenarioPreview({
                   className={controlClass}
                   type="date"
                   value={effectiveOn}
-                  onChange={(event) => setEffectiveOn(event.target.value)}
+                  onChange={(event) => {
+                    setEffectiveOn(event.target.value)
+                    edited()
+                  }}
                 />
               </label>
             </div>
@@ -293,7 +416,20 @@ export function ScenarioPreview({
                 )}
             </div>
           )}
-          <Button disabled>Record this transfer</Button>
+          {warned && (
+            <label>
+              <input
+                type="checkbox"
+                checked={acknowledged}
+                onChange={(event) => setAcknowledged(event.target.checked)}
+              />{' '}
+              I have reviewed this warning.
+            </label>
+          )}
+          <Button disabled={!canRecord} onClick={() => void record()}>
+            Record this transfer
+          </Button>
+          {recordError && <p role="alert">{recordError}</p>}
         </>
       )}
     </section>

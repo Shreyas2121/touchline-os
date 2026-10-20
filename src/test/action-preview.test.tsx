@@ -237,6 +237,9 @@ describe('Finance action preview', () => {
       screen.getByRole('button', { name: 'Record this action' }),
     ).toBeDisabled()
     expect(
+      screen.getByText('Choose a player on Transfers to record a move.'),
+    ).toBeInTheDocument()
+    expect(
       screen.getByRole('region', { name: 'Action preview' }).textContent,
     ).not.toContain('transfer-')
     expect(await storedState()).toEqual(before)
