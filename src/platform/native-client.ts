@@ -23,5 +23,31 @@ export function createNativeClient(): GameClient {
       }
     },
     ...unavailableMethods(rejectOperation),
+    campaigns: (page) => call('list_campaigns', { page }),
+    screen: (query) => call('read_screen', { query }),
+    player: (campaignId, playerId) =>
+      call('read_player', { campaignId, playerId }),
+    previewPolicy: (query) => call('preview_policy', { query }),
+    selectImport: () => call('select_import'),
+    confirmImport: (token) => call('confirm_import', { token }),
+    cancelImport: () => call('cancel_import'),
+    exportCampaign: (campaignId) =>
+      call('export_campaign', {
+        campaignId,
+        exportId: crypto.randomUUID(),
+        exportedAt: new Date().toISOString(),
+      }),
+    backupDatabase: () => call('backup_database'),
+  }
+}
+
+async function call<T>(
+  command: string,
+  args?: Record<string, unknown>,
+): Promise<T> {
+  try {
+    return await invoke<T>(command, args)
+  } catch (error) {
+    throw mapInvokeError(error)
   }
 }

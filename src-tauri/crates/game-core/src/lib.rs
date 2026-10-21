@@ -18,6 +18,7 @@ pub mod money;
 mod nulls;
 mod numbers;
 pub mod policy;
+pub mod queries;
 pub mod random;
 mod rows;
 pub mod selection;

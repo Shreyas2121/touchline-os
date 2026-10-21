@@ -2,7 +2,7 @@
 
 Touchline OS is being developed as an offline **desktop Standalone Sporting Director Sim** using Tauri, React/Vite, a Rust backend and SQLite: build squads, negotiate transfers, follow board philosophies and simulate a fictional football world.
 
-The current implementation is complete through **Phase 7 Guide 5 on the web/Dexie stack**. Native migration is planned, not implemented. First complete the [native migration bridge](plans/native-migration.md), starting with [NM-G01](plans/native-migration/guide1.md). Only after its NM-G09 cutover gate passes should Phase 7 Guide 6 implement Rust Continue; Guide 7 then verifies the foundation.
+The web implementation is complete through **Phase 7 Guide 5**. The native application now supports SQLite-backed campaign and screen reads, Rust policy/finance previews, browser-save import with review, JSON export and verified SQLite backups through **NM-G06**. Gameplay writes and fresh career persistence are unavailable until the following bridge guides. The [native migration bridge](plans/native-migration.md) remains in progress; its NM-G09 gate must pass before Phase 7 Guide 6 implements Rust Continue.
 
 Existing web careers can start on July 1 with generated clubs and Challenge/Sandbox rules. Match simulation, negotiations and Continue remain unavailable. See [MASTER_PLAN.md](MASTER_PLAN.md), [Phase 7](plans/phase7.md) and [DEC-002](DECISIONS.md).
 
@@ -12,9 +12,11 @@ Existing web careers can start on July 1 with generated clubs and Challenge/Sand
 - No accounts
 - No hosted player database
 
-Independent football game project; not affiliated with any football game, team or league. Existing legacy screens still use the companion framing until their implementation guides update them.
+Independent football game project; not affiliated with any football game, team or league. Imported legacy saves retain their existing mode and history.
 
 ## Current web setup
+
+The browser build remains the original IndexedDB application and migration exporter. Use the original browser address and profile to export an existing save. Desktop never falls back to that database.
 
 Install dependencies:
 
@@ -41,6 +43,23 @@ pnpm test:e2e
 
 Install Chromium once per machine, before `pnpm test:e2e`.
 
+## Desktop setup and checks
+
+With the pinned Rust toolchain, MSVC/Windows SDK and WebView2 installed:
+
+```bash
+pnpm tauri dev
+pnpm native:bindings:check
+pnpm native:check
+pnpm tauri build
+```
+
+`native:check` runs Rust formatting, locked Clippy and native workspace tests. Frontend tests do not substitute for Rust/SQLite verification. `tauri build` produces MSI and NSIS installers on Windows; signing and final release certification remain later work.
+
+On desktop, select **Import save**, choose an exported JSON file and review its mode, revision and table counts before confirming. Import preserves saved IDs and rows and leaves the browser source untouched. Reimporting identical bytes returns the recorded outcome; different content using an existing campaign ID is refused. Cancellation does nothing. **Export campaign** reads a consistent saved snapshot; choose a new filename to preserve prior exports. **Back up database** creates and reopens a SQLite online backup containing all native campaigns.
+
+Reads include all ten workspace sections, native club-choice guards, paged player search, saved tactics graphics and profiles. Queries return at most 50 primary rows per collection with the persisted campaign revision; related contracts and profiles are bounded. Complete financial and eligibility inputs remain in Rust. Career creation, editing, Continue and match simulation are truthfully unavailable at this milestone.
+
 ## Toolchain
 
 - Node.js 22 (see `.nvmrc`)
@@ -48,8 +67,8 @@ Install Chromium once per machine, before `pnpm test:e2e`.
 
 ## Local database
 
-The current implementation stores legacy and standalone campaigns in IndexedDB v2. The migration bridge will export complete snapshots and import them into Rust-owned SQLite while preserving the original browser data. The exporter, native tooling and SQLite are pending; the current build still uses the commands above.
+The browser source stores legacy and standalone campaigns in IndexedDB v2. Its Export for desktop action produces a complete campaign snapshot. The desktop application stores imported campaigns in Rust-owned SQLite schema 1 under the app-local `com.touchline.os` directory. Production uses `touchline.sqlite3`; development and test profiles have separate subdirectories. Filesystem access is scoped to Rust-owned app storage and native dialog selections; frontend commands accept no file paths or SQL.
 
-Campaigns are stored in an IndexedDB database named touchline-os on this device. Creating a campaign, opening the fictional demo, renaming, archiving, deleting, correcting a player, saving a development note, saving a tactics lineup, saving a constitution, posting an opening allocation, posting prize income, reversing a ledger entry, saving a shortlist, recording a completed transfer, recording an offer, accepting an offer, rejecting an offer, saving a contract, saving a registration, and recording a match write to touchline-os. Scouting, seasons, import, and backup remain previews.
+The browser application retains its existing IndexedDB name, `touchline-os`, and original workflows for migration reference. Desktop screens use GameClient and typed native services, with unavailable write controls and no browser mutations as fallback. Import transport receipts are separate from gameplay audits and never increment campaign revisions.
 
-Legacy and standalone demos have distinct identities; reset targets only the selected demo. Native build/check scripts will be introduced during NM-G02; real desktop verification is separate from the current frontend checks.
+Legacy and standalone demos have distinct identities. Native reset/delete and fresh career creation are pending NM-G07. New native worlds follow the declared Rust generator rules; DEC-003 does not require old JavaScript algorithm compatibility. Existing saved content is imported directly without regeneration.

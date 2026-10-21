@@ -53,7 +53,7 @@ pub fn constitution_preset(preset: Preset) -> Vec<ConstitutionRule> {
     ]
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ts_rs::TS)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct RegistrationPlayer {
     pub player_id: EntityId,
@@ -67,7 +67,7 @@ pub struct RegistrationPlayer {
     #[serde(deserialize_with = "nullable")]
     pub age: Option<SafeInt>,
 }
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ts_rs::TS)]
 #[serde(
     tag = "type",
     rename_all = "kebab-case",

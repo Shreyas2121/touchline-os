@@ -137,7 +137,7 @@ describe('native boundary', () => {
         ),
         'dependencies',
       ),
-    ).toEqual(['game-core', 'game-store'])
+    ).toEqual(['game-core', 'game-store', 'serde_json'])
     const shell = section(
       readFileSync(path.join(root, 'src-tauri/Cargo.toml'), 'utf8'),
       'dependencies',

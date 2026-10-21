@@ -2,7 +2,34 @@
 #![forbid(unsafe_code)]
 
 mod mapping;
+mod queries;
 mod snapshots;
+pub use queries::ScreenRead;
+pub fn inspect_snapshot(bytes: &[u8]) -> Result<game_core::queries::MigrationSummary> {
+    let prepared = snapshots::prepare(bytes)?;
+    let snapshot = game_core::parse_snapshot(bytes)?;
+    let counts = serde_json::to_value(&snapshot.tables)?
+        .as_object()
+        .ok_or_else(|| invalid("tables"))?
+        .iter()
+        .map(|(key, rows)| {
+            Ok((
+                key.clone(),
+                game_core::SafeInt::new(
+                    rows.as_array().ok_or_else(|| invalid("rows"))?.len() as i64
+                )
+                .map_err(|e| invalid(e.to_string()))?,
+            ))
+        })
+        .collect::<Result<_>>()?;
+    Ok(game_core::queries::MigrationSummary {
+        campaign: snapshot.tables.campaigns[0].clone(),
+        source_storage: snapshot.source_storage,
+        source_schema_version: snapshot.source_schema_version,
+        counts,
+        token: prepared.digest().to_owned(),
+    })
+}
 
 use game_core::{CampaignSnapshot, StorageAvailability};
 use rusqlite::{Connection, OptionalExtension};
@@ -76,6 +103,13 @@ pub struct ImportOutcome {
 
 type Reply<T> = mpsc::Sender<Result<T>>;
 enum Request {
+    Campaigns(i64, Reply<game_core::queries::CampaignPage>),
+    Screen(game_core::queries::ScreenQuery, Reply<ScreenRead>),
+    Player(
+        game_core::EntityId,
+        game_core::EntityId,
+        Reply<game_core::PlayerRow>,
+    ),
     Import(snapshots::PreparedImport, Reply<ImportOutcome>),
     Read(String, Reply<Value>),
     Backup(PathBuf, Reply<()>),
@@ -89,6 +123,19 @@ pub struct Store {
     worker: Option<JoinHandle<()>>,
 }
 impl Store {
+    pub fn campaigns(&self, page: i64) -> Result<game_core::queries::CampaignPage> {
+        self.call(|reply| Request::Campaigns(page, reply))
+    }
+    pub fn screen(&self, query: game_core::queries::ScreenQuery) -> Result<ScreenRead> {
+        self.call(|reply| Request::Screen(query, reply))
+    }
+    pub fn player(
+        &self,
+        campaign: game_core::EntityId,
+        player: game_core::EntityId,
+    ) -> Result<game_core::PlayerRow> {
+        self.call(|reply| Request::Player(campaign, player, reply))
+    }
     pub fn open(path: impl AsRef<Path>) -> Result<Self> {
         let path = path.as_ref().to_owned();
         let (sender, receiver) = mpsc::sync_channel(8);
@@ -108,6 +155,16 @@ impl Store {
                 };
                 while let Ok(request) = receiver.recv() {
                     match request {
+                        Request::Campaigns(page, reply) => {
+                            let _ = reply.send(queries::campaigns(&mut connection, page));
+                        }
+                        Request::Screen(query, reply) => {
+                            let _ = reply.send(queries::screen(&mut connection, &query));
+                        }
+                        Request::Player(campaign, player, reply) => {
+                            let _ =
+                                reply.send(queries::player(&mut connection, &campaign, &player));
+                        }
                         Request::Import(prepared, reply) => {
                             let _ = reply.send(snapshots::import(&mut connection, prepared));
                         }

@@ -54,7 +54,7 @@ Preserve existing schema/identity/version/nullable contracts. No real user save 
 - UI uses GameClient and shows unavailable native writes without Dexie fallback.
 - Native export/backup round-trip and screen reload; browser exporter/tests preserved.
 
-Prefer compatibility/integration properties over tests that mirror implementation. Keep golden data independent of the Rust port.
+Prefer native correctness/integration properties over tests that mirror implementation. Keep historical golden data unchanged and independent of native business logic.
 
 ## 8. Verification commands
 
@@ -80,11 +80,11 @@ Run relevant browser compatibility/E2E when its flows are touched; NM-G09 record
 
 ## 10. Definition of done
 
-- [ ] The narrow outcome is implemented and verified.
-- [ ] Source/browser data and completed guide history are preserved.
-- [ ] Required parity, negative and rollback checks pass.
-- [ ] No new gameplay or false native/release claim is introduced.
-- [ ] Evidence and limitations are recorded in bridge §10.
+- [x] The narrow outcome is implemented and verified.
+- [x] Source/browser data and completed guide history are preserved.
+- [x] Required native correctness, negative and rollback checks pass under DEC-003.
+- [x] No new gameplay or false native/release claim is introduced.
+- [x] Evidence and limitations are recorded in bridge §10.
 
 ## 11. Commit instructions
 

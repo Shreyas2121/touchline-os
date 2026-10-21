@@ -18,6 +18,11 @@ pub(super) struct PreparedImport {
     outcome: ImportOutcome,
     tables: Vec<Vec<Vec<SqlValue>>>,
 }
+impl PreparedImport {
+    pub(super) fn digest(&self) -> &str {
+        &self.outcome.source_sha256
+    }
+}
 
 pub(super) fn prepare(bytes: &[u8]) -> Result<PreparedImport> {
     let snapshot = parse_snapshot(bytes)?;

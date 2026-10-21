@@ -1,5 +1,9 @@
 import type { GameClientError } from './errors'
-import { unavailableMethods, type GameClient } from './game-client'
+import {
+  unavailableMethods,
+  unavailableNativeReads,
+  type GameClient,
+} from './game-client'
 import type { HealthReport } from './generated/HealthReport'
 import type { ClientOperation } from './operations'
 
@@ -18,6 +22,7 @@ export function createBrowserClient(): GameClient {
       }
     },
     ...unavailableMethods(rejectInBrowser),
+    ...unavailableNativeReads(),
   }
 }
 

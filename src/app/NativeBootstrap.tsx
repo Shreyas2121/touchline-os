@@ -8,6 +8,10 @@ import {
 import type { GameClientError } from '../platform/errors'
 import { mapInvokeError } from '../platform/errors'
 import type { HealthReport } from '../platform/generated/HealthReport'
+import type { GameClient } from '../platform/game-client'
+import { NativeWorkspace } from './native/NativeWorkspace'
+import { createNativeClient } from '../platform/native-client'
+const nativeClient = createNativeClient()
 
 type BootstrapState =
   | { status: 'loading' }
@@ -17,8 +21,10 @@ type BootstrapState =
 
 export function NativeBootstrap({
   loadHealth = loadNativeHealth,
+  client = nativeClient,
 }: {
   loadHealth?: () => Promise<HealthReport>
+  client?: GameClient
 }) {
   const [state, setState] = useState<BootstrapState>({ status: 'loading' })
 
@@ -28,8 +34,12 @@ export function NativeBootstrap({
       (report) => {
         if (!active) return
         if (
-          report.storage !== 'unavailable' ||
-          report.features !== 'unavailable' ||
+          !(
+            (report.storage === 'unavailable' &&
+              report.features === 'unavailable') ||
+            (report.storage === 'sqlite' &&
+              report.features === 'reads-migration')
+          ) ||
           report.dexieFallback
         ) {
           setState({ status: 'refused' })
@@ -64,6 +74,11 @@ export function NativeBootstrap({
       </main>
     )
   }
+  if (
+    state.report.storage === 'sqlite' &&
+    state.report.features === 'reads-migration'
+  )
+    return <NativeWorkspace client={client} />
 
   return (
     <main>
@@ -77,6 +92,5 @@ export function NativeBootstrap({
 }
 
 async function loadNativeHealth(): Promise<HealthReport> {
-  const { createNativeClient } = await import('../platform/native-client')
-  return createNativeClient().health()
+  return nativeClient.health()
 }

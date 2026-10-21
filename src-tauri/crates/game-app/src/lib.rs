@@ -1,8 +1,13 @@
-//! Use cases for the shell. Reads, writes, import, and the clock stay unavailable until later guides.
+//! Native read and migration use cases. Gameplay writes remain unavailable.
 
 #![forbid(unsafe_code)]
+mod migration;
+mod reads;
+pub use game_core::{queries::*, EntityId, PlayerRow, SafeInt};
+pub use migration::{backup_file, export_file, MigrationSession};
+pub use reads::{preview, read_screen, store_error, validation};
 
-use game_core::{reject_client_operation, StorageAvailability, APP_IDENTIFIER, PRODUCT_NAME};
+use game_core::{reject_client_operation, APP_IDENTIFIER, PRODUCT_NAME};
 pub use game_core::{CommandError, HealthReport};
 pub use game_store::{database_path, Store as NativeStore};
 
@@ -37,15 +42,12 @@ impl Profile {
 }
 
 pub fn health(profile: Profile) -> Result<HealthReport, CommandError> {
-    let storage = match game_store::storage_availability() {
-        StorageAvailability::Unavailable => "unavailable",
-    };
     Ok(HealthReport {
         product: PRODUCT_NAME.into(),
         identifier: APP_IDENTIFIER.into(),
         profile: profile.as_str().into(),
-        storage: storage.into(),
-        features: "unavailable".into(),
+        storage: "sqlite".into(),
+        features: "reads-migration".into(),
         dexie_fallback: false,
     })
 }
@@ -60,10 +62,10 @@ mod tests {
     use game_core::CommandError;
 
     #[test]
-    fn health_reports_storage_unavailable() {
+    fn health_reports_read_migration_capabilities() {
         let report = health(Profile::Test).expect("health");
-        assert_eq!(report.storage, "unavailable");
-        assert_eq!(report.features, "unavailable");
+        assert_eq!(report.storage, "sqlite");
+        assert_eq!(report.features, "reads-migration");
         assert!(!report.dexie_fallback);
         assert_eq!(report.profile, "test");
         assert_eq!(report.identifier, "com.touchline.os");
