@@ -2,9 +2,20 @@
 #![forbid(unsafe_code)]
 
 mod mapping;
+mod mutations;
 mod queries;
 mod snapshots;
 pub use queries::ScreenRead;
+pub fn creation_fingerprint(canonical: &str) -> String {
+    use sha2::{Digest, Sha256};
+    format!(
+        "native-create:1:{}",
+        Sha256::digest(canonical.as_bytes())
+            .iter()
+            .map(|b| format!("{b:02x}"))
+            .collect::<String>()
+    )
+}
 pub fn inspect_snapshot(bytes: &[u8]) -> Result<game_core::queries::MigrationSummary> {
     let prepared = snapshots::prepare(bytes)?;
     let snapshot = game_core::parse_snapshot(bytes)?;
@@ -45,6 +56,7 @@ pub type Result<T> = std::result::Result<T, StoreError>;
 
 #[derive(Debug)]
 pub enum StoreError {
+    Command(game_core::CommandError),
     Sqlite(rusqlite::Error),
     Io(std::io::Error),
     Invalid(String),
@@ -103,6 +115,26 @@ pub struct ImportOutcome {
 
 type Reply<T> = mpsc::Sender<Result<T>>;
 enum Request {
+    Planning(
+        game_core::EntityId,
+        game_core::EntityId,
+        Reply<game_core::queries::PlayerPlanning>,
+    ),
+    Manage(
+        game_core::management::ManagementCommand,
+        Reply<game_core::management::ManagementOutcome>,
+    ),
+    Create(
+        game_core::management::CreationRequest,
+        Value,
+        String,
+        Reply<game_core::management::ManagementOutcome>,
+    ),
+    CreationProbe(
+        game_core::management::CreationRequest,
+        String,
+        Reply<Option<game_core::management::ManagementOutcome>>,
+    ),
     Campaigns(i64, Reply<game_core::queries::CampaignPage>),
     Screen(game_core::queries::ScreenQuery, Reply<ScreenRead>),
     Player(
@@ -123,6 +155,49 @@ pub struct Store {
     worker: Option<JoinHandle<()>>,
 }
 impl Store {
+    pub fn planning(
+        &self,
+        campaign: game_core::EntityId,
+        player: game_core::EntityId,
+    ) -> Result<game_core::queries::PlayerPlanning> {
+        self.call(|reply| Request::Planning(campaign, player, reply))
+    }
+    pub fn manage(
+        &self,
+        command: game_core::management::ManagementCommand,
+    ) -> Result<game_core::management::ManagementOutcome> {
+        self.call(|reply| Request::Manage(command, reply))
+    }
+    pub fn creation_probe(
+        &self,
+        request: game_core::management::CreationRequest,
+        fingerprint: String,
+    ) -> Result<Option<game_core::management::ManagementOutcome>> {
+        self.call(|reply| Request::CreationProbe(request, fingerprint, reply))
+    }
+    pub fn create(
+        &self,
+        request: game_core::management::CreationRequest,
+        tables: game_core::SnapshotTables,
+        fingerprint: String,
+    ) -> Result<game_core::management::ManagementOutcome> {
+        if tables.campaigns.len() != 1
+            || tables.audit_events.len() != 1
+            || tables.simulation_receipts.len() != 1
+            || tables.campaigns[0].id != request.career.campaign_id
+            || tables.audit_events[0].action_id != request.career.action_id
+            || tables.audit_events[0].id != request.career.audit_event_id
+            || tables.campaigns[0].active_season_id != request.career.season_id
+        {
+            return Err(invalid(
+                "Prepared career headers do not match the creation request.",
+            ));
+        }
+        let tables = serde_json::to_value(tables)?;
+        // Full schema and reference validation happens before queueing generation output.
+        snapshots::envelope(tables.clone(), "native-create", &request.career.now)?;
+        self.call(|reply| Request::Create(request, tables, fingerprint, reply))
+    }
     pub fn campaigns(&self, page: i64) -> Result<game_core::queries::CampaignPage> {
         self.call(|reply| Request::Campaigns(page, reply))
     }
@@ -155,6 +230,28 @@ impl Store {
                 };
                 while let Ok(request) = receiver.recv() {
                     match request {
+                        Request::Planning(campaign, player, reply) => {
+                            let _ =
+                                reply.send(queries::planning(&mut connection, &campaign, &player));
+                        }
+                        Request::Manage(command, reply) => {
+                            let _ = reply.send(mutations::manage(&mut connection, command));
+                        }
+                        Request::Create(request, tables, fingerprint, reply) => {
+                            let _ = reply.send(mutations::create(
+                                &mut connection,
+                                request,
+                                tables,
+                                &fingerprint,
+                            ));
+                        }
+                        Request::CreationProbe(request, fingerprint, reply) => {
+                            let _ = reply.send(mutations::probe_snapshot(
+                                &mut connection,
+                                &request,
+                                &fingerprint,
+                            ));
+                        }
                         Request::Campaigns(page, reply) => {
                             let _ = reply.send(queries::campaigns(&mut connection, page));
                         }

@@ -82,10 +82,19 @@ NM-G05 adds native generators and pure career preparation:
   selected club, seed, year, rules and preset remain part of the identity.
 - `validate_prepared_career` checks world legality and exact initialization headers
   for the supplied settings. `into_tables` maps the result to the 23 saved-row
-  arrays for NM-G07's future atomic creation service. No persistence or command
-  handler is added here; import continues to use saved rows directly.
+  arrays for the app/store atomic creation service; import uses saved rows directly.
 
 Run `cargo test -p game-core --test generation --locked` for complete native worlds,
 repeated serialized output, Unicode seeds, alternate campaign/year inputs, all
 mode/preset combinations, representative club selections and malformed-world or
 initialization rejection. These tests assert native invariants, not old-world parity.
+
+NM-G07 adds pure management actions in `management.rs`. The store calls these
+against a scoped snapshot inside its write transaction, then validates the full
+result before writing changed rows. Action fingerprints and saved audits make a
+retry return the current persisted revision. New actions advance revision and
+append one audit; deletion returns no surviving revision or fictitious audit.
+Challenge constitutions are locked in every campaign mode. Standalone player
+and club edits are forbidden. Registration derives standalone homegrown facts
+and age in Rust. Constitution versions are immutable, and changing an opening
+allocation cannot issue a second allocation, including after reversal.

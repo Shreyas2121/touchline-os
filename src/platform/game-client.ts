@@ -7,6 +7,11 @@ import type { PreviewQuery } from './generated/PreviewQuery'
 import type { NativePreview } from './generated/NativePreview'
 import type { MigrationSummary } from './generated/MigrationSummary'
 import type { MigrationResult } from './generated/MigrationResult'
+import type { CreationRequest } from './generated/CreationRequest'
+import type { ManagementCommand } from './generated/ManagementCommand'
+import type { ManagementOutcome } from './generated/ManagementOutcome'
+import type { ClubChoices } from './generated/ClubChoices'
+import type { PlayerPlanning } from './generated/PlayerPlanning'
 import {
   clientOperations,
   operationMethod,
@@ -23,12 +28,16 @@ export type GameClient = ClientCalls & {
   campaigns(page: number): Promise<CampaignPage>
   screen(query: ScreenQuery): Promise<ScreenModel>
   player(campaignId: string, playerId: string): Promise<PlayerRow>
+  planning(campaignId: string, playerId: string): Promise<PlayerPlanning>
   previewPolicy(query: PreviewQuery): Promise<NativePreview>
   selectImport(): Promise<MigrationSummary | null>
   confirmImport(token: string): Promise<MigrationResult>
   cancelImport(): Promise<void>
   exportCampaign(campaignId: string): Promise<boolean>
   backupDatabase(): Promise<boolean>
+  createCareer(request: CreationRequest): Promise<ManagementOutcome>
+  previewCreation(request: CreationRequest): Promise<ClubChoices>
+  manage(command: ManagementCommand): Promise<ManagementOutcome>
 }
 
 export function unavailableNativeReads() {
@@ -41,12 +50,16 @@ export function unavailableNativeReads() {
     campaigns: reject,
     screen: reject,
     player: reject,
+    planning: reject,
     previewPolicy: reject,
     selectImport: reject,
     confirmImport: reject,
     cancelImport: reject,
     exportCampaign: reject,
     backupDatabase: reject,
+    createCareer: reject,
+    previewCreation: reject,
+    manage: reject,
   }
 }
 

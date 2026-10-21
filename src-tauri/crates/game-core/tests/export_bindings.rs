@@ -12,7 +12,13 @@ fn export_bindings() {
     CampaignSnapshot::export_all(&config).expect("snapshot bindings");
     HealthReport::export_all(&config).expect("health bindings");
     CommandError::export_all(&config).expect("error bindings");
+    game_core::management::CreationRequest::export_all(&config).expect("creation bindings");
+    game_core::management::ClubChoices::export_all(&config).expect("club choice bindings");
+    game_core::management::ManagementCommand::export_all(&config).expect("management bindings");
+    game_core::management::ManagementOutcome::export_all(&config)
+        .expect("management result bindings");
     game_core::queries::ScreenQuery::export_all(&config).expect("query bindings");
+    game_core::queries::PlayerPlanning::export_all(&config).expect("player planning bindings");
     game_core::queries::ScreenModel::export_all(&config).expect("screen bindings");
     game_core::queries::CampaignPage::export_all(&config).expect("campaign page bindings");
     game_core::queries::MigrationSummary::export_all(&config).expect("migration bindings");

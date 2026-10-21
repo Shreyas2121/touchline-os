@@ -86,6 +86,8 @@ pub struct HealthReport {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[serde(tag = "code", rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum CommandError {
+    Conflict { message: String },
+    Scope { message: String },
     Unavailable { message: String },
     Validation { message: String },
     Internal { message: String },
@@ -94,7 +96,9 @@ pub enum CommandError {
 impl std::fmt::Display for CommandError {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Unavailable { message }
+            Self::Conflict { message }
+            | Self::Scope { message }
+            | Self::Unavailable { message }
             | Self::Validation { message }
             | Self::Internal { message } => formatter.write_str(message),
         }

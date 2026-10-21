@@ -40,7 +40,7 @@ const columns: Partial<Record<TableName, string[]>> = {
     'name',
     'positions',
     'age',
-    'nationality',
+    'nationalityCode',
     'weeklyWageCents',
     'marketValueCents',
     'squadTier',

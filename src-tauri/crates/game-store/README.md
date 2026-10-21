@@ -2,8 +2,9 @@
 
 `Store::open` starts one connection worker with an eight-request queue. Its blocking
 methods belong on the native adapter's blocking executor, not the UI thread.
-Tauri startup manages its lifetime; IPC and gameplay services still wait for NM-G06
-and subsequent guides. The shell continues to report those services unavailable.
+Tauri startup manages its lifetime. Native bounded reads, migration dialogs and
+guarded management writes are exposed through NM-G07; remaining legacy writes and
+Continue still belong to their later guides.
 
 `database_path` takes Tauri's app-local data directory. Production uses
 `touchline.sqlite3` directly under that directory; development and test profiles use
@@ -36,7 +37,7 @@ closing/reopening that file, syncs it, then replaces the destination by rename. 
 failure leaves the previous destination intact. Live database/sidecar destinations
 and destinations with active journals are refused. The backup has a 30-second
 deadline, and uses SQLite's backup API to include committed WAL pages. Destination
-files must be closed before replacement; dialogs/file selection are NM-G06 work.
+files must be closed before replacement; NM-G06 owns native file selection.
 
 Dependencies introduced here: pinned rusqlite 0.40.2 (`bundled`, `backup`) and sha2
 0.11.1, verified against their published APIs and the pinned Rust/MSVC toolchain.
@@ -47,4 +48,13 @@ See [rusqlite backup](https://docs.rs/rusqlite/0.40.2/rusqlite/backup/index.html
 Run `cargo test -p game-store --locked` from `src-tauri` for real temporary-file
 schema/import/retry/rollback/export/backup/concurrency tests against the independently
 committed TypeScript fixtures. Browser compatibility fixtures and source schemas are
-unchanged. Continue, native generation and gameplay writes remain later guides.
+unchanged. Native creation and management tests additionally exercise complete
+3,000-player insertion, transaction races and late trigger failures. Generation
+and its first shape/reference checks happen before queueing; commit rechecks saved
+identities, revision and scope. Mutations read a consistent scoped snapshot, apply
+pure core guards and validate the result, then write only changed rows. No whole
+campaign blob is stored. Audit action IDs and canonical SHA-256 fingerprints make
+retries harmless; creation receipts are checked before regeneration. Physical
+schema and the 23-array snapshot contract remain version 1. Deletion cascades the
+selected save's history and transport receipts; reset is one delete/insert
+transaction restricted to the matching native demo. Continue is still unavailable.

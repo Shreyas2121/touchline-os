@@ -31,6 +31,7 @@ function model(): ScreenModel {
       homegrownNation: true,
     })),
     finance: { capacity: '€123.45', wages: '€67.89', tiers: { key: '€67.89' } },
+    activeConstitution: snapshot.tables.constitutions[0] ?? null,
     reports: [],
     chooseClubRequired: false,
     labels: Object.fromEntries(
@@ -45,6 +46,12 @@ function client(): GameClient {
       .fn()
       .mockResolvedValue({ campaigns: [campaign], total: 1, page: 0 }),
     screen: vi.fn().mockResolvedValue(model()),
+    planning: vi.fn().mockResolvedValue({
+      player: snapshot.tables.players[0]!,
+      revision: campaign.revision,
+      note: snapshot.tables.developmentPlans[0] ?? null,
+      shortlist: snapshot.tables.shortlistItems[0] ?? null,
+    }),
     selectImport: vi.fn().mockResolvedValue(null),
     cancelImport: vi.fn().mockResolvedValue(undefined),
     backupDatabase: vi.fn().mockResolvedValue(false),
@@ -74,7 +81,7 @@ describe('native read and migration UI', () => {
       await screen.findByRole('link', { name: campaign.name }),
     ).toBeInTheDocument()
     expect(api.campaigns).toHaveBeenCalledWith(0)
-    expect(screen.getByRole('button', { name: /Create career/ })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /Create career/ })).toBeEnabled()
     fireEvent.click(screen.getByRole('button', { name: 'Import save' }))
     await waitFor(() => expect(api.selectImport).toHaveBeenCalledOnce())
     expect(
@@ -149,7 +156,7 @@ describe('native read and migration UI', () => {
     expect(
       await screen.findByRole('heading', { name: campaign.name }),
     ).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Edit player' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Save contract' })).toBeDisabled()
     fireEvent.change(
       screen.getByRole('searchbox', { name: 'Search players' }),
       { target: { value: 'Ada' } },
@@ -234,16 +241,18 @@ describe('native read and migration UI', () => {
   })
   it('routes unchosen careers to native club reads and shows scoped query failures', async () => {
     const api = client()
+    const legacy = model()
+    legacy.rows.campaigns[0]!.mode = 'legacy'
     api.screen = vi
       .fn()
-      .mockResolvedValue({ ...model(), chooseClubRequired: true })
+      .mockResolvedValue({ ...legacy, chooseClubRequired: true })
     const view = show(api, `/app/${campaign.id}/squad`)
     expect(
       await screen.findByRole('heading', { name: 'Choose club', level: 1 }),
     ).toBeInTheDocument()
     expect(
       await screen.findByRole('button', { name: 'Select managed club' }),
-    ).toBeDisabled()
+    ).toBeEnabled()
     view.unmount()
     api.screen = vi.fn().mockRejectedValue({
       code: 'VALIDATION',

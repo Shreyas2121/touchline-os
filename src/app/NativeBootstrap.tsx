@@ -37,8 +37,7 @@ export function NativeBootstrap({
           !(
             (report.storage === 'unavailable' &&
               report.features === 'unavailable') ||
-            (report.storage === 'sqlite' &&
-              report.features === 'reads-migration')
+            (report.storage === 'sqlite' && report.features === 'management')
           ) ||
           report.dexieFallback
         ) {
@@ -76,7 +75,7 @@ export function NativeBootstrap({
   }
   if (
     state.report.storage === 'sqlite' &&
-    state.report.features === 'reads-migration'
+    state.report.features === 'management'
   )
     return <NativeWorkspace client={client} />
 

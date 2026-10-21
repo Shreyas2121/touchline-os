@@ -40,6 +40,7 @@ fn core_sources_do_not_touch_the_platform() {
         include_str!("../src/fictional_names.rs"),
         include_str!("../src/world_validation.rs"),
         include_str!("../src/queries.rs"),
+        include_str!("../src/management.rs"),
     ];
     for source in sources {
         for forbidden in [

@@ -1,9 +1,13 @@
-//! Native read and migration use cases. Gameplay writes remain unavailable.
+//! Native queries, migration and guarded career management use cases.
 
 #![forbid(unsafe_code)]
+mod management;
 mod migration;
 mod reads;
+pub use game_core::management::ClubChoices;
+pub use game_core::management::{CreationRequest, ManagementCommand, ManagementOutcome};
 pub use game_core::{queries::*, EntityId, PlayerRow, SafeInt};
+pub use management::{create_career, manage, preview_creation};
 pub use migration::{backup_file, export_file, MigrationSession};
 pub use reads::{preview, read_screen, store_error, validation};
 
@@ -47,7 +51,7 @@ pub fn health(profile: Profile) -> Result<HealthReport, CommandError> {
         identifier: APP_IDENTIFIER.into(),
         profile: profile.as_str().into(),
         storage: "sqlite".into(),
-        features: "reads-migration".into(),
+        features: "management".into(),
         dexie_fallback: false,
     })
 }
@@ -65,7 +69,7 @@ mod tests {
     fn health_reports_read_migration_capabilities() {
         let report = health(Profile::Test).expect("health");
         assert_eq!(report.storage, "sqlite");
-        assert_eq!(report.features, "reads-migration");
+        assert_eq!(report.features, "management");
         assert!(!report.dexie_fallback);
         assert_eq!(report.profile, "test");
         assert_eq!(report.identifier, "com.touchline.os");

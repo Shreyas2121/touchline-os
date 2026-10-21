@@ -49,7 +49,7 @@ pub fn reject_standalone_write(
     })
 }
 pub fn reject_challenge_constitution(campaign: &CampaignRow) -> Result<(), GuardError> {
-    if campaign.mode == CampaignMode::Standalone && campaign.rules_mode == RulesMode::Challenge {
+    if campaign.rules_mode == RulesMode::Challenge {
         return Err(GuardError::Scope {
             message: "Challenge rules are locked.".into(),
         });

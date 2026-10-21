@@ -231,7 +231,7 @@ pub(super) fn screen(db: &mut Connection, query: &ScreenQuery) -> Result<ScreenR
             0,
         )?);
     }
-    let chosen: i64 = tx.query_row("SELECT count(*) FROM auditEvents WHERE campaignId = ?1 AND actionType = 'campaign.select-club'", [&scope[0]], |r| r.get(0))?;
+    let chosen: i64 = tx.query_row("SELECT count(*) FROM auditEvents WHERE campaignId = ?1 AND (actionType = 'campaign.select-club' OR (actionType = 'campaign.create' AND json_extract(payload,'$.creationFingerprint') IS NOT NULL))", [&scope[0]], |r| r.get(0))?;
     // Resolve referenced names in the same snapshot; there is no per-row IPC.
     fn refs(value: &Value, ids: &mut std::collections::BTreeSet<String>) {
         match value {
@@ -292,6 +292,12 @@ pub(super) fn screen(db: &mut Connection, query: &ScreenQuery) -> Result<ScreenR
     }
     let choose_club_required =
         campaign.mode == game_core::CampaignMode::Legacy && campaign.seed.is_some() && chosen == 0;
+    let active_constitution = financial["constitutions"]
+        .as_array()
+        .and_then(|rows| rows.first())
+        .cloned()
+        .map(serde_json::from_value)
+        .transpose()?;
     tx.commit()?;
     Ok(ScreenRead {
         model: ScreenModel {
@@ -301,6 +307,7 @@ pub(super) fn screen(db: &mut Connection, query: &ScreenQuery) -> Result<ScreenR
             page: query.page,
             player_facts: vec![],
             finance: None,
+            active_constitution,
             reports: vec![],
             choose_club_required,
             labels,
@@ -325,4 +332,55 @@ pub(super) fn player(
     Ok(serde_json::from_value(
         rows.into_iter().next().ok_or(StoreError::NotFound)?,
     )?)
+}
+pub(super) fn planning(
+    db: &mut Connection,
+    campaign: &EntityId,
+    player_id: &EntityId,
+) -> Result<PlayerPlanning> {
+    let tx = db.transaction()?;
+    let headers = select(&tx, "campaigns", "id=?1", &[campaign.as_str().into()], 1, 0)?;
+    let header: CampaignRow =
+        serde_json::from_value(headers.into_iter().next().ok_or(StoreError::NotFound)?)?;
+    let scope = vec![campaign.as_str().into(), player_id.as_str().into()];
+    let players = select(&tx, "players", "campaignId=?1 AND id=?2", &scope, 1, 0)?;
+    let player = serde_json::from_value(players.into_iter().next().ok_or(StoreError::NotFound)?)?;
+    let note_scope = vec![
+        campaign.as_str().into(),
+        player_id.as_str().into(),
+        header.active_season_id.as_str().into(),
+    ];
+    let notes = select(
+        &tx,
+        "developmentPlans",
+        "campaignId=?1 AND playerId=?2 AND seasonId=?3",
+        &note_scope,
+        1,
+        0,
+    )?;
+    let shortlist = select(
+        &tx,
+        "shortlistItems",
+        "campaignId=?1 AND playerId=?2",
+        &scope,
+        1,
+        0,
+    )?;
+    let note = notes
+        .into_iter()
+        .next()
+        .map(serde_json::from_value)
+        .transpose()?;
+    let shortlist = shortlist
+        .into_iter()
+        .next()
+        .map(serde_json::from_value)
+        .transpose()?;
+    tx.commit()?;
+    Ok(PlayerPlanning {
+        player,
+        revision: header.revision,
+        note,
+        shortlist,
+    })
 }

@@ -2,6 +2,8 @@ export const gameClientErrorCodes = [
   'UNAVAILABLE',
   'VALIDATION',
   'INTERNAL',
+  'CONFLICT',
+  'SCOPE',
 ] as const
 
 export type GameClientErrorCode = (typeof gameClientErrorCodes)[number]

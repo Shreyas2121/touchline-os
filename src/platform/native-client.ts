@@ -27,6 +27,8 @@ export function createNativeClient(): GameClient {
     screen: (query) => call('read_screen', { query }),
     player: (campaignId, playerId) =>
       call('read_player', { campaignId, playerId }),
+    planning: (campaignId, playerId) =>
+      call('player_planning', { campaignId, playerId }),
     previewPolicy: (query) => call('preview_policy', { query }),
     selectImport: () => call('select_import'),
     confirmImport: (token) => call('confirm_import', { token }),
@@ -38,6 +40,9 @@ export function createNativeClient(): GameClient {
         exportedAt: new Date().toISOString(),
       }),
     backupDatabase: () => call('backup_database'),
+    createCareer: (request) => call('create_career', { request }),
+    previewCreation: (request) => call('preview_creation', { request }),
+    manage: (command) => call('manage_campaign', { command }),
   }
 }
 

@@ -9,6 +9,7 @@ use game_store::{ScreenRead, Store, StoreError};
 
 pub fn store_error(error: StoreError) -> CommandError {
     match error {
+        StoreError::Command(error) => error,
         StoreError::NotFound => validation("This campaign or record was not found."),
         StoreError::Collision(_) => validation(
             "A different save already uses this campaign ID. Import cannot overwrite it.",

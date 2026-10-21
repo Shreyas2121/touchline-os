@@ -783,7 +783,7 @@ fn mode_challenge_scope_and_revision_guards_reject_direct_calls() {
             }
             assert_eq!(
                 reject_challenge_constitution(&campaign).is_err(),
-                mode == CampaignMode::Standalone && rules == RulesMode::Challenge
+                rules == RulesMode::Challenge
             );
         }
     }

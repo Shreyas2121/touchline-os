@@ -14,7 +14,7 @@ use serde_json::json;
 use std::collections::BTreeSet;
 
 pub const CAREER_OPERATION_KEY: &str = "career:initialize";
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ts_rs::TS)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct CareerInput {
     pub campaign_id: EntityId,
@@ -70,7 +70,7 @@ impl PreparedCareer {
 fn invalid() -> CoreError {
     CoreError::Invalid("Career initialization is incomplete or inconsistent.")
 }
-fn input_fingerprint(input: &CareerInput) -> CoreResult<String> {
+pub fn input_fingerprint(input: &CareerInput) -> CoreResult<String> {
     validate_identity_seed(&input.seed, &input.campaign_id)?;
     validate_timestamp(&input.now)?;
     season_dates(input.start_year.get())?;

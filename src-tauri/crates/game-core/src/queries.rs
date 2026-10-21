@@ -55,6 +55,14 @@ pub struct PlayerFact {
 }
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct PlayerPlanning {
+    pub player: PlayerRow,
+    pub revision: SafeInt,
+    pub note: Option<DevelopmentPlanRow>,
+    pub shortlist: Option<ShortlistItemRow>,
+}
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct NativeFinance {
     pub capacity: String,
     pub wages: String,
@@ -84,6 +92,7 @@ pub struct ScreenModel {
     pub page: SafeInt,
     pub player_facts: Vec<PlayerFact>,
     pub finance: Option<NativeFinance>,
+    pub active_constitution: Option<ConstitutionRow>,
     pub reports: Vec<NativeReport>,
     pub choose_club_required: bool,
     pub labels: BTreeMap<String, String>,

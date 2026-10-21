@@ -274,6 +274,11 @@ pub(super) fn import(
 
 pub(super) fn read(connection: &mut Connection, campaign_id: &str) -> Result<Value> {
     let transaction = connection.transaction()?;
+    let tables = read_from(&transaction, campaign_id)?;
+    transaction.commit()?;
+    Ok(tables)
+}
+pub(super) fn read_from(transaction: &Connection, campaign_id: &str) -> Result<Value> {
     let mut tables = Map::new();
     for table in TABLES {
         let names = table
@@ -320,7 +325,6 @@ pub(super) fn read(connection: &mut Connection, campaign_id: &str) -> Result<Val
         }
         tables.insert(table.name.to_owned(), Value::Array(rows));
     }
-    transaction.commit()?;
     Ok(Value::Object(tables))
 }
 

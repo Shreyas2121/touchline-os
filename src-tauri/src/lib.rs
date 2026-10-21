@@ -9,6 +9,42 @@ use tauri_plugin_dialog::DialogExt;
 
 type Store = Arc<game_app::NativeStore>;
 type Imports = Arc<game_app::MigrationSession>;
+#[tauri::command]
+async fn player_planning(
+    store: tauri::State<'_, Store>,
+    campaign_id: game_app::EntityId,
+    player_id: game_app::EntityId,
+) -> Result<game_app::PlayerPlanning, CommandError> {
+    let store = store.inner().clone();
+    blocking(move || {
+        store
+            .planning(campaign_id, player_id)
+            .map_err(game_app::store_error)
+    })
+    .await
+}
+#[tauri::command]
+async fn preview_creation(
+    request: game_app::CreationRequest,
+) -> Result<game_app::ClubChoices, CommandError> {
+    blocking(move || game_app::preview_creation(request)).await
+}
+#[tauri::command]
+async fn manage_campaign(
+    store: tauri::State<'_, Store>,
+    command: game_app::ManagementCommand,
+) -> Result<game_app::ManagementOutcome, CommandError> {
+    let store = store.inner().clone();
+    blocking(move || game_app::manage(&store, command)).await
+}
+#[tauri::command]
+async fn create_career(
+    store: tauri::State<'_, Store>,
+    request: game_app::CreationRequest,
+) -> Result<game_app::ManagementOutcome, CommandError> {
+    let store = store.inner().clone();
+    blocking(move || game_app::create_career(&store, request)).await
+}
 async fn blocking<T: Send + 'static>(
     work: impl FnOnce() -> Result<T, CommandError> + Send + 'static,
 ) -> Result<T, CommandError> {
@@ -198,7 +234,11 @@ pub fn run() {
             list_campaigns,
             read_screen,
             read_player,
+            player_planning,
             preview_policy,
+            manage_campaign,
+            preview_creation,
+            create_career,
             select_import,
             confirm_import,
             cancel_import,

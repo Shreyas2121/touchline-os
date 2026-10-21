@@ -6,6 +6,121 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 
 static SEQUENCE: AtomicU64 = AtomicU64::new(0);
+#[test]
+fn management_late_audit_failure_rolls_back_player_and_revision() {
+    use game_core::{management::*, EntityId, SafeInt};
+    let dir = Directory::new();
+    let path = dir.file("management-rollback.sqlite3");
+    let store = Store::open(&path).unwrap();
+    store.import_snapshot(&fixture("legacy-v2")).unwrap();
+    let before = tables(&store, "legacy-v2");
+    let source = game_core::parse_snapshot(&fixture("legacy-v2")).unwrap();
+    let mut player = source.tables.players[0].clone();
+    player.name = "Rejected correction".into();
+    Connection::open(&path).unwrap().execute_batch("CREATE TRIGGER reject_management_audit BEFORE INSERT ON auditEvents BEGIN SELECT RAISE(ABORT,'injected audit failure'); END;").unwrap();
+    let command = ManagementCommand {
+        campaign_id: EntityId::new("legacy-v2").unwrap(),
+        expected_revision: SafeInt::new(before["campaigns"][0]["revision"].as_i64().unwrap())
+            .unwrap(),
+        action_id: EntityId::new("management-fault-action").unwrap(),
+        audit_id: EntityId::new("management-fault-audit").unwrap(),
+        now: "2026-10-21T12:00:00.000Z".into(),
+        action: ManagementAction::UpdatePlayer { player },
+    };
+    assert!(store.manage(command.clone()).is_err());
+    assert_eq!(tables(&store, "legacy-v2"), before);
+    Connection::open(&path)
+        .unwrap()
+        .execute_batch("DROP TRIGGER reject_management_audit")
+        .unwrap();
+    assert!(!store.manage(command).unwrap().replayed);
+    assert_eq!(
+        tables(&store, "legacy-v2")["campaigns"][0]["revision"],
+        before["campaigns"][0]["revision"].as_i64().unwrap() + 1
+    );
+}
+
+#[test]
+fn career_partial_insert_and_demo_reset_failures_preserve_previous_saves() {
+    use game_core::{career::*, management::*, policy::Preset, EntityId, RulesMode, SafeInt};
+    let dir = Directory::new();
+    let path = dir.file("creation-rollback.sqlite3");
+    let store = Store::open(&path).unwrap();
+    store.import_snapshot(&fixture("legacy-v2")).unwrap();
+    let protected = tables(&store, "legacy-v2");
+    let id = |s: &str| EntityId::new(s).unwrap();
+    let input = CareerInput {
+        campaign_id: id(STANDALONE_DEMO_ID),
+        name: "Standalone demo".into(),
+        seed: "native-standalone-demo-v2".into(),
+        start_year: SafeInt::new(2026).unwrap(),
+        club_key: "club:01".into(),
+        rules_mode: RulesMode::Sandbox,
+        preset: Preset::Balanced,
+        now: "2026-10-21T12:00:00.000Z".into(),
+        season_id: id("fault-season"),
+        clock_id: id("fault-clock"),
+        constitution_id: id("fault-constitution"),
+        allocation_id: id("fault-allocation"),
+        receipt_id: id("fault-receipt"),
+        audit_event_id: id("fault-audit"),
+        action_id: id("fault-action"),
+    };
+    let prepared = prepare_standalone_career(&input).unwrap().into_tables();
+    let request = CreationRequest {
+        career: input.clone(),
+        kind: CreationKind::StandaloneDemo,
+        reset_revision: None,
+        club: None,
+    };
+    Connection::open(&path).unwrap().execute_batch("CREATE TRIGGER reject_generated_player BEFORE INSERT ON players WHEN NEW.id LIKE '%player-0100' BEGIN SELECT RAISE(ABORT,'injected mid-world failure'); END;").unwrap();
+    assert!(store
+        .create(
+            request.clone(),
+            prepared.clone(),
+            "creation-signature".into()
+        )
+        .is_err());
+    assert_eq!(store.campaigns(0).unwrap().total.get(), 1);
+    assert_eq!(tables(&store, "legacy-v2"), protected);
+    Connection::open(&path)
+        .unwrap()
+        .execute_batch("DROP TRIGGER reject_generated_player")
+        .unwrap();
+    store
+        .create(
+            request.clone(),
+            prepared.clone(),
+            "creation-signature".into(),
+        )
+        .unwrap();
+    let before = tables(&store, STANDALONE_DEMO_ID);
+    Connection::open(&path).unwrap().execute_batch("CREATE TRIGGER reject_reset_receipt BEFORE INSERT ON simulationReceipts BEGIN SELECT RAISE(ABORT,'injected reset failure'); END;").unwrap();
+    let mut reset = request;
+    reset.reset_revision = Some(SafeInt::new(0).unwrap());
+    reset.career.action_id = id("reset-fault-action");
+    let reset_prepared = prepare_standalone_career(&reset.career)
+        .unwrap()
+        .into_tables();
+    assert!(store
+        .create(
+            reset.clone(),
+            reset_prepared.clone(),
+            "reset-signature".into()
+        )
+        .is_err());
+    assert_eq!(tables(&store, STANDALONE_DEMO_ID), before);
+    assert_eq!(tables(&store, "legacy-v2"), protected);
+    Connection::open(&path)
+        .unwrap()
+        .execute_batch("DROP TRIGGER reject_reset_receipt")
+        .unwrap();
+    store
+        .create(reset, reset_prepared, "reset-signature".into())
+        .unwrap();
+    assert_eq!(tables(&store, "legacy-v2"), protected);
+    assert!(store.import_snapshot(&fixture("legacy-v2")).is_ok());
+}
 struct Directory(PathBuf);
 impl Directory {
     fn new() -> Self {

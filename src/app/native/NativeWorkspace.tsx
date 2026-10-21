@@ -20,9 +20,11 @@ import { CrestSvg } from '../../components/graphics/CrestSvg'
 import { NativeTactics } from './NativeTactics'
 import { Button } from '../../components/ui/Button'
 import { NativeScreenTables } from './NativeScreenTables'
+import { NativeCareerForm } from './NativeCareerForm'
+import { NativeManagementPanel } from './NativeManagementPanel'
 
 const readOnly =
-  'Gameplay editing is unavailable during this migration milestone. Career management, match and transfer recording will become available in later updates.'
+  'Career management is available natively. Contract, finance, match and transfer recording will arrive in later updates. Continue is not available.'
 
 export function NativeWorkspace({ client }: { client: GameClient }) {
   return (
@@ -265,7 +267,7 @@ function Campaigns({ client }: { client: GameClient }) {
           </>
         )
       )}
-      <Button disabled>Create career — unavailable</Button>
+      <NativeCareerForm client={client} />
     </section>
   )
 }
@@ -515,6 +517,17 @@ function ScreenContent({
             )}
             {screen === 'tactics' && <NativeTactics model={data} />}
             <NativeScreenTables model={data} screen={screen} />
+            <NativeManagementPanel
+              key={data.revision}
+              client={client}
+              model={data}
+              screen={screen}
+              onSaved={() => {
+                setNotice('Saved native campaign change.')
+                setRetry((value) => value + 1)
+              }}
+              onReload={() => setRetry((value) => value + 1)}
+            />
             {data.reports.map((report, i) => (
               <section key={i}>
                 <h3>
@@ -549,23 +562,13 @@ function ScreenContent({
 function unavailableActions(screen: Screen): string[] {
   switch (screen) {
     case 'squad':
-      return ['Add player', 'Edit player', 'Save contract']
-    case 'tactics':
-      return ['Save lineup', 'Delete lineup']
+      return ['Save contract']
     case 'transfers':
       return ['Record transfer', 'Record offer', 'Accept offer', 'Reject offer']
     case 'finance':
       return ['Post prize income', 'Reverse ledger entry']
-    case 'registration':
-      return ['Save registration']
-    case 'scouting':
-      return ['Save shortlist', 'Save development note']
-    case 'constitution':
-      return ['Save constitution']
     case 'matches':
       return ['Record match']
-    case 'choose-club':
-      return ['Select managed club']
     default:
       return []
   }
