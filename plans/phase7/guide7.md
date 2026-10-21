@@ -2,7 +2,7 @@
 
 ## 1. Context and authority
 
-Master 3.0.0 §§9/12; [Phase 7](../phase7.md); predecessor P07-G06 `feat(p07-g06): advance native careers deterministically` plus passed NM-G09 bridge.
+Master 3.0.2 / DEC-003 / DEC-004 §§9/12; [Phase 7](../phase7.md); predecessor P07-G06 `feat(p07-g06): advance native careers deterministically` plus passed NM-G09 bridge.
 
 Commit: `test(p07-g07): verify native standalone foundations`.
 
@@ -33,8 +33,8 @@ Reuse meaningful earlier tests. Do not duplicate every implementation function o
 
 ## 6. Implementation steps
 
-1. Audit native existing-feature parity and bridge evidence; exact import/generator/receipt semantics remain protected.
-2. Exercise source legacy/standalone import, native new career, guarded management and one permitted legacy workflow through the actual native app.
+1. Audit native standalone correctness and bridge evidence; save preservation, deterministic generation and receipt semantics remain protected. Old-output equality and manual-feature parity are not gates.
+2. Exercise source standalone import, native new career and guarded management through the actual native app. Historical manual saves remain inspectable/exportable with unchanged rows; direct editing and progression refuse. No working manual-play workflow is required.
 3. Advance to deadline/kickoff with close/relaunch; verify matching retries/stale conflicts and hard stop. No unrelated player/finance/history changes.
 4. Check export/consistent backup/reopen and campaign/reset isolation after progression. Source browser data is unchanged.
 5. Confirm generated bindings and IPC screen projections are current and desktop runtime has no Dexie fallback or raw SQL API.
@@ -68,7 +68,7 @@ Run relevant browser compatibility E2E when changed. Record targeted/full native
 
 ## 9. Manual acceptance check
 
-Follow Phase 7 §8 journey in the native app. Check imported legacy history, new fixed-seed career, Challenge rejection/Sandbox edit, persisted deadline/kickoff and restart, export/backup, separate demo reset and source preservation.
+Follow Phase 7 §8 journey in the native app. Check preserved read-only historical data, a new fixed-seed standalone career, Challenge rejection/Sandbox edit, persisted deadline/kickoff and restart, export/backup, isolated standalone demo reset and source preservation.
 
 ## 10. Definition of done
 
@@ -90,4 +90,4 @@ Stage only related tests/fixes/docs and phase evidence. Record actual SHA/checks
 
 ## 12. Handoff
 
-Generate `plans/phase8.md` and all its guides from master 3.0.0 before implementation. Add fixture/result/performance contracts through a later SQLite migration and one pure Rust engine for managed/AI matches. Market/lifecycle/analytics/import/release remain Phases 9–13.
+Generate `plans/phase8.md` and all its guides from master 3.0.2 before implementation. Add fixture/result/performance contracts through a later SQLite migration and one pure Rust engine for managed/AI matches. Market/lifecycle/analytics/import/release remain Phases 9–13.

@@ -3,8 +3,11 @@
 `Store::open` starts one connection worker with an eight-request queue. Its blocking
 methods belong on the native adapter's blocking executor, not the UI thread.
 Tauri startup manages its lifetime. Native bounded reads, migration dialogs and
-guarded management writes are exposed through NM-G07; remaining legacy writes and
-Continue still belong to their later guides.
+guarded management writes are exposed through NM-G07; manual-workflow retirement
+and Continue still belong to their later guides. DEC-004 makes standalone careers
+the only gameplay mode. Retained historical manual rows and schema fields do not
+require further manual command ports; revised NM-G08 will reject their editing
+without deleting or converting saved data.
 
 `database_path` takes Tauri's app-local data directory. Production uses
 `touchline.sqlite3` directly under that directory; development and test profiles use

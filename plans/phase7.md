@@ -1,15 +1,15 @@
 # Phase 7 — Standalone foundations with a native migration prerequisite
 
-> **Authority:** `MASTER_PLAN.md` 3.0.0 / DEC-002
+> **Authority:** `MASTER_PLAN.md` 3.0.2 / DEC-002 / DEC-003 / DEC-004
 > **Completed:** P07-G01–G05; files and evidence preserved unchanged
 > **Checkpoint:** `df23431abf8807cf61d2d1b63c66d6f7ef6a4cd3` (G05), followed by `7b3c6a0`
-> **Current stage:** [Native migration bridge](native-migration.md), starting at [NM-G01](native-migration/guide1.md)
+> **Current stage:** [Native migration bridge](native-migration.md), next [revised NM-G08](native-migration/guide8.md)
 > **P07-G06/G07:** Pending and blocked until NM-G09 passes
-> **Status:** Native migration/progression remain unimplemented
+> **Status:** Native bridge implemented through NM-G07; manual-workflow retirement/cutover certification and progression remain pending
 
 ## 1. Parent plan contract
 
-Master 3.0.0 → active bridge/phase → guide → implementation. Preserve historical web G01–G05. Read [DEC-002](../DECISIONS.md) for the native decision and [the bridge](native-migration.md) for the prerequisite port.
+Master 3.0.2 → active bridge/phase → guide → implementation. Preserve historical web G01–G05. Read [DEC-002/003/004](../DECISIONS.md) for native architecture, native correctness and standalone-only scope, and [the bridge](native-migration.md) for prerequisites. Completed manual-feature instructions are historical; they do not require continued companion gameplay.
 
 Execution order is fixed:
 
@@ -24,7 +24,7 @@ P07-G05 → NM-G01 … NM-G09 → P07-G06 → P07-G07 → Phase 8
 | P07-G03       | TS calendar/streams                                | `feat(p07-g03): define deterministic game time`           | Complete            |
 | P07-G04       | Playable world generator                           | `feat(p07-g04): generate playable club worlds`            | Complete            |
 | P07-G05       | Web career creation/guards                         | `feat(p07-g05): start standalone careers safely`          | Complete            |
-| Native bridge | Port existing G05 capabilities, no new progression | See own nine-guide plan                                   | Required before G06 |
+| Native bridge | Native standalone foundations, retire manual workflows, no progression | See own nine-guide plan                       | Required before G06 |
 | P07-G06       | Rust Continue / next-event UI                      | `feat(p07-g06): advance native careers deterministically` | Pending             |
 | P07-G07       | Native foundation certification                    | `test(p07-g07): verify native standalone foundations`     | Pending             |
 
@@ -34,15 +34,15 @@ Only pending G06/G07 instructions change. Previous plan-2 phase/pending guides a
 
 After bridge completion, finish the standalone foundation in the native app: Continue advances a complete seeded career from July 1 through the summer deadline to September 1 kickoff, persists once, survives relaunch and refuses unsupported further simulation.
 
-All existing migrated/native workflows remain usable. This phase still ends before match simulation; Phase 8 adds fixtures/results/league tables in Rust.
+Supported standalone management remains usable. Historical manual saves are preserved/read-only, without gameplay edits or conversion. This phase still ends before match simulation; Phase 8 adds fixtures/results/league tables in Rust.
 
 ## 3. Prerequisites
 
 Do not execute G06 based only on the G05 web SHA. First require:
 
 - NM-G09 committed with an explicit passed bridge gate, recorded SHA/checks and working native APIs.
-- Rust core calendar/PRNG/generation matches existing TS fixtures.
-- SQLite read/write/import/backup/reopen and legacy/standalone guards pass.
+- Rust core calendar/PRNG/generation passes native correctness and reproducibility checks; previous TS output equality is not required (DEC-003).
+- SQLite read/write/import/backup/reopen, standalone guards and retired-manual-command refusal pass (DEC-004).
 - Existing native features use GameClient; no Dexie fallback.
 
 Inspect `plans/native-migration.md` §10 and the actual Cargo/native/DTO code before trusting a checkbox. Missing bridge code is a blocked prerequisite, not permission to implement Continue in TS.
@@ -85,7 +85,7 @@ Preserve consumed-boundary semantics: a deadline just processed must not remain 
 
 GameClient exposes native preview/advance. Show Game date, Next event, Continue, pending feedback, structured validation and stale-save remedy. Disable duplicate submit and re-read persisted state after success.
 
-At kickoff, replace progression with explicit Phase 8 message. Direct Rust calls must stop too. Legacy manual forms remain available in their own save; standalone manual-match/finance/transfer forms remain prohibited.
+At kickoff, replace progression with explicit Phase 8 message. Direct Rust calls must stop too. Manual creation/gameplay forms are retired in every mode; historical manual saves remain read-only and cannot use Continue.
 
 ## 6. Dependencies and guide work
 
@@ -103,7 +103,7 @@ See [guide6](phase7/guide6.md) and [guide7](phase7/guide7.md) for exact implemen
 4. Retry cannot advance the next boundary, duplicate audit or report a fictitious revision.
 5. Concurrent/stale/faulted commands leave no partial state.
 6. Kickoff blocks UI and direct calls with the Phase 8 message.
-7. Imported legacy/standalone histories, seed keys and existing workflows remain intact.
+7. Imported histories and seed keys remain intact; standalone management works, while historical manual saves reject edits and progression.
 8. Command Center never uses Dexie or TS policy/clock authority.
 9. No later gameplay or production-platform claim is fabricated.
 
@@ -124,9 +124,9 @@ pnpm test:desktop
 
 Run relevant browser compatibility checks when touched. Native tests use temporary DBs/app-local paths, and test automation stays out of normal release builds.
 
-Journey: open/import existing career → create fixed-seed Challenge → July 1 → Continue/deadline → close/relaunch → Continue/kickoff → repeated request/next action refused → switch legacy and confirm history → inspect no unrelated effects.
+Journey: open/import standalone career → create fixed-seed Challenge → July 1 → Continue/deadline → close/relaunch → Continue/kickoff → repeated request/next action refused → inspect/export historical manual data without edits → inspect no unrelated effects.
 
-No new implementation checks have run during this docs amendment. Preserved progress rows below are historical web evidence.
+No new implementation checks have run during this scope amendment. Preserved progress rows below are historical web evidence; their manual-feature statements predate DEC-004 and do not create current product requirements.
 
 ## 9. Risks and rollback
 
@@ -160,4 +160,4 @@ The completed rows below are preserved verbatim. They describe checks at their h
 
 ### Handoff
 
-Generate Phase 8 and all its guides from master 3.0.0 after G07 passes. Add fixtures/results/both-team appearances to Rust/SQLite with one shared match engine. Preserve legacy journal separation and seed/version behavior. Future market/lifecycle/analytics/import phases remain 9/10/11/12; Phase 13 is desktop release hardening.
+Generate Phase 8 and all its guides from master 3.0.2 after G07 passes. Add fixtures/results/both-team appearances to Rust/SQLite with one shared match engine. Historical journal rows remain separate/read-only; preserve seed/version behavior. Future market/lifecycle/analytics/import phases remain 9/10/11/12; Phase 13 is desktop release hardening.

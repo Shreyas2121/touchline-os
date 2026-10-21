@@ -2,7 +2,7 @@
 
 ## 1. Context and authority
 
-- Master 3.0.0 §§4.6, 7.1, 8 and 9; parent [Phase 7](../phase7.md).
+- Master 3.0.2 / DEC-003 / DEC-004 §§4.6, 7.1, 8 and 9; parent [Phase 7](../phase7.md).
 - Historical predecessor: completed P07-G05 at `df23431abf8807cf61d2d1b63c66d6f7ef6a4cd3`.
 - **Mandatory prerequisite:** [native migration bridge](../native-migration.md) through committed NM-G09 with passed cutover gate.
 - Commit: `feat(p07-g06): advance native careers deterministically`.
@@ -15,13 +15,13 @@ In the migrated native application, Continue advances July 1 → August 31 summe
 
 ## 3. Preconditions
 
-Read bridge §10 and verify actual NM-G09 SHA/checks/gate PASS. Confirm native existing-feature parity, SQLite import/backup/reopen and generated DTOs. A pending/missing gate means do not execute this guide.
+Read bridge §10 and verify actual NM-G09 SHA/checks/gate PASS. Confirm native standalone correctness, manual-workflow retirement, SQLite import/backup/reopen and generated DTOs. A pending/missing gate means do not execute this guide.
 
 Inspect working tree; preserve completed G01–G05 files and browser source data. No new dependency, TS progression engine, Dexie schema, fixture engine or migration redesign.
 
 ## 4. Files to inspect
 
-- Rust game-core calendar/random and fixed JS compatibility vectors from NM-G04.
+- Rust game-core calendar/random and native correctness/reproducibility tests from NM-G04; JS vectors are optional references under DEC-003.
 - game-app current command/retry/guard use cases.
 - game-store simulation-state/receipt and optimistic transaction APIs.
 - Thin Tauri command registration and GameClient/generated DTOs.
@@ -52,7 +52,7 @@ Request includes campaign ID, expected revision, source date/cursor and target b
 6. Recheck source/revision/receipt in the short DB-worker transaction. Write clock date/cursor/phase, receipt, audit and one revision increment together. Returning a prior receipt must not report a fictitious increment.
 7. No match/player/contract/registration/money changes occur. At kickoff UI and direct service both stop with the exact Phase 8 message.
 8. Wire GameClient native preview/advance, disable duplicate submission, show structured failure/stale-state remedy and refresh after persisted success.
-9. Never advance on mount, polling, focus, relaunch or wall-clock time. Preserve migrated legacy workflows and standalone manual-write guards.
+9. Never advance on mount, polling, focus, relaunch or wall-clock time. Preserve standalone guards and read-only historical manual saves; no retired workflow is restored.
 
 ## 7. Tests to add/change
 
@@ -63,7 +63,7 @@ Request includes campaign ID, expected revision, source date/cursor and target b
 - Inject transaction failure: no partial clock/cursor/revision/audit/receipt.
 - UI reload and actual native close/relaunch preserve time. Different audit time has no gameplay effect.
 - Kickoff direct service refuses; other entity/finance/history rows stay unchanged.
-- Legacy/standalone and campaign isolation remain intact.
+- Historical manual saves refuse progression and editing without changing rows/revision; campaign isolation remains intact.
 
 ## 8. Verification commands
 
@@ -88,7 +88,7 @@ Run focused Rust/UI progression tests first. Browser compatibility checks remain
 2. Continue to August 31; close/relaunch; confirm same date and consumed deadline.
 3. Continue to September 1; close/relaunch; verify kickoff stop and no further advancement.
 4. Replay a prior request in integration/native tests; time must remain at the persisted latest date.
-5. Switch to migrated legacy save and verify manual history. No fixtures, offers or growth appeared.
+5. Inspect/export historical manual history if present; confirm edits and progression are refused. No fixtures, offers or growth appeared in those records.
 
 ## 10. Definition of done
 

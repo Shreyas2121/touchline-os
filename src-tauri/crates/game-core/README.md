@@ -1,5 +1,11 @@
 # Native foundations
 
+Product scope follows master 3.0.2 / DEC-004: standalone simulation only. The
+manual generator/management APIs documented below describe the completed NM-G07
+checkpoint, not a requirement to continue companion gameplay. Revised NM-G08
+retires manual creation/editing paths while preserving stored rows and fixtures;
+no additional manual match/finance/market command port is planned.
+
 The core exposes pure models and functions for the native application services.
 It has no storage, platform, network, ambient clock or ambient RNG dependency.
 NM-G04 adds rules and previews; no persisted clock advancement or IPC feature is

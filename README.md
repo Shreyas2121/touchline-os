@@ -2,21 +2,22 @@
 
 Touchline OS is being developed as an offline **desktop Standalone Sporting Director Sim** using Tauri, React/Vite, a Rust backend and SQLite: build squads, negotiate transfers, follow board philosophies and simulate a fictional football world.
 
-The web implementation is complete through **Phase 7 Guide 5**. The native application supports SQLite-backed reads, policy/finance previews, reviewed save migration, export/backup and guarded career management through **NM-G07**. You can create seeded Challenge/Sandbox careers or legacy campaigns, manage saves, and edit supported squad, tactics, registration, board and planning data. Legacy contracts, finance, offers, deals and match recording remain NM-G08; Continue remains blocked until the [native migration bridge](plans/native-migration.md) passes NM-G09.
+The web implementation is complete through **Phase 7 Guide 5**. The native application supports SQLite-backed reads, policy/finance previews, reviewed save migration, export/backup and guarded career management through **NM-G07**. Create seeded standalone Challenge/Sandbox careers, manage saves, and edit permitted tactics, registration, board and planning data. **Standalone simulation is the only supported product direction** ([DEC-004](DECISIONS.md#dec-004--standalone-simulation-only-retire-manual-campaign-workflows)); manual campaign workflows will not be ported. Revised NM-G08 removes manual choices already present in the NM-G07 build. Continue remains blocked until the [native migration bridge](plans/native-migration.md) passes NM-G09.
 
-Existing web careers can start on July 1 with generated clubs and Challenge/Sandbox rules. Match simulation, negotiations and Continue remain unavailable. See [MASTER_PLAN.md](MASTER_PLAN.md), [Phase 7](plans/phase7.md) and [DEC-002](DECISIONS.md).
+Native standalone careers start on July 1 with generated clubs and Challenge/Sandbox rules. Match simulation, negotiations and Continue remain unavailable until their assigned phases. See [MASTER_PLAN.md](MASTER_PLAN.md), [Phase 7](plans/phase7.md) and [DECISIONS.md](DECISIONS.md).
 
 ## Non-goals
 
 - No live match ticker in the initial standalone release
 - No accounts
 - No hosted player database
+- No companion/manual campaign mode or manual match, transfer, offer, contract or money recording
 
-Independent football game project; not affiliated with any football game, team or league. Imported legacy saves retain their existing mode and history.
+Independent football game project; not affiliated with any football game, team or league. Existing historical saves retain their recorded mode and history; they are not converted into simulated careers.
 
 ## Current web setup
 
-The browser build remains the original IndexedDB application and migration exporter. Use the original browser address and profile to export an existing save. Desktop never falls back to that database.
+The browser build remains the frozen original IndexedDB application and migration exporter, not a second supported playable product. Use the original browser address and profile to export an existing save. Desktop never falls back to that database.
 
 Install dependencies:
 
@@ -60,9 +61,11 @@ On desktop, select **Import save**, choose an exported JSON file and review its 
 
 Reads include all ten workspace sections, native club-choice guards, paged player search, saved tactics graphics and profiles. Queries return at most 50 primary rows per collection with the saved revision; complete financial and eligibility inputs stay in Rust. Editors load missing roster pages explicitly and fetch a selected player's saved planning records before editing. Board edits use the current constitution even when the history is paged.
 
-Choose **Create career**, enter a seed/year and rules preset, preview the native clubs and confirm your club. Standalone careers begin on July 1. Legacy creation also supports custom club names, colors and settings, including a Custom preset with no initial allocation until you enable a funding rule. Challenge constitutions are locked; standalone player, contract, money and managed-club changes remain forbidden. Sandbox board edits cannot issue a second opening allocation. Notes and shortlists never change player attributes or ownership.
+Choose **Create career**, enter a seed/year and rules preset, preview the native clubs and confirm your club. Standalone careers begin on July 1. Challenge constitutions are locked; direct player, contract, money and managed-club changes remain forbidden. Sandbox board edits cannot issue a second opening allocation. Notes and shortlists never change player attributes or ownership.
 
-Campaign controls support rename, archive/restore and confirmed deletion. Only the selected native demo can be reset; earlier season history is preserved when a legacy campaign changes its managed club. Registration replaces the managed club's competition selection only after explicit confirmation, with native eligibility/policy validation. Each new management action commits one revision and audit. Logical retries return the saved result without another effect; stale or rejected actions write nothing.
+Standalone campaign controls support rename, archive/restore and confirmed deletion, plus scoped standalone demo reset. Registration replaces the managed club's competition selection only after explicit confirmation, with native eligibility/policy validation. Each new management action commits one revision and audit. Logical retries return the saved result without another effect; stale or rejected actions write nothing.
+
+The NM-G07 build still contains manual campaign/demo creation, custom-club setup and manual player/club editing. DEC-004 schedules their removal and direct-call refusal in revised NM-G08; that retirement has not yet been implemented. Existing manual saves will be historical/read-only for inspection and export/backup, with explicit deletion available. No further manual gameplay features will be added.
 
 ## Toolchain
 
@@ -75,4 +78,4 @@ The browser source stores legacy and standalone campaigns in IndexedDB v2. Its E
 
 The browser application retains its existing IndexedDB name, `touchline-os`, and original workflows for migration reference. Desktop screens use GameClient and typed native services. Unsupported workflows remain disabled, with no browser mutations as fallback. Import transport receipts remain separate from gameplay audits and never increment campaign revisions.
 
-Legacy and standalone demos use distinct native identities, `native-legacy-demo` and `native-standalone-demo`; reset replaces only that demo with its default seeded world. New worlds follow the declared Rust generator rules; DEC-003 does not require old JavaScript algorithm compatibility. Existing saved content is imported directly without regeneration. Deleting a campaign intentionally removes its owned history; deleted saves have no fictitious persisted revision or audit.
+The standalone demo uses `native-standalone-demo`. NM-G07 also created `native-legacy-demo`; its creation/reset gameplay path is scheduled for retirement, while stored data remains preserved. New worlds follow declared Rust generator rules; DEC-003 does not require old JavaScript algorithm compatibility. Existing saved content is imported directly without regeneration. Explicitly deleting a campaign removes its owned history; deleted saves have no fictitious persisted revision or audit.

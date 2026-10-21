@@ -5,13 +5,13 @@
 > **Product choice:** **Standalone Sporting Director Sim**
 > **Target:** Offline desktop application: Tauri 2 + React/Vite UI + Rust game backend + SQLite
 > **Status:** Web implementation complete through P07-G05; native bridge NM-G01–NM-G07 implemented, cutover gate pending
-> **Plan version:** `3.0.1` (product release target remains v1)
+> **Plan version:** `3.0.2` (product release target remains v1)
 > **Last revised:** 2026-10-21
 > **Execution chain:** master → active phase → guide → one reviewed Git commit per guide
 
 ## 0. HOW AN AI CODING AGENT MUST USE THIS FILE
 
-This is the source of truth for current scope, data semantics, invariants, milestone order and release gates. Plan 3.0.0 changes platform/backend at the P07-G05 checkpoint; the standalone game-design decisions from 2.0.0 remain. Plan 3.0.1 / DEC-003 removes compatibility with previous TypeScript business logic as a requirement. Native correctness, deterministic execution and the intended product rules govern remaining implementation; historical parity instructions in pending guides are superseded. Existing save-data preservation remains in scope.
+This is the source of truth for current scope, data semantics, invariants, milestone order and release gates. Plan 3.0.0 changes platform/backend at the P07-G05 checkpoint; the standalone game-design decisions from 2.0.0 remain. Plan 3.0.1 / DEC-003 removes compatibility with previous TypeScript business logic as a requirement. Plan 3.0.2 / DEC-004 removes companion/manual campaign gameplay from the product. Native correctness, deterministic execution and intended standalone rules govern remaining implementation. Historical parity and manual-feature requirements are superseded; existing save-data preservation remains in scope.
 
 ### Hierarchy and execution
 
@@ -26,12 +26,12 @@ Read master and the active bridge/phase plan before a guide. Resolve conflicts b
 
 - Phases 1–6 and `P07-G01` are completed companion foundations under plan 1.0.0.
 - `P07-G02` through `P07-G05` are completed web standalone foundations under plan 2.0.0. Preserve every completed guide file, SHA and recorded check.
-- Web checkpoint: `df23431abf8807cf61d2d1b63c66d6f7ef6a4cd3` (G05), followed by evidence commit `7b3c6a0`. New browser careers exist in IndexedDB v2. The native shell, SQLite persistence, pure core foundations, world generation, career preparation, bounded screen reads, migration UI, atomic career creation and management writes are implemented through NM-G07. Legacy contract/finance/match/deal writes, Continue and match simulation remain pending. See the bridge progress log for actual native SHAs, checks and desktop verification limits.
-- **Next execution: `plans/native-migration/guide8.md` (NM-G08)**. Phase 7 G06/G07 are blocked until the separate native migration bridge passes. Do not rerun completed guides or reset to an earlier phase.
+- Web checkpoint: `df23431abf8807cf61d2d1b63c66d6f7ef6a4cd3` (G05), followed by evidence commit `7b3c6a0`. New browser careers exist in IndexedDB v2. The native shell, SQLite persistence, pure core foundations, world generation, career preparation, bounded screen reads, migration UI, atomic career creation and management writes are implemented through NM-G07. Manual campaign features already present are scheduled for retirement in revised NM-G08; further manual command ports are canceled. Continue and match simulation remain pending. See the bridge progress log for actual native SHAs, checks and desktop verification limits.
+- **Next execution: `plans/native-migration/guide8.md` (revised NM-G08: retire manual workflows)**. Phase 7 G06/G07 are blocked until the separate native migration bridge passes. Do not rerun completed guides or reset to an earlier phase.
 - Keep completed P07-G01–G05 unchanged. The bridge has NM-G01–NM-G09 with its own plan/guide IDs. After its cutover gate, resume P07-G06 (Rust Continue), then P07-G07 (native foundation certification).
 - Superseded companion instructions remain under `plans/archive/companion-v1/`. Superseded plan-2 Phase 7 and pending guides are under `plans/archive/web-standalone-v2/`. Archives are reference only.
 - Future Phases 8–12 retain their gameplay/analytics/import outcomes but execute on Rust/SQLite. Phase 13 becomes desktop release hardening.
-- Legacy and standalone saves both remain supported. Migration changes storage/ownership of logic, not campaign mode or game history.
+- Standalone careers are the only supported gameplay mode (DEC-004). Preserve existing manual campaign data for inspection/export/backup; do not continue its gameplay workflows or silently convert it into simulation history.
 
 ### Engineering rules
 
@@ -94,7 +94,7 @@ No external football game is required. AI clubs are deterministic local algorith
 - AI clubs obey finite transfer and wage budgets and preserve legal player ownership/contracts.
 - A failed or repeated command never leaves partial results or duplicates money, minutes, growth or progression.
 - Save export/restore preserves history, pending negotiations and the same future simulation.
-- Existing legacy campaigns are preserved without fabricating missing competitive history.
+- Historical manual campaign data is preserved without continued gameplay support or fabricated competitive history.
 
 ### 1.5 Scope choices and non-goals
 
@@ -110,6 +110,7 @@ Out of scope for v1:
 - Scraping commercial databases, console saves or external games; automatic two-way game integration.
 - Remote backend servers, accounts, cloud saves, multiplayer, subscriptions or real-money mechanics. The local Rust backend is in scope.
 - A second playable web edition, WASM/OPFS persistence, Drizzle, paid model APIs, hosted LLMs or exposed secret keys. A shared WASM core is a later decision; desktop is primary.
+- Companion/manual campaigns, manual result/deal/contract/money recording, manual campaign demos and direct player/club editing through old companion forms.
 
 The SVG board supplies tactical decisions to the match engine. A simulated result is an outcome in this game, never a claim about a real match.
 
@@ -144,7 +145,7 @@ Use serde/serde_json, ts-rs and rusqlite in the native workspace. Verify current
 
 - Windows is the first tested native target, matching the development environment. Rust/MSVC linker, Windows SDK and WebView2 prerequisites are checked explicitly in NM-G02; missing system installation is a prerequisite, not a reason to rewrite the platform.
 - SQLite path: `appLocalDataDir()/touchline.sqlite3`. Keep application identity stable. Dev/test runs use isolated paths, never production saves.
-- Support all imported legacy and standalone campaign rows. Never assume Chrome/Edge IndexedDB is automatically available in Tauri's WebView.
+- Preserve already supported imported campaign rows; only standalone saves are playable. Historical manual saves can be inspected/exported without ongoing manual workflow support. Never assume Chrome/Edge IndexedDB is automatically available in Tauri's WebView.
 - Export from the original browser origin, validate and import into desktop. Preserve the original browser DB and file until the desktop save is verified.
 - Newer unsupported DB/save/engine versions fail with an actionable compatibility state; never silently downgrade, wipe or regenerate.
 - Use a consistent SQLite backup API and tested restore; do not copy a live main DB file while ignoring its journal.
@@ -176,14 +177,14 @@ Campaign Workspace
   └─ Board Philosophies — challenge rules or Sandbox editor
 
 Global Utilities
-  ├─ Campaign Switcher (standalone / legacy labeled)
+  ├─ Campaign Switcher (playable standalone careers / historical read-only saves labeled)
   ├─ Search / Command Palette
   ├─ Backup / Restore
   ├─ Settings / Accessibility
   └─ Help / Data Provenance
 ```
 
-Client-side routes work inside the desktop shell and preserve current slugs. Existing route slugs may remain for compatibility; the `/matches` route becomes Fixtures & Results for standalone saves and retains the legacy journal for old saves.
+Client-side routes work inside the desktop shell and preserve current slugs. Existing route slugs may remain; `/matches` becomes Fixtures & Results for standalone saves. Previously saved manual journals are historical data, with no new manual-entry workflow.
 
 ### 3.2 Visual system
 
@@ -222,7 +223,7 @@ Client-side routes work inside the desktop shell and preserve current slugs. Exi
 10. **Provenance:** distinguish original fictional/imported/user-entered data from generated profiles and simulated outcomes.
 11. **One canonical result:** one completed result per fixture and one appearance per fixture/player. Legacy journal entries never enter standalone standings.
 12. **Atomic progression:** Rust services commit results, appearances, availability, finances, receipt and time pointer together for each bounded event in SQLite.
-13. **Compatibility:** browser-to-native import and SQLite upgrades preserve legacy/standalone modes, identities and history; migration never silently promotes a manual save.
+13. **Data preservation:** browser-to-native import and SQLite upgrades preserve stored modes, identities and history; historical manual saves remain read-only and are never silently promoted into playable simulation.
 
 ### 4.2 Existing entities retained
 
@@ -339,7 +340,7 @@ remainingTransferCapacity = authorizedCapacity - completedIncomingTransferFees
 spendableForDeal = min(remainingTransferCapacity, availableClubTransferBalance)
 ```
 
-- New seasons receive an explicit board allocation, not a side effect of saving the constitution. Legacy behavior remains compatible.
+- New seasons receive an explicit board allocation, not a side effect of saving the constitution. Manual allocation workflows are retired under DEC-004.
 - Incoming fees debit the buyer and credit the seller once. A reservation reduces availability while a negotiation is open and is released or consumed once.
 - Only completed deals and settled awards affect credits. Speculative offers never finance a signing.
 - Wage commitment is the sum of active weekly contracts. Compare it with tier caps and the club weekly wage budget; v1 does not debit weekly payroll from transfer capacity.
@@ -371,7 +372,7 @@ Kickoff validates a legal selection, registered or age-exempt players, active ow
 
 ### 6.1 Loader A — versioned fictional world
 
-Retain the deterministic 4-league / 72-club / 3,000-player generator framework. Native generator v1 produces legacy demo data and v2 produces playable worlds. Each native version is reproducible; DEC-003 does not require previous JavaScript outputs. Import existing saved rows directly without regeneration.
+Retain the deterministic 4-league / 72-club / 3,000-player playable-world generator framework. Native generator v2 produces playable worlds; v1 is historical implementation/fixture support with no new manual demo requirement. Each retained version is reproducible; DEC-003 does not require previous JavaScript outputs. Import existing saved rows directly without regeneration.
 
 - Four independent leagues of 18 clubs; fictional players, names and crests.
 - Preserve the total of 2,880 owned players and 120 free agents; improve squad composition, not the scale.
@@ -381,7 +382,7 @@ Retain the deterministic 4-league / 72-club / 3,000-player generator framework. 
 - Owned active players receive exactly one complete contract: wage, tier and expiry. Free agents have no active contract.
 - Every club has a finite transfer balance and weekly wage ceiling; initial contracts fit that ceiling. The selected challenge has a feasible starting registration and XI.
 - Standalone calendars start July 1 of an explicit year. Root seeds are user supplied or explicitly generated at the native application boundary and then persisted; audit time does not select world content.
-- The playable demo has a separate campaign identity from the existing legacy demo. Reset acts on the selected demo only.
+- Offer a standalone playable demo. Its reset affects only that demo; preserve any previously saved manual demo as historical data without a creation/reset gameplay option.
 - Rust world computation/validation precedes one atomic SQLite creation transaction. No partially initialized save is listed as playable.
 - Featured gameplay history is produced by the engine or explicitly labeled scripted tutorial state; do not mix authored legacy scores into a competitive table.
 
@@ -403,7 +404,7 @@ Imported data may remain a non-playable preview until requirements are met; neve
 
 Newgens in standalone careers are real fictional gameplay participants. Generate and offer academy intakes for every club, using academy tier and stable season keys; acceptance/promotion establishes an actual contract and roster place through the same eligibility rules.
 
-Replace the companion-only optional planning-candidate workflow for standalone saves. Import-created careers disclose fictional replenishment during setup; it cannot be silently presented as real-world data. Legacy saves retain historical behavior.
+Use the standalone planning-candidate workflow. Import-created careers disclose fictional replenishment during setup; it cannot be silently presented as real-world data. Historical manual saves retain their recorded data, without continued gameplay behavior.
 
 Bounded role-targeted development uses age, potential, simulated minutes and development plans at midseason and season end. Split an annual growth budget across these checkpoints; do not automatically add 1–4 twice. Age-related decline is position-aware, and retirement plus youth intake maintain a playable world over multiple seasons.
 
@@ -413,7 +414,7 @@ Bounded role-targeted development uses age, potential, simulated minutes and dev
 
 ### 7.1 Campaigns, clock and command center
 
-- New Standalone Career selects seed, start year, club and Challenge/Sandbox; legacy saves remain labeled and openable.
+- New Career selects seed, start year, club and Challenge/Sandbox. Previously imported manual saves are labeled historical/read-only; they cannot start or resume standalone simulation.
 - `Continue` advances to the earliest due decision boundary, never the browser clock. Show current date, next event, progress and blockers.
 - Calendar v1: July 1–June 30 seasons; summer transfers July 1–August 31; winter transfers January 1–31; league round 1 September 1, then 33 weekly rounds. This is a fictional game calendar, not a real league schedule.
 - Same-day order: user-required decisions and deadline guards → closing/opening window transitions → kickoff/results → post-match recovery/development boundaries. Contract expiry and year-end settlement are handled before next-season initialization.
@@ -425,7 +426,7 @@ Bounded role-targeted development uses age, potential, simulated minutes and dev
 
 Retain searchable/sortable squad tables, profiles, wage pyramid, contracts and development plans. Add fitness/sharpness, injury return, league bans, role fit, simulated minutes and development history.
 
-Player metadata correction is legacy-only; Sandbox editing, if later exposed, uses a separate audited command. Challenge users cannot manufacture attributes, values or money through existing forms. Contract expiry/renewal and retirement are simulated in Phase 10. All generated first-season contracts run at least to June 30 so intermediate milestones do not expire players without a handler.
+Retire the old manual player correction command/UI. Any future Sandbox player editor requires a separately scoped audited feature. Challenge users cannot manufacture attributes, values or money through existing forms. Contract expiry/renewal and retirement are simulated in Phase 10. All generated first-season contracts run at least to June 30 so intermediate milestones do not expire players without a handler.
 
 ### 7.3 Tactical decisions and selection
 
@@ -439,7 +440,7 @@ During windows, AI clubs evaluate positional shortages, player age, affordabilit
 
 Incoming purchases require board approval, selling-club agreement and player agreement on wage, role and term. Use deterministic valuation/willingness formulas, bounded counters, deadlines and budget reservations. Repeating an identical proposal does not reroll acceptance.
 
-One settlement command updates ownership, both clubs' finances, old/new contracts, registrations, affected lineups, offers, receipt and audit atomically. Retain the existing manual transfer commands only for legacy saves. AI clubs cannot sign indefinitely or send unaffordable binding offers.
+One settlement command updates ownership, both clubs' finances, old/new contracts, registrations, affected lineups, offers, receipt and audit atomically. Do not retain or port manual transfer commands as a substitute for this Phase 9 workflow. AI clubs cannot sign indefinitely or send unaffordable binding offers.
 
 ### 7.5 Registration and availability
 
@@ -455,7 +456,7 @@ Injury duration is 7–28 game days; recovery uses game-date differences. A stra
 - Scores equal goal-event totals; scorer/assist/minute/card records reconcile. An own-goal representation must be explicit if supported. A precomputed final score is not an independent second source of truth.
 - Derive standings: 3 points for win, 1 for draw; order by points, goal difference, goals scored, then stable club simulation key. Show this fictional tiebreak rule.
 - Historical lineups/club identity and performance survive later transfers and growth.
-- Simulated results are immutable. Legacy journal corrections, if provided, cannot change standalone fixtures, finances or standings.
+- Simulated results are immutable. Historical manual journals remain read-only and never change standalone fixtures, finances or standings.
 - Phase 10 rollover requires all fixtures resolved, obligations cleared and an explicit review/preview/confirm. Settle awards, contracts, growth, academy and next-season data once.
 
 ### 7.7 Moneyball analytics and scouting (Phase 11)
@@ -648,7 +649,7 @@ Authority: `plans/native-migration.md`; executable files: `plans/native-migratio
 | `NM-G05` | Rust generators and career preparation            | `feat(nm-g05): reproduce seeded worlds in rust`                  |
 | `NM-G06` | Native read API, save migration UI and loaders    | `feat(nm-g06): read campaigns through native services`           |
 | `NM-G07` | Native campaign/squad/tactics/board writes        | `feat(nm-g07): execute career management in rust`                |
-| `NM-G08` | Native legacy match/finance/market parity         | `feat(nm-g08): preserve legacy workflows on sqlite`              |
+| `NM-G08` | Retire manual workflows; standalone-only surface | `refactor(nm-g08): retire manual campaign workflows`             |
 | `NM-G09` | Native cutover and compatibility certification    | `test(nm-g09): certify the native migration bridge`              |
 
 **Bridge exit gate:** intended workflows run through Rust/SQLite in a packaged Tauri app; imported/browser snapshots, valid deterministic native careers, native reopen/backup, command guards and direct-call tests pass. Exact compatibility with previous TypeScript logic is not required (DEC-003). Record bridge SHAs/checks in its own plan. Only then resume Phase 7.
@@ -884,7 +885,7 @@ A guide should be executable by a fresh AI agent that has the repository and mas
 - SQLite integration: actual schema upgrades, constraints, scoped references, rollback, revisions, logical retries, deletion scope and consistent backup/reopen.
 - Migration: actual browser v1/v2 snapshot fixtures, all 23 source stores, null/optional preservation, no regeneration, import collision/retry/fault behavior.
 - Contract/UI: generated DTO freshness, Rust runtime rejection, native adapter errors, mocked GameClient rendering and accessible workflows.
-- Native E2E: packaged application creation/import → reopen → selection/board/legacy writes → Continue → close/relaunch; later phases add match/transfer/season/restore journeys.
+- Native E2E: packaged standalone creation/import → reopen → selection/board/planning writes → Continue → close/relaunch; historical manual saves remain unchanged/read-only. Later phases add simulated match/transfer/season/restore journeys.
 - Existing browser Vitest/Playwright suites remain compatibility evidence during the port. Mocked invoke or browser-only tests do not certify SQLite/native behavior.
 
 ### 12.2 Explicit invariants
@@ -962,7 +963,7 @@ Keyboard users can create/import/open a native save, select a team, resolve bloc
 | Import reruns history or changes revisions         | Row-preserving transaction and separate transport receipt                        |
 | Live SQLite file copy is inconsistent              | Supported backup API, temp snapshot validation and reopen tests                  |
 | UI freezes or transaction waits on heavy work      | CPU tasks outside DB worker/short transactions                                   |
-| Legacy commands bypass Challenge or lose behavior  | Rust service port, direct-call guards and parity/native tests                    |
+| Retired commands bypass standalone/read-only guards | Remove UI paths; direct-call refusal and unchanged-history tests                |
 | App update breaks saves                            | Independent schema/engine/save versions, backup and actual upgrade tests         |
 | Native migration becomes one unreviewable rewrite  | NM-G01–NM-G09 bridge commits; preserve old code as reference until cutover       |
 | Game loop expands into live manager                | Instant results/auto-substitutions; live ticker deferred                         |
@@ -1000,7 +1001,7 @@ At release a reviewer can:
 9. Complete the season, review objectives/development, settle once and see next-season awards and capacity.
 10. Export, restore as a separate campaign and verify the same future outcome from identical decisions.
 11. Go offline and continue playing in the installed desktop application.
-12. Import/open a preserved browser legacy campaign; its manual history and revisions remain intact and have not become a simulated table.
+12. Inspect/export a preserved historical manual campaign; its rows and revision remain intact, it has no gameplay edits, and its history has not become a simulated table.
 
 The portfolio story is a playable sporting-director loop whose board rules create meaningful recruitment decisions.
 
@@ -1037,10 +1038,11 @@ Material changes require a master version update, a DECISIONS entry, affected pe
 - DEC-001: plan 1.0.0 → 2.0.0, companion → standalone sim.
 - DEC-002: plan 2.0.0 → 3.0.0 at P07-G05, web/Dexie → native Tauri/Rust/SQLite before match-engine implementation.
 - DEC-003: plan 3.0.0 → 3.0.1 during NM-G04; previous-logic compatibility is no longer required. Native correctness and determinism govern remaining work.
+- DEC-004: plan 3.0.1 → 3.0.2 before NM-G08; standalone simulation is the only gameplay mode. Retire manual campaign options instead of porting their remaining workflows; preserve stored history and completed evidence.
 - Keep standalone game design and Phases 8–12 outcomes. Insert a separate migration bridge before pending Phase 7 G06/G07; update release Phase 13 and preserve completed work.
 - The browser remains the migration/export source and optional test reference. Desktop is the primary game; a complete second web edition is deferred. Previous-logic parity is not required (DEC-003).
 
-**Next execution:** `plans/native-migration/guide8.md` after this master, DEC-002/DEC-003 and the bridge plan. P07-G06 is blocked until NM-G09 passes; then implement Rust Continue and P07-G07 certification. Match simulation starts in Phase 8.
+**Next execution:** revised `plans/native-migration/guide8.md` (standalone-only scope retirement) after this master, DEC-002/DEC-003/DEC-004 and the bridge plan. P07-G06 is blocked until NM-G09 passes; then implement Rust Continue and P07-G07 certification. Match simulation starts in Phase 8.
 
 ---
 

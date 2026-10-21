@@ -2,25 +2,25 @@
 
 ## 1. Context and authority
 
-Master 3.0.1 / DEC-003 → [native migration plan](../native-migration.md) → this guide. Compatibility certification refers to save-data preservation and native cutover, not previous-logic equality.
-Predecessor: NM-G08; locate its subject in the bridge progress log and verify its commit is an ancestor.
+Master 3.0.2 / DEC-003 / DEC-004 → [native migration plan](../native-migration.md) → this guide. Certification covers the standalone product and save-data preservation, not previous-logic equality or continued manual campaign gameplay.
+Predecessor: revised NM-G08 `refactor(nm-g08): retire manual campaign workflows`; locate its actual commit in the bridge progress log and verify it is an ancestor. The canceled manual-workflow port is not a prerequisite.
 Commit: `test(nm-g09): certify the native migration bridge`.
 
 Phase 7 G06 is blocked until the full bridge passes. This guide ports existing capability; it does not implement Continue.
 
 ## 2. Goal and user-observable result
 
-Certify that the existing G05 application has migrated successfully, then release the explicit gate for Phase 7 Guide 6.
+Certify the standalone native foundations and retirement of manual workflows, then release the explicit gate for Phase 7 Guide 6. Previously stored manual saves remain preserved/read-only; a working manual-play journey is not required.
 
 ## 3. Preconditions
 
-Read master, DEC-002 and bridge plan. Inspect git status; preserve completed P07-G01–G05 and unrelated work. Verify predecessor evidence before code. Introduce only dependencies assigned to this guide, with verified versions/lockfiles. Missing future feature is an unavailable state, never permission to fall back to Dexie.
+Read master, DEC-002/003/004 and bridge plan. Inspect git status; preserve completed P07-G01–G05 and unrelated work. Verify predecessor evidence before code. Introduce only dependencies assigned to this guide, with verified versions/lockfiles. Missing future feature is an unavailable state, never permission to fall back to Dexie.
 
 ## 4. Files to inspect
 
 - Every NM guide and bridge acceptance/progress log
-- Native service inventory and all current G05 feature tests
-- SQLite migration/import/export/backup and core parity suites
+- Supported standalone service inventory, retired manual paths and relevant tests
+- SQLite migration/import/export/backup and native core correctness suites
 - Tauri capabilities/release configuration and original browser exporter
 
 Paths under new native directories exist only after their introducing guide; do not assume future files are already implemented.
@@ -36,9 +36,9 @@ Preserve existing schema/identity/version/nullable contracts. No real user save 
 
 ## 6. Implementation steps
 
-1. Audit the GameClient inventory: every previously usable G05 read/write has an authoritative native path; no TS gameplay fallback, arbitrary SQL or forgotten manual handler.
+1. Audit the GameClient inventory: every supported standalone read/write has an authoritative native path. Manual creation/demo/editing paths are absent or reject direct calls, including retries. No TS gameplay fallback, arbitrary SQL or accidentally callable retired handler.
 2. Add real native desktop automation using current official Tauri/WebdriverIO service. Use isolated paths/test-only instrumentation; exclude automation from normal release builds.
-3. Run source-export/import, same-file retry/collision/rollback, native core/world correctness and reproducibility, current writes, direct-call guards and source preservation checks. No previous-logic parity gate remains.
+3. Run standalone source-export/import, same-file retry/collision/rollback, native core/world correctness and reproducibility, allowed management writes, retired-command refusal and source preservation checks. Historical manual rows remain inspectable/exportable without edits, regeneration or conversion. No previous-logic or manual-feature parity gate remains.
 4. Close/relaunch actual app and verify imported/new careers, revisions/receipts and backup/reopen. Browser/mocked tests are labeled as compatibility only.
 5. Build/smoke the normal native artifact as well as the dedicated E2E test binary; record Windows support honestly and do not claim other OS/signing/updater release coverage.
 6. Confirm game date remains July 1 and no Continue/fixtures/AI/growth/rollover was added while migrating.
@@ -74,14 +74,14 @@ Run relevant browser compatibility/E2E when its flows are touched; NM-G09 record
 
 ## 9. Manual acceptance check
 
-1. Export from original browser, import native, run existing workflows, create fixed-seed career and relaunch.
+1. Export a standalone save from the original browser, import native, run permitted standalone management workflows, create a fixed-seed career and relaunch. Verify historical manual data remains read-only and no manual creation/editing is offered.
 2. Inspect preserved browser data, native backup and normal release artifact; verify July 1 is unchanged and no Continue yet.
 
 ## 10. Definition of done
 
 - [ ] The narrow outcome is implemented and verified.
 - [ ] Source/browser data and completed guide history are preserved.
-- [ ] Required parity, negative and rollback checks pass.
+- [ ] Standalone correctness, retired-command refusal, preservation and rollback checks pass.
 - [ ] No new gameplay or false native/release claim is introduced.
 - [ ] Evidence and limitations are recorded in bridge §10.
 

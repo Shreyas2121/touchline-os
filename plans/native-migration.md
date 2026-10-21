@@ -1,16 +1,16 @@
-# Native migration bridge — port the existing G05 application
+# Native migration bridge — standalone native foundation
 
-> **Authority:** `MASTER_PLAN.md` 3.0.1 / DEC-002 / DEC-003
+> **Authority:** `MASTER_PLAN.md` 3.0.2 / DEC-002 / DEC-003 / DEC-004
 > **Placement:** after completed P07-G05, before P07-G06
-> **Status:** NM-G01 through NM-G06 complete; NM-G07 through NM-G09 pending. Gate not passed.
-> **Next execution:** [NM-G07](native-migration/guide7.md)
-> **Exit:** existing features work natively; Continue still belongs to resumed P07-G06
+> **Status:** NM-G01 through NM-G07 complete; revised NM-G08 and NM-G09 pending. Gate not passed.
+> **Next execution:** [NM-G08 — retire manual workflows](native-migration/guide8.md)
+> **Exit:** standalone foundations work natively; Continue still belongs to resumed P07-G06
 
 ## 1. Parent plan contract
 
-Master §§0, 2, 4.4–4.6, 8, 9 and 12 define the native architecture, source-save contract, native correctness, execution gate and verification. This bridge is an explicit prerequisite stage, not a renumbered gameplay phase. DEC-003 removes previous-logic compatibility as a requirement for remaining guides; old parity wording below is superseded where it conflicts. Existing save-data preservation and completed history remain required.
+Master §§0, 2, 4.4–4.6, 8, 9 and 12 define the native architecture, source-save contract, native correctness, execution gate and verification. DEC-003 removes previous-logic compatibility; DEC-004 removes manual campaign gameplay. Only standalone gameplay is in scope. Existing save-data preservation and completed history remain required. Completed guide files and progress evidence below describe historical implementation, not obligations to keep manual creation/demos/editing or port additional manual commands.
 
-`P07-G01–G05` and their evidence remain unchanged. Preserve the original browser implementation and saved data as the migration source/oracle. Resume G06 only after NM-G09 is committed with passing bridge evidence.
+`P07-G01–G05` and their evidence remain unchanged. Preserve the original browser implementation and saved data as migration/reference material. Resume G06 only after NM-G09 is committed with passing bridge evidence.
 
 | Guide    | Deliverable                                       | Commit subject                                                   |
 | -------- | ------------------------------------------------- | ---------------------------------------------------------------- |
@@ -21,16 +21,16 @@ Master §§0, 2, 4.4–4.6, 8, 9 and 12 define the native architecture, source-s
 | `NM-G05` | Rust generators and career preparation            | `feat(nm-g05): reproduce seeded worlds in rust`                  |
 | `NM-G06` | Native read API, save migration UI and loaders    | `feat(nm-g06): read campaigns through native services`           |
 | `NM-G07` | Native campaign/squad/tactics/board writes        | `feat(nm-g07): execute career management in rust`                |
-| `NM-G08` | Native legacy match/finance/market parity         | `feat(nm-g08): preserve legacy workflows on sqlite`              |
+| `NM-G08` | Retire manual workflows; standalone-only surface | `refactor(nm-g08): retire manual campaign workflows`             |
 | `NM-G09` | Native cutover and compatibility certification    | `test(nm-g09): certify the native migration bridge`              |
 
 All nine guide files exist before implementation. One guide = one logical commit; document a split before coding if a port grows too large.
 
 ## 2. Objective and user-visible outcome
 
-Move the currently working G05 application to a Tauri desktop shell with Rust-owned logic and SQLite, preserving existing features and saves.
+Move the standalone foundations to a Tauri desktop shell with Rust-owned logic and SQLite. Preserve saved data; continuing companion/manual-mode features is no longer required (DEC-004).
 
-At exit a user can export from the original browser origin, import into desktop, open/read/edit existing supported workflows, create a seeded native career, close/relaunch, export a native snapshot and create/reopen a consistent backup.
+At exit a user can export from the original browser origin, import into desktop, manage a standalone career, create a seeded native career, close/relaunch, export a native snapshot and create/reopen a consistent backup. Previously stored manual saves remain historical/read-only, without conversion into playable careers.
 
 A standalone career remains on July 1. The bridge does not add Continue, fixtures, AI bids, progression effects, growth or rollover. Those new features must not conceal missing migration work.
 
@@ -48,15 +48,15 @@ Inspect current schemas/models, every `src/data/commands/**` write, scoped repos
 
 NM-G01 uses existing Node/pnpm tooling. NM-G02 checks Rust/MSVC/Windows SDK/WebView2 prerequisites and introduces verified compatible Tauri/Rust versions, generated bindings and native scripts. No native tool is assumed installed by this document.
 
-Historical G05 evidence is 49 files / 665 tests plus 6 browser tests, frontend lint/types/build. This bridge has no runtime evidence yet.
+Historical G05 evidence is 49 files / 665 tests plus 6 browser tests, frontend lint/types/build. Actual NM-G01–NM-G07 runtime evidence is recorded in §10.
 
 ## 4. Scope
 
-In scope: browser snapshots/vectors, Tauri shell, GameClient, Rust workspace, SQLite/import/backup, current domain/generation parity, current native query/write workflows and cutover tests.
+In scope: browser snapshots/reference vectors, Tauri shell, GameClient, Rust workspace, SQLite/import/backup, native rule/world correctness, standalone management queries/writes, removal of manual campaign entry points and cutover tests. Preserve historical saved rows without further manual-mode feature development.
 
 Deferred: new game-clock advancement (P07-G06), foundation progression certification (P07-G07), matches (Phase 8), AI market (9), player/season lifecycle (10), analytics (11), general datasets/remapped restore (12), full platform/signing/updater/release work (13), PWA/WASM edition.
 
-No browser DB wipe, Dexie v3, automatic native access to Chrome's storage, dual writes, raw frontend SQL or gameplay rebalance.
+No browser DB wipe, Dexie v3, automatic native access to Chrome's storage, dual writes, raw frontend SQL or gameplay rebalance. No manual match/offer/transfer/contract/ledger ports, new manual campaigns/demos, or continued manual player/club editing.
 
 ## 5. Architecture and contracts
 
@@ -139,15 +139,15 @@ Implement the intended native rules using TypeScript as reference material:
 
 GameClient exposes bounded per-screen queries, authoritative Rust previews and explicit commands. serde DTOs generate TS through ts-rs; Rust runtime validation remains mandatory. Structured native errors map to current user-visible error/result behavior.
 
-NM-G06 replaces UI repository access, using unavailable states for writes not yet ported. NM-G07 ports campaign/squad/tactics/registration/board/shortlist writes. NM-G08 ports legacy match/offer/transfer/contract/ledger workflows. By cutover all previously usable operations are supported natively.
+NM-G06 introduced native reads/migration; NM-G07 introduced management writes. Revised NM-G08 retires manual campaign creation/demo/editing options and rejects their Rust command paths. Manual match/offer/transfer/contract/ledger ports are canceled. By cutover, supported standalone management uses native services; the old companion feature inventory is not a completion gate.
 
-Commands keep one audit/revision per new business action; rejections have no side effects. Logical retry receipts return persisted outcomes without fictitious revisions. Preserve separate legacy/standalone demos, reset/delete scope, Sandbox allocation rules and fixed standalone managed club. Existing legacy offers are compatibility behavior, not autonomous Phase 9 AI.
+Commands keep one audit/revision per new business action; rejections have no side effects. Logical retry receipts return persisted outcomes without fictitious revisions. Preserve standalone demo reset/delete scope, Sandbox allocation rules and fixed managed club. Previously stored manual demos and campaigns remain inspectable/exportable, with explicit save deletion allowed but no gameplay edits, reset or conversion. Standalone simulated offers/transfers/contracts belong to their later phases.
 
 ### 5.6 Gate before P07-G06
 
 NM-G09 must prove:
 
-- actual browser legacy/standalone import and no source changes;
+- actual standalone import and preservation of already supported historical records/source data, without a manual-play journey;
 - legal deterministic native fresh careers and intended reads/writes;
 - direct Rust scope/Challenge/standalone guard enforcement;
 - transactional rollback, collision/retry handling, backup and app restart;
@@ -167,7 +167,7 @@ P07-G05 complete
  → NM-G05 generators/preparation
  → NM-G06 native reads/import UI
  → NM-G07 management writes
- → NM-G08 legacy writes
+ → NM-G08 retire manual workflows
  → NM-G09 cutover certification
  → P07-G06 native Continue
  → P07-G07 foundation certification
@@ -185,7 +185,7 @@ The original pending web G06/G07 are superseded; active guides retain their orig
 5. SQLite constraints, schema upgrades, deletion scope and backups are proven with real files.
 6. Rust passes deterministic PRNG/Unicode/fingerprint, valid date, checked money and policy tests. Old TypeScript equality is optional reference evidence.
 7. Native creation produces a legal reproducible 72-club/3,000-player world and one opening allocation.
-8. Every current feature uses typed native services, with mode/Challenge guards at direct calls.
+8. Every supported standalone feature uses typed native services; direct calls reject retired manual creation/gameplay and enforce read-only historical saves and Challenge guards.
 9. Native save/read/write survives close/relaunch; browser/other campaigns stay isolated.
 10. Desktop has no raw SQL command or Dexie fallback.
 11. Existing frontend tests and actual Cargo/native tests are distinguished and pass.
@@ -218,18 +218,18 @@ native:check runs locked workspace rustfmt/clippy/tests; binding check compares 
 
 NM-G09 adds `pnpm test:desktop` against a dedicated native test binary, using test-only automation excluded from normal release artifacts. Also manually smoke the normal packaged app. Browser/mocked tests do not certify Rust/SQLite.
 
-Final journey: original-origin export → native import legacy/standalone → inspect counts/nulls/balances → reimport harmlessly → create fixed-seed native career → edit existing workflows → close/relaunch → verify Challenge rejection → export/backup/reopen → confirm no clock progression → record gate evidence.
+Final journey: original-origin export → native import standalone → inspect counts/nulls/balances → reimport harmlessly → create fixed-seed native career → edit allowed standalone planning/tactics/registration/board → close/relaunch → verify Challenge and retired-command rejection → export/backup/reopen → confirm historical rows/source untouched and no clock progression → record gate evidence.
 
 ## 9. Risks and rollback
 
 Preserve source browser DB and export until native verification. Use compatible forward fixes and known-good native snapshots; do not wipe or downgrade a live DB.
 
-Main risks: origin mismatch, changed Unicode/seed algorithm, unsafe i64/JS transport, FK cycles, hidden browser writes, lost revision/audit semantics, UI blocking, duplicate import rollback of newer state and incomplete legacy port. Each has a dedicated fixture/direct-call/native test gate above.
+Main risks: origin mismatch, changed Unicode/seed algorithm, unsafe i64/JS transport, FK cycles, hidden browser writes, lost revision/audit semantics, UI blocking, duplicate import rollback of newer state and retired manual commands remaining callable. Each has a dedicated fixture/direct-call/native test gate above.
 
 ## 10. Exit and handoff
 
 - [ ] NM-G01–NM-G09 committed in order with actual check evidence.
-- [ ] Current G05 capabilities all work on Rust/SQLite.
+- [ ] Supported standalone foundations work on Rust/SQLite; manual workflows are retired under DEC-004.
 - [ ] Import/export/backup and native close/relaunch pass.
 - [ ] Native core/generator correctness, reproducibility and direct-call guards pass.
 - [ ] Source browser data and completed guide history are preserved.
@@ -237,6 +237,8 @@ Main risks: origin mismatch, changed Unicode/seed algorithm, unsafe i64/JS trans
 - [ ] Resume pointer is P07-G06, with native APIs/scripts documented.
 
 ### Progress log
+
+Completed rows and narrative below preserve actual historical checks. Their manual-workflow references predate DEC-004 and do not override the revised scope. NM-G08 has not been implemented or certified under its new scope.
 
 | Guide    | Commit  | Checks  |
 | -------- | ------- | ------- |
@@ -247,7 +249,7 @@ Main risks: origin mismatch, changed Unicode/seed algorithm, unsafe i64/JS trans
 | `NM-G05` | `b1354bd8dc328310c3abbc461df7f416034ca311` | `cargo test -p game-core --test generation --locked` (10 native property/integration tests), `pnpm native:bindings:check`, `pnpm native:check` (rustfmt, locked clippy and 42 Rust tests), `pnpm lint`, `pnpm typecheck`, `pnpm test --maxWorkers=2` (52 files / 681 passed), `pnpm build`, and `pnpm tauri build` (MSI and NSIS). Native v1/v2 generators produce reproducible fictional worlds; v2 has 4 leagues, 72 clubs, 2,880 owned players, 120 free agents and 2,880 complete active contracts. Validated career preparation produces one consistent initialization and maps to all 23 saved-row arrays without persistence. DEC-003 governs native correctness rather than previous JavaScript output parity. |
 | `NM-G06` | `8f131b5f608dbbb5eccdc81687818f4d5e389074` | `cargo test -p game-app --test reads_migration --locked` (5 real SQLite/file integration tests), `pnpm native:bindings:check`, `pnpm native:check` (rustfmt, locked Clippy and 47 Rust tests), `pnpm lint`, `pnpm typecheck`, `pnpm test --maxWorkers=2` (53 files / 687 passed), focused native UI tests (11 passed across 2 files), `pnpm test:e2e` (7 browser tests passed, including build), and `pnpm tauri build` (frontend build, MSI and NSIS). Native screen queries and 50-row player pages share a consistent saved revision. Rust owns finance, policy and saved-selection reports. Scoped file dialogs expose reviewed import, consistent export and verified online backup; unsupported writes remain unavailable. |
 | `NM-G07` | `56933186b29fd1511f94b243252fc0e3f70789ed` | `pnpm native:bindings:check`, `pnpm native:check` (rustfmt, locked Clippy and 56 Rust tests), `pnpm lint`, `pnpm typecheck`, `pnpm test --maxWorkers=2` (54 files / 694 passed), targeted Prettier check, `pnpm test:e2e` (7 browser tests, including frontend build), and `pnpm tauri build` (frontend build, MSI and NSIS). Seven new app integration tests and two new store fault tests verify native creation, management, guards, retries, concurrent revisions and rollback. Real native forms, direct calls, close/relaunch and isolated demo reset passed in the test profile. |
-| `NM-G08` | Pending | Not run |
+| `NM-G08` | Pending — revised by DEC-004 | Manual-workflow port canceled; standalone-only surface and direct-call retirement checks remain to be implemented. |
 | `NM-G09` | Pending | Not run |
 
 NM-G03 verification used only synthetic committed source fixtures and injected temporary SQLite paths. The schema-0 upgrade fixture is an empty native SQLite file: there is no earlier deployed native schema to migrate. The harness imported and reopened indexeddb 1/2 and native sqlite 1 snapshots, compared all arrays/nullable values, tested concurrent retries and committed read isolation, rejected unsafe/oversized/future/cross-campaign inputs, and reopened consistent backups. Browser migrations, compatibility fixtures and completed P07-G01–G05 files are unchanged. The frontend dependency-boundary assertion now permits the guide's storage dependencies; the first run found that stale assertion, and a later default-concurrency run alongside the release build hit timing failures. The final full suite passed with two workers and unchanged test timeouts. No browser flow changed, so browser E2E was not repeated. Packaged-app interaction, native import/read UI and final release certification remain later bridge work; no Continue or new gameplay is implemented.
@@ -274,4 +276,6 @@ Desktop acceptance used only synthetic data in the isolated `test` profile. Nati
 
 The normal release build produced MSI and NSIS installers. Interactive verification used a separate debug build with an ignored verification-only config and WebView directory under `test-results/nm-g07`; no production debugging flags, automation handlers or test paths were added. This remains native integration evidence, not NM-G09 packaged-release certification. No dependency, lockfile, schema, source fixture, browser domain/data or completed Phase 7 guide changed. The verification app was closed normally. NM-G08 is next for remaining legacy writes. Continue, contract/finance/match/deal recording and new match simulation remain unavailable at this milestone.
 
-**Gate status: NOT PASSED.** NM-G09 records final bridge certification; only then execute [P07-G06](phase7/guide6.md).
+DEC-004 / master 3.0.2 supersedes the historical NM-G08 handoff above. The unfinished manual-command code was discarded before commit. Next implement revised NM-G08 to retire manual creation/demo/editing paths while preserving stored data. This documentation amendment does not claim the existing NM-G07 binary has already removed those choices, and it does not complete NM-G08.
+
+**Gate status: NOT PASSED.** NM-G09 certifies the standalone native product and data preservation; only then execute [P07-G06](phase7/guide6.md).

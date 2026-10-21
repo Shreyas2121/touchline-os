@@ -1,62 +1,60 @@
-# NM-G08 — Native legacy match/finance/market parity
+# NM-G08 — Retire manual campaign workflows
 
 ## 1. Context and authority
 
-Master 3.0.1 / DEC-003 → [native migration plan](../native-migration.md) → this guide. Its historical parity title does not require matching previous logic; implement intended native workflows and preserve imported history.
-Predecessor: NM-G07; locate its subject in the bridge progress log and verify its commit is an ancestor.
-Commit: `feat(nm-g08): preserve legacy workflows on sqlite`.
+Master 3.0.2 / DEC-004 → [native migration plan](../native-migration.md) → this guide. DEC-004 replaces this guide's unimplemented manual match/finance/market port. Standalone simulation is the only supported gameplay mode. DEC-003 still removes previous-logic parity requirements.
 
-Phase 7 G06 is blocked until the full bridge passes. This guide ports existing capability; it does not implement Continue.
+Predecessor: NM-G07 `56933186b29fd1511f94b243252fc0e3f70789ed`; verify it is an ancestor and read the bridge evidence.
+Commit: `refactor(nm-g08): retire manual campaign workflows`.
+
+P07-G06 remains blocked until NM-G09 passes. Do not add Continue, simulated matches, negotiations or lifecycle behavior here.
 
 ## 2. Goal and user-observable result
 
-Preserve all currently usable legacy match, finance, offer, transfer and contract workflows on Rust/SQLite.
+The native app offers standalone Challenge/Sandbox careers and a standalone demo. It no longer offers manual campaign creation, manual demos, direct player corrections, club switching or manual journal/money/deal/contract recording. Historical manual saves remain preserved and clearly read-only, with inspection, export/backup and explicit deletion available.
 
 ## 3. Preconditions
 
-Read master, DEC-002 and bridge plan. Inspect git status; preserve completed P07-G01–G05 and unrelated work. Verify predecessor evidence before code. Introduce only dependencies assigned to this guide, with verified versions/lockfiles. Missing future feature is an unavailable state, never permission to fall back to Dexie.
+Read master, DEC-002/003/004 and the bridge. Inspect git status, verify predecessor evidence and preserve completed guide files, source browser data and unrelated work. The canceled NM-G08 command port must not be resumed. No new dependency or schema migration is expected; justify one only if evidence requires it.
 
 ## 4. Files to inspect
 
-- Current record-match.ts and matches/appearance repositories
-- record-offer/accept-offer/reject-offer and record-transfer commands
-- save-contract, post-ledger-entry, reverse-ledger-entry and finance previews
-- Current record-match/offers/record-transfer/save-contract/ledger/finance invariant tests
-
-Paths under new native directories exist only after their introducing guide; do not assume future files are already implemented.
+- Native creation/management forms, workspace routes and capability copy.
+- game-app creation/management services; game-core guards and command DTOs.
+- Store transactional revision/receipt checks and existing import/export/backup behavior.
+- Generated GameClient bindings and direct native command registration.
+- Existing tests for manual creation/editing, standalone guards and source preservation.
 
 ## 5. Files to create/modify
 
-- game-app legacy match/finance/market/contract services
-- game-store related atomic mutations
-- Tauri/GameClient legacy methods and existing native UI handlers
-- Rust command-parity/fault/guard tests
+- Native UI creation/demo choices and historical-save read-only state.
+- Rust creation/management guards and obsolete manual-only API variants as appropriate.
+- Generated DTOs/GameClient calls when their contract changes.
+- Rust/UI retirement and unchanged-history tests, README and bridge evidence.
 
-Preserve existing schema/identity/version/nullable contracts. No real user save is a test fixture.
+Do not delete historical enum values, row shapes, saved rows, fixtures, source files or stored receipts merely because their gameplay is retired. No automatic conversion of a manual save into a standalone career.
 
 ## 6. Implementation steps
 
-1. Port legacy manual journal/appearances with existing xG milli-units, missing minutes/rating semantics and duplicate/ownership checks. Do not create simulated fixtures.
-2. Port opening/prize posts and reversals using current season/typed-ledger rules; keep transfer-linked entries and allocations protected.
-3. Port existing recorded offers/accept/reject/completed moves/contracts with roster, ledger, contract, lineup and audit atomicity. Preserve current legacy scope; do not add autonomous AI or claim Phase 9 negotiation/two-club economics.
-4. Re-evaluate rules/expected revision at commit; preserve required warning acknowledgement and qualifying-bid rejection behavior.
-5. Standalone manual match/offer/transfer/contract/ledger commands still reject through direct Rust calls. Mode isolation is mandatory even when UI hides forms.
-6. Connect remaining native legacy forms, retain existing result/error messages, and refresh persisted query state.
-7. Add failure injection and meaningful parity cases. Do not weaken old tests or silently fix game behavior during port.
+1. Remove manual campaign/demo/custom-club setup choices from native creation. Retain seeded standalone Challenge/Sandbox creation, explicit club choice and the standalone demo with scoped reset/retry behavior.
+2. Remove direct player add/update, managed-club switching and manual gameplay entry points from native screens. Do not replace them with a Sandbox cheat path. Allowed standalone notes, shortlist, tactics, registration and board edits remain.
+3. Reject retired creation kinds, manual-demo reset and manual gameplay actions in Rust, including direct invokes and stale clients. A matching old receipt must not bypass retirement. Do not weaken the fixed-club, Challenge or no-second-allocation guards.
+4. Make historical manual campaigns read-only in native gameplay routes and direct mutation services. Allow inspection, consistent export/backup and explicitly confirmed deletion; reject rename/archive/reset and all gameplay changes. Preserve their current revision, audit and rows on every refused write.
+5. Keep existing supported snapshot import/export and schema preservation. Label historical mode accurately; do not regenerate missing players, invent simulation state or enable Continue on these saves. No new manual-specific screens or workflows are required.
+6. Remove obsolete availability tests alongside the retired behavior; replace them with meaningful direct-call refusal, historical preservation and standalone regression checks. Keep historical fixture files and completed evidence unchanged. The frozen browser source/exporter is not a second supported playable product and need not be rewritten.
+7. Refresh native status/help copy and API documentation to describe actual supported scope. Unimplemented simulation features remain unavailable in their assigned phases.
 
 ## 7. Tests to add/change
 
-- Native manual match/appearance/xG and duplicate/cross-campaign cases.
-- Sale-to-buy, rejected signing, prestige offer, free move, active contract and reversal parity.
-- Atomic failure leaves no split roster/contract/ledger/audit state.
-- Standalone/Challenge guards and actual revision consistency.
-- All previously usable native legacy forms work after relaunch; no AI-generated bid/match/lifecycle data.
-
-Prefer compatibility/integration properties over tests that mirror implementation. Keep golden data independent of the Rust port.
+- Only standalone careers/demo are offered and accepted; direct manual creation/reset and old retry paths cannot bypass retirement.
+- A historical imported/manual save is inspectable and exportable, but all gameplay/lifecycle writes except explicit deletion refuse without side effects.
+- Standalone fixed-seed creation/retry, Challenge lock, Sandbox allocation limit, planning, tactics, registration and scoped demo reset still work.
+- Snapshot round-trip/backup retains historical fields and receipts; another campaign and the browser source remain unchanged.
+- No new match, offer, transfer, contract, ledger or clock effects appear.
 
 ## 8. Verification commands
 
-Run focused new tests first, then:
+Run focused tests first, then:
 
 ```bash
 pnpm native:bindings:check
@@ -68,32 +66,32 @@ pnpm build
 pnpm tauri build
 ```
 
-The native scripts are introduced by NM-G02. Missing prerequisites or failed native checks must be resolved; a frontend/mock pass is not a substitute.
-Run relevant browser compatibility/E2E when its flows are touched; NM-G09 records the complete cutover evidence.
+Run relevant browser E2E when shared entry/export flows change. Real Rust/SQLite/native checks cannot be replaced with mocked invoke tests. Record actual checks, including any removed obsolete test expectations.
 
 ## 9. Manual acceptance check
 
-1. In imported legacy save record a match, post/reverse allowed finance, complete sale-to-buy and accept/reject offers with policy feedback.
-2. Repeat forbidden manual paths in a standalone test career; verify no changes.
+1. Create standalone Challenge and Sandbox careers; use permitted planning/tactics/registration/board controls and verify Challenge refusal and no duplicate allocation.
+2. Inspect/export a synthetic historical manual save, attempt direct retired commands and verify unchanged rows/revision. No manual creation/demo/edit forms are offered.
+3. Close/relaunch; verify standalone and historical data persist. Reset only the standalone demo and verify isolation.
 
 ## 10. Definition of done
 
-- [ ] The narrow outcome is implemented and verified.
-- [ ] Source/browser data and completed guide history are preserved.
-- [ ] Required parity, negative and rollback checks pass.
-- [ ] No new gameplay or false native/release claim is introduced.
-- [ ] Evidence and limitations are recorded in bridge §10.
+- [ ] Native product surface is standalone-only and direct Rust calls enforce it.
+- [ ] Existing stored history, source data and completed evidence are preserved.
+- [ ] Standalone regressions, retirement refusals and required checks pass.
+- [ ] No Continue, later-phase simulation or false release claim is introduced.
+- [ ] Actual evidence and limitations are recorded in bridge §10.
 
 ## 11. Commit instructions
 
-Stage only related implementation/tests/docs and the bridge progress row. Do not stage later guide work or rewrite completed history.
+Stage only this retirement implementation, its tests/docs and bridge progress. Do not port the canceled manual workflows or rewrite completed history.
 
 ```text
-feat(nm-g08): preserve legacy workflows on sqlite
+refactor(nm-g08): retire manual campaign workflows
 ```
 
-Do not commit failing required checks. Record actual SHA and commands/results; bridge gate remains pending until NM-G09.
+Do not commit failing required checks. Record the actual SHA; the bridge gate remains pending until NM-G09.
 
 ## 12. Handoff
 
-All G05 capabilities should now be native. NM-G09 independently certifies cutover before any P07-G06 work.
+NM-G09 certifies the standalone native foundation and data preservation. A working manual-mode journey is not a prerequisite. P07-G06 still follows the passed bridge gate.

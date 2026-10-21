@@ -1,6 +1,6 @@
 # Architecture and product decisions
 
-> Current architecture: DEC-002 + DEC-003 / master 3.0.1. DEC-001 records the earlier web decision and its historical checkpoint; DEC-002 changes platform/execution order, and DEC-003 removes previous-logic compatibility requirements.
+> Current architecture: DEC-002 + DEC-003 + DEC-004 / master 3.0.2. Earlier decisions and completed evidence are historical where superseded. DEC-004 makes standalone simulation the only supported gameplay mode.
 
 ## DEC-001 — Pivot to Standalone Sporting Director Sim
 
@@ -109,3 +109,17 @@ Remaining native work follows the intended product rules and native correctness,
 This relaxes logic compatibility; it does not authorize deleting browser data or changing imported historical rows. NM-G03's save import/export/backup and source-preservation contracts remain implemented and supported. Native behavior changes are documented and tested directly. No new Continue, match or later-phase gameplay is authorized by this clarification.
 
 DEC-003 takes precedence over remaining exact-old-logic/golden-parity requirements in the master, bridge and NM-G04–NM-G09 guides. Future generator checks prove native validity, counts, reproducibility and receipt consistency rather than byte equality to JavaScript worlds. Native money uses exact checked integer percentage arithmetic rather than emulating floating-point intermediate rounding.
+
+## DEC-004 — Standalone simulation only; retire manual campaign workflows
+
+- **Date:** 2026-10-21
+- **Status:** Accepted; user explicitly rejected the manual campaign mode while NM-G08 was starting and requested all affected documentation be updated.
+- **Plan change:** 3.0.1 → 3.0.2
+
+Touchline OS supports standalone simulated careers with Challenge/Sandbox rules. The earlier companion/manual campaign mode is no longer a product requirement. Do not port manual match journals, ledger posts/reversals, offers, transfers or contracts. Do not retain manual campaign creation, demos, direct player correction or club switching as supported gameplay. Sandbox board/planning/tactics/registration controls remain subject to their intended native rules; Sandbox does not imply arbitrary money, player or ownership editing.
+
+NM-G07 and earlier commits remain completed history. Discard the uncommitted NM-G08 legacy-command implementation begun before this clarification. Repurpose pending NM-G08 as `refactor(nm-g08): retire manual campaign workflows`: remove manual creation/demo/edit choices from the native UI and reject their direct Rust command paths. Preserve existing saves, schema fields, import receipts, audit history and browser source files. Existing manual campaign records may remain available for inspection, export/backup and explicit save deletion, without gameplay edits or automatic conversion into simulated careers. Retain implemented import/export preservation without expanding manual-mode support.
+
+NM-G09 certifies the standalone native product and data preservation, not every old companion feature. Future Phase 7 guides must not require a working manual-mode journey. Keep historical plans, completed guides, tests/fixtures and recorded checks as evidence; they do not create new feature obligations. Remove obsolete tests only alongside the corresponding retirement implementation, replacing feature-availability expectations with meaningful refusal and preservation checks.
+
+The bridge order remains NM-G07 → revised NM-G08 → NM-G09 → P07-G06 → P07-G07 → Phase 8. This decision does not mark NM-G08 or the bridge complete, authorize Continue early, or bring simulated matches, negotiations or lifecycle work forward. Those remain in their assigned phases.
