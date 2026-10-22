@@ -316,6 +316,7 @@ Rollback is a forward schema fix or a restored backup. Do not downgrade user ver
 | Guide | Commit | Checks |
 | --- | --- | --- |
 | G01 | `20b0ae3` | Schema 3 storage and snapshot contracts implemented. All 69 Rust workspace tests pass (`cargo test --workspace --locked` from `src-tauri`), including 19 persistence tests; all 18 native UI tests also pass separately. All 699 frontend tests pass with `pnpm test --maxWorkers=1`; earlier concurrent runs hit timing failures. Bindings check, Rust formatting, lint, typecheck, production build, and Tauri MSI/NSIS build pass. `0002_standalone.sql` is unchanged and kickoff still stops at the Phase 8 sentence. `native:check` is blocked at Clippy by Windows Application Control (OS error 4551), including outside the sandbox; its workspace test portion passed separately. |
+| G02 | `c6d11df` | Pure circle-method calendar produces 1,224 fixtures with stable keys and weekly dates; standings use points, goal difference, goals scored, then Unicode scalar key order. All 77 Rust workspace tests pass, including 8 schedule tests for pair/venue counts, pinned round 1, leap dates, ordering, invalid inputs, and arithmetic overflow. Rust formatting, lint, typecheck, and production build pass. All 699 frontend tests pass with `pnpm test --maxWorkers=1`. `native:check` remains blocked at Clippy by Windows Application Control (OS error 4551), including outside the sandbox; workspace tests passed separately. No persistence, IPC, UI, DTO, or dependency changes. |
 
 ### Handoff to Phase 9
 
