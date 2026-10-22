@@ -26,6 +26,7 @@ fn core_sources_do_not_touch_the_platform() {
         include_str!("../src/snapshot.rs"),
         include_str!("../src/validate.rs"),
         include_str!("../src/calendar.rs"),
+        include_str!("../src/schedule.rs"),
         include_str!("../src/dates.rs"),
         include_str!("../src/finance.rs"),
         include_str!("../src/guards.rs"),

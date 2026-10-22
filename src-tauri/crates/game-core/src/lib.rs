@@ -23,6 +23,7 @@ pub mod progression;
 pub mod queries;
 pub mod random;
 mod rows;
+pub mod schedule;
 pub mod selection;
 mod snapshot;
 mod validate;
