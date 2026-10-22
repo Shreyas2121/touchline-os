@@ -14,7 +14,16 @@ import type { CampaignSnapshot } from '../platform/generated/CampaignSnapshot'
 import type { ScreenModel } from '../platform/generated/ScreenModel'
 import source from '../../src-tauri/fixtures/standalone.json'
 
-const snapshot = source as CampaignSnapshot
+const snapshot = {
+  ...source,
+  sourceSchemaVersion: 3,
+  tables: {
+    ...source.tables,
+    fixtures: [],
+    simulatedMatches: [],
+    simulatedAppearances: [],
+  },
+} as CampaignSnapshot
 const campaign = snapshot.tables.campaigns[0]!
 function model(): ScreenModel {
   return {

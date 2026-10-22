@@ -8,6 +8,229 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 
 static SEQUENCE: AtomicU64 = AtomicU64::new(0);
+
+fn matchday_source() -> Value {
+    let mut source = value("save-b");
+    source["sourceSchemaVersion"] = json!(3);
+    let t = &mut source["tables"];
+    let campaign = t["campaigns"][0]["id"].clone();
+    let home = t["clubs"][0]["id"].clone();
+    let mut away = t["clubs"][0].clone();
+    away["id"] = json!("away-club");
+    t["clubs"].as_array_mut().unwrap().push(away);
+    let mut player = t["players"][0].clone();
+    player["id"] = json!("away-player");
+    player["clubId"] = json!("away-club");
+    t["players"].as_array_mut().unwrap().push(player);
+    t["fixtures"] = json!([{
+        "id":"fixture-1", "campaignId":campaign, "seasonId":t["seasons"][0]["id"],
+        "leagueId":t["leagues"][0]["id"], "round":1, "matchDate":"2026-09-01",
+        "homeClubId":home, "awayClubId":"away-club", "fixtureKey":"season:2026:round:01", "status":"scheduled"
+    }]);
+    t["simulatedMatches"] = json!([{
+        "id":"match-1", "campaignId":campaign, "fixtureId":"fixture-1",
+        "homeGoals":1, "awayGoals":0, "homeXgMilli":1200, "awayXgMilli":800,
+        "timeline":[{"minute":30,"kind":"goal"}], "inputSnapshot":{"homeStrength":70},
+        "eventSeed":4294967295_u64, "engineVersion":"1"
+    }]);
+    t["simulatedAppearances"] = json!([
+        {"id":"appearance-home", "campaignId":campaign, "fixtureId":"fixture-1", "playerId":t["players"][0]["id"], "clubId":home, "started":true, "minutes":90, "goals":1, "assists":0, "rating":80, "yellowCards":0, "redCards":0},
+        {"id":"appearance-away", "campaignId":campaign, "fixtureId":"fixture-1", "playerId":"away-player", "clubId":"away-club", "started":false, "minutes":45, "goals":0, "assists":0, "rating":50, "yellowCards":2, "redCards":1}
+    ]);
+    t["auditEvents"][0]["actionType"] = json!("simulation.matchday");
+    t["simulationReceipts"][0]["outcomeRefs"] = json!([
+        {"kind":"fixture","id":"fixture-1"}, {"kind":"match","id":"match-1"}
+    ]);
+    source
+}
+
+#[test]
+fn schema_two_upgrades_empty_match_tables_and_preserves_all_existing_rows() {
+    let dir = Directory::new();
+    let path = dir.file("schema-two.sqlite3");
+    let mut db = Connection::open(&path).unwrap();
+    db.execute_batch(INITIAL_MIGRATION).unwrap();
+    let source = value("save-b");
+    // Populate the real schema 2 using its own columns, including audit history.
+    let tx = db.transaction().unwrap();
+    for (table, rows) in source["tables"].as_object().unwrap() {
+        for row in rows.as_array().unwrap() {
+            let object = row.as_object().unwrap();
+            let columns = object.keys().cloned().collect::<Vec<_>>();
+            let values = object
+                .values()
+                .map(|v| match v {
+                    Value::Null => rusqlite::types::Value::Null,
+                    Value::Bool(b) => rusqlite::types::Value::Integer(i64::from(*b)),
+                    Value::Number(n) => rusqlite::types::Value::Integer(n.as_i64().unwrap()),
+                    Value::String(s) => rusqlite::types::Value::Text(s.clone()),
+                    _ => rusqlite::types::Value::Text(v.to_string()),
+                })
+                .collect::<Vec<_>>();
+            tx.execute(
+                &format!(
+                    "INSERT INTO {table} ({}) VALUES ({})",
+                    columns.join(","),
+                    vec!["?"; columns.len()].join(",")
+                ),
+                rusqlite::params_from_iter(values),
+            )
+            .unwrap();
+        }
+    }
+    tx.commit().unwrap();
+    drop(db);
+    let store = Store::open(&path).unwrap();
+    assert_eq!(tables(&store, "save-b"), sorted_tables(&bytes(&source)));
+    for table in ["fixtures", "simulatedMatches", "simulatedAppearances"] {
+        assert_eq!(count(&path, table), 0);
+    }
+    let db = Connection::open(&path).unwrap();
+    assert_eq!(
+        db.pragma_query_value(None, "user_version", |r| r.get::<_, i64>(0))
+            .unwrap(),
+        3
+    );
+    assert_eq!(count(&path, "schemaMigrations"), 2);
+    db.execute(
+        "UPDATE auditEvents SET actionType = 'simulation.matchday'",
+        [],
+    )
+    .unwrap();
+}
+
+#[test]
+fn legacy_snapshot_exports_explicit_empty_schema_three_collections() {
+    let dir = Directory::new();
+    let store = Store::open(dir.file("legacy.sqlite3")).unwrap();
+    let legacy = value("save-b");
+    assert!(legacy["tables"].get("fixtures").is_none());
+    store.import_snapshot(&bytes(&legacy)).unwrap();
+    let exported = store
+        .export_snapshot("save-b", "export", "2026-10-22T12:00:00.000Z")
+        .unwrap();
+    assert_eq!(exported.source_schema_version.get(), 3);
+    let encoded = bytes(&serde_json::to_value(exported).unwrap());
+    let parsed: Value = serde_json::from_slice(&encoded).unwrap();
+    for table in ["fixtures", "simulatedMatches", "simulatedAppearances"] {
+        assert_eq!(parsed["tables"][table], json!([]));
+    }
+    let other = Store::open(dir.file("reimport.sqlite3")).unwrap();
+    other.import_snapshot(&encoded).unwrap();
+    assert_eq!(tables(&store, "save-b"), tables(&other, "save-b"));
+}
+
+#[test]
+fn matchday_rows_round_trip_and_sql_enforces_identities_and_scope() {
+    let dir = Directory::new();
+    let path = dir.file("matchday.sqlite3");
+    let source = matchday_source();
+    let store = Store::open(&path).unwrap();
+    store.import_snapshot(&bytes(&source)).unwrap();
+    assert_eq!(tables(&store, "save-b"), sorted_tables(&bytes(&source)));
+    drop(store);
+    let store = Store::open(&path).unwrap();
+    let export = store
+        .export_snapshot("save-b", "export", "2026-10-22T12:00:00.000Z")
+        .unwrap();
+    assert_eq!(export.source_schema_version.get(), 3);
+    let other = Store::open(dir.file("roundtrip.sqlite3")).unwrap();
+    other
+        .import_snapshot(&serde_json::to_vec(&export).unwrap())
+        .unwrap();
+    assert_eq!(tables(&other, "save-b"), tables(&store, "save-b"));
+    let db = Connection::open(&path).unwrap();
+    db.pragma_update(None, "foreign_keys", true).unwrap();
+    for table in ["simulatedMatches", "simulatedAppearances"] {
+        let columns = db
+            .prepare(&format!("PRAGMA table_info({table})"))
+            .unwrap()
+            .query_map([], |r| r.get::<_, String>(1))
+            .unwrap()
+            .collect::<Result<Vec<_>, _>>()
+            .unwrap();
+        let selection = columns
+            .iter()
+            .map(|c| if c == "id" { "'duplicate'" } else { c.as_str() })
+            .collect::<Vec<_>>()
+            .join(",");
+        assert!(db
+            .execute(
+                &format!("INSERT INTO {table} SELECT {selection} FROM {table} LIMIT 1"),
+                []
+            )
+            .is_err());
+    }
+    for sql in [
+        "UPDATE fixtures SET homeClubId = 'missing'",
+        "UPDATE simulatedMatches SET fixtureId = 'missing'",
+        "UPDATE simulatedAppearances SET playerId = 'missing'",
+        "UPDATE simulatedMatches SET homeGoals = 16",
+        "UPDATE simulatedMatches SET awayXgMilli = 20001",
+        "UPDATE simulatedMatches SET engineVersion = '2'",
+    ] {
+        assert!(db.execute(sql, []).is_err(), "accepted {sql}");
+    }
+}
+
+#[test]
+fn invalid_matchday_values_and_duplicate_players_fail_before_import() {
+    let source = matchday_source();
+    for (pointer, bad) in [
+        ("/tables/fixtures/0/round", json!(0)),
+        ("/tables/fixtures/0/round", json!(35)),
+        ("/tables/fixtures/0/matchDate", json!("2026-02-30")),
+        ("/tables/fixtures/0/status", json!("unknown")),
+        ("/tables/simulatedMatches/0/engineVersion", json!("2")),
+        ("/tables/simulatedMatches/0/homeGoals", json!(16)),
+        ("/tables/simulatedMatches/0/awayXgMilli", json!(20001)),
+        (
+            "/tables/simulatedMatches/0/timeline",
+            json!(vec![json!({}); 81]),
+        ),
+        (
+            "/tables/simulatedMatches/0/inputSnapshot",
+            json!({"players":[{"attributes":{"pace":70}}]}),
+        ),
+        ("/tables/simulatedAppearances/0/minutes", json!(91)),
+        ("/tables/simulatedAppearances/0/rating", json!(101)),
+        ("/tables/simulatedAppearances/0/yellowCards", json!(3)),
+        ("/tables/simulatedAppearances/0/redCards", json!(2)),
+    ] {
+        let mut bad_source = source.clone();
+        *bad_source.pointer_mut(pointer).unwrap() = bad;
+        assert!(
+            parse_snapshot(&bytes(&bad_source)).is_err(),
+            "accepted {pointer}"
+        );
+    }
+    for table in ["simulatedMatches", "simulatedAppearances"] {
+        let mut duplicate = source.clone();
+        let mut row = duplicate["tables"][table][0].clone();
+        row["id"] = json!("duplicate");
+        duplicate["tables"][table].as_array_mut().unwrap().push(row);
+        assert!(parse_snapshot(&bytes(&duplicate)).is_err());
+    }
+}
+
+#[test]
+fn unsupported_versions_leave_database_bytes_unchanged() {
+    let dir = Directory::new();
+    for version in [1, 4, 99, -1] {
+        let path = dir.file(&format!("unsupported-{version}.sqlite3"));
+        let db = Connection::open(&path).unwrap();
+        db.execute_batch(
+            "CREATE TABLE precious (value TEXT); INSERT INTO precious VALUES ('keep');",
+        )
+        .unwrap();
+        db.pragma_update(None, "user_version", version).unwrap();
+        drop(db);
+        let before = std::fs::read(&path).unwrap();
+        assert!(matches!(Store::open(&path),Err(StoreError::UnsupportedSchema(v)) if v==version));
+        assert_eq!(std::fs::read(&path).unwrap(), before);
+    }
+}
+
 #[test]
 fn management_late_audit_failure_rolls_back_name_and_revision() {
     use game_core::{management::*, EntityId, SafeInt};
@@ -331,7 +554,7 @@ fn invalid_scope_references_keys_numbers_and_versions_never_promote() {
             json!(9_007_199_254_740_992_i64),
         ),
         ("/campaignRevision", json!(999)),
-        ("/sourceSchemaVersion", json!(3)),
+        ("/sourceSchemaVersion", json!(4)),
         ("/formatVersion", json!(2)),
     ] {
         let mut source = value("save-b");
@@ -370,9 +593,9 @@ fn fresh_and_version_zero_upgrade_are_transactional_and_future_versions_refuse()
     assert_eq!(
         db.query_row("PRAGMA user_version", [], |r| r.get::<_, i64>(0))
             .unwrap(),
-        2
+        3
     );
-    assert_eq!(count(&path, "schemaMigrations"), 1);
+    assert_eq!(count(&path, "schemaMigrations"), 2);
     drop(store);
     drop(db);
     drop(Store::open(&path).unwrap());

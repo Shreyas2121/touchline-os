@@ -1,4 +1,4 @@
-// Explicit column mappings for the 21 standalone collections; nested values alone use JSON.
+// Explicit column mappings for the 24 standalone collections; nested values alone use JSON.
 use super::{Column, Kind, Table};
 pub(super) const TABLES: &[Table] = &[
     Table {
@@ -863,6 +863,153 @@ pub(super) const TABLES: &[Table] = &[
             Column {
                 name: "createdAt",
                 kind: Kind::Text,
+            },
+        ],
+    },
+    Table {
+        name: "fixtures",
+        columns: &[
+            Column {
+                name: "id",
+                kind: Kind::Text,
+            },
+            Column {
+                name: "campaignId",
+                kind: Kind::Text,
+            },
+            Column {
+                name: "seasonId",
+                kind: Kind::Text,
+            },
+            Column {
+                name: "leagueId",
+                kind: Kind::Text,
+            },
+            Column {
+                name: "round",
+                kind: Kind::Integer,
+            },
+            Column {
+                name: "matchDate",
+                kind: Kind::Text,
+            },
+            Column {
+                name: "homeClubId",
+                kind: Kind::Text,
+            },
+            Column {
+                name: "awayClubId",
+                kind: Kind::Text,
+            },
+            Column {
+                name: "fixtureKey",
+                kind: Kind::Text,
+            },
+            Column {
+                name: "status",
+                kind: Kind::Text,
+            },
+        ],
+    },
+    Table {
+        name: "simulatedMatches",
+        columns: &[
+            Column {
+                name: "id",
+                kind: Kind::Text,
+            },
+            Column {
+                name: "campaignId",
+                kind: Kind::Text,
+            },
+            Column {
+                name: "fixtureId",
+                kind: Kind::Text,
+            },
+            Column {
+                name: "homeGoals",
+                kind: Kind::Integer,
+            },
+            Column {
+                name: "awayGoals",
+                kind: Kind::Integer,
+            },
+            Column {
+                name: "homeXgMilli",
+                kind: Kind::Integer,
+            },
+            Column {
+                name: "awayXgMilli",
+                kind: Kind::Integer,
+            },
+            Column {
+                name: "timeline",
+                kind: Kind::Json,
+            },
+            Column {
+                name: "inputSnapshot",
+                kind: Kind::Json,
+            },
+            Column {
+                name: "eventSeed",
+                kind: Kind::Integer,
+            },
+            Column {
+                name: "engineVersion",
+                kind: Kind::Text,
+            },
+        ],
+    },
+    Table {
+        name: "simulatedAppearances",
+        columns: &[
+            Column {
+                name: "id",
+                kind: Kind::Text,
+            },
+            Column {
+                name: "campaignId",
+                kind: Kind::Text,
+            },
+            Column {
+                name: "fixtureId",
+                kind: Kind::Text,
+            },
+            Column {
+                name: "playerId",
+                kind: Kind::Text,
+            },
+            Column {
+                name: "clubId",
+                kind: Kind::Text,
+            },
+            Column {
+                name: "started",
+                kind: Kind::Bool,
+            },
+            Column {
+                name: "minutes",
+                kind: Kind::Integer,
+            },
+            Column {
+                name: "goals",
+                kind: Kind::Integer,
+            },
+            Column {
+                name: "assists",
+                kind: Kind::Integer,
+            },
+            Column {
+                name: "rating",
+                kind: Kind::Integer,
+            },
+            Column {
+                name: "yellowCards",
+                kind: Kind::Integer,
+            },
+            Column {
+                name: "redCards",
+                kind: Kind::Integer,
             },
         ],
     },

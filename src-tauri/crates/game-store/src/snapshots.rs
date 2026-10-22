@@ -123,6 +123,9 @@ fn validate_relationships(tables: &Value) -> Result<()> {
         {
             for (key, target) in [
                 ("leagueId", "leagues"),
+                ("fixtureId", "fixtures"),
+                ("homeClubId", "clubs"),
+                ("awayClubId", "clubs"),
                 ("clubId", "clubs"),
                 ("managedClubId", "clubs"),
                 ("bidderClubId", "clubs"),
@@ -177,6 +180,8 @@ fn validate_relationships(tables: &Value) -> Result<()> {
                 Some("season") => "seasons",
                 Some("club") => "clubs",
                 Some("player") => "players",
+                Some("fixture") => "fixtures",
+                Some("match") => "simulatedMatches",
                 _ => continue,
             };
             reference(target, &outcome["id"])?;
@@ -200,6 +205,10 @@ fn validate_relationships(tables: &Value) -> Result<()> {
 }
 
 const UNIQUE_KEYS: &[(&str, &[&str])] = &[
+    ("fixtures", &["fixtureKey"]),
+    ("fixtures", &["seasonId", "round", "homeClubId"]),
+    ("simulatedMatches", &["fixtureId"]),
+    ("simulatedAppearances", &["fixtureId", "playerId"]),
     ("seasons", &["ordinal"]),
     ("constitutions", &["version"]),
     ("registrations", &["seasonId", "competitionKey", "playerId"]),
@@ -334,7 +343,7 @@ pub(super) fn envelope(
     validate_relationships(&tables)?;
     let value = json!({
         "format": "touchline-campaign", "formatVersion": 1,
-        "sourceStorage": "sqlite", "sourceSchemaVersion": 2,
+        "sourceStorage": "sqlite", "sourceSchemaVersion": 3,
         "exportId": export_id, "exportedAt": exported_at,
         "campaignRevision": tables["campaigns"][0]["revision"], "tables": tables,
     });

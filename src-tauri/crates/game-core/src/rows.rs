@@ -430,6 +430,10 @@ pub struct PlayerSimulationStateRow {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[serde(tag = "kind", deny_unknown_fields)]
 pub enum OutcomeRef {
+    #[serde(rename = "fixture")]
+    Fixture { id: EntityId },
+    #[serde(rename = "match")]
+    Match { id: EntityId },
     #[serde(rename = "campaign")]
     Campaign { id: EntityId },
     #[serde(rename = "season")]
@@ -456,9 +460,66 @@ pub struct SimulationReceiptRow {
     pub created_at: String,
 }
 
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct FixtureRow {
+    pub id: EntityId,
+    pub campaign_id: EntityId,
+    pub season_id: EntityId,
+    pub league_id: EntityId,
+    pub round: SafeInt,
+    pub match_date: String,
+    pub home_club_id: EntityId,
+    pub away_club_id: EntityId,
+    pub fixture_key: String,
+    pub status: crate::enums::FixtureStatus,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct SimulatedMatchRow {
+    pub id: EntityId,
+    pub campaign_id: EntityId,
+    pub fixture_id: EntityId,
+    pub home_goals: SafeInt,
+    pub away_goals: SafeInt,
+    pub home_xg_milli: SafeInt,
+    pub away_xg_milli: SafeInt,
+    #[ts(type = "unknown")]
+    pub timeline: Value,
+    #[ts(type = "unknown")]
+    pub input_snapshot: Value,
+    pub event_seed: SafeInt,
+    pub engine_version: VersionOne,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct SimulatedAppearanceRow {
+    pub id: EntityId,
+    pub campaign_id: EntityId,
+    pub fixture_id: EntityId,
+    pub player_id: EntityId,
+    pub club_id: EntityId,
+    pub started: bool,
+    pub minutes: SafeInt,
+    pub goals: SafeInt,
+    pub assists: SafeInt,
+    pub rating: SafeInt,
+    pub yellow_cards: SafeInt,
+    pub red_cards: SafeInt,
+}
+
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct SnapshotTables {
+    #[serde(default)]
+    pub fixtures: Vec<FixtureRow>,
+    #[serde(default)]
+    pub simulated_matches: Vec<SimulatedMatchRow>,
+    #[serde(default)]
+    pub simulated_appearances: Vec<SimulatedAppearanceRow>,
+
     pub campaigns: Vec<CampaignRow>,
     pub seasons: Vec<SeasonRow>,
     pub leagues: Vec<LeagueRow>,

@@ -56,8 +56,9 @@ use std::sync::mpsc::{self, SyncSender};
 use std::thread::{self, JoinHandle};
 use std::time::Duration;
 
-pub const SCHEMA_VERSION: i64 = 2;
+pub const SCHEMA_VERSION: i64 = 3;
 pub const INITIAL_MIGRATION: &str = include_str!("../../../migrations/0002_standalone.sql");
+pub const MATCHDAY_MIGRATION: &str = include_str!("../../../migrations/0003_matchday.sql");
 pub type Result<T> = std::result::Result<T, StoreError>;
 
 #[derive(Debug)]
@@ -374,6 +375,14 @@ fn migrate(connection: &mut Connection) -> Result<()> {
             }
             let transaction = connection.transaction()?;
             transaction.execute_batch(INITIAL_MIGRATION)?;
+            transaction.execute_batch(MATCHDAY_MIGRATION)?;
+            check_database(&transaction)?;
+            transaction.commit()?;
+        }
+        2 => {
+            let transaction = connection.transaction()?;
+            transaction.execute_batch(MATCHDAY_MIGRATION)?;
+            check_database(&transaction)?;
             transaction.commit()?;
         }
         SCHEMA_VERSION => {}
@@ -387,15 +396,17 @@ fn check_database(connection: &Connection) -> Result<()> {
     if version != SCHEMA_VERSION {
         return Err(StoreError::UnsupportedSchema(version));
     }
-    let migration: Option<String> = connection
-        .query_row(
-            "SELECT name FROM schemaMigrations WHERE version = 2",
-            [],
-            |r| r.get(0),
-        )
-        .optional()?;
-    if migration.as_deref() != Some("0002_standalone") {
-        return Err(StoreError::Invalid("migration metadata".into()));
+    for (version, name) in [(2, "0002_standalone"), (3, "0003_matchday")] {
+        let migration: Option<String> = connection
+            .query_row(
+                "SELECT name FROM schemaMigrations WHERE version = ?1",
+                [version],
+                |r| r.get(0),
+            )
+            .optional()?;
+        if migration.as_deref() != Some(name) {
+            return Err(StoreError::Invalid("migration metadata".into()));
+        }
     }
     for table in mapping::TABLES {
         let columns = table

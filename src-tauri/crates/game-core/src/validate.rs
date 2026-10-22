@@ -64,7 +64,7 @@ pub fn validate_snapshot(snapshot: &CampaignSnapshot) -> Result<(), SnapshotErro
         snapshot.source_storage,
         snapshot.source_schema_version.get(),
     ) {
-        (crate::enums::SourceStorage::Sqlite, 2) => {}
+        (crate::enums::SourceStorage::Sqlite, 2 | 3) => {}
         _ => return Err(SnapshotError::UnsupportedVersion("source schema".into())),
     }
     if snapshot.campaign_revision.get() < 0 {
@@ -108,10 +108,89 @@ pub fn validate_snapshot(snapshot: &CampaignSnapshot) -> Result<(), SnapshotErro
         256,
         "simulationReceipts",
     )?;
+    require_len(tables.fixtures.len(), 0, 2_048, "fixtures")?;
+    require_len(tables.simulated_matches.len(), 0, 2_048, "simulatedMatches")?;
+    require_len(
+        tables.simulated_appearances.len(),
+        0,
+        80_000,
+        "simulatedAppearances",
+    )?;
     validate_tables(tables)
 }
 
 fn validate_tables(tables: &SnapshotTables) -> Result<(), SnapshotError> {
+    let mut fixture_keys = BTreeSet::new();
+    let mut fixture_rounds = BTreeSet::new();
+    for row in &tables.fixtures {
+        require_range(row.round.get(), 1, 34, "fixture round")?;
+        require_date(&row.match_date, "match date")?;
+        require_key(&row.fixture_key, "fixture key")?;
+        if row.home_club_id == row.away_club_id
+            || !fixture_keys.insert((row.campaign_id.as_str(), &row.fixture_key))
+            || !fixture_rounds.insert((
+                row.campaign_id.as_str(),
+                row.season_id.as_str(),
+                row.round.get(),
+                row.home_club_id.as_str(),
+            ))
+        {
+            return Err(SnapshotError::Invalid("fixture identity".into()));
+        }
+    }
+    let mut matches = BTreeSet::new();
+    for row in &tables.simulated_matches {
+        if !matches.insert((row.campaign_id.as_str(), row.fixture_id.as_str())) {
+            return Err(SnapshotError::Invalid("duplicate match".into()));
+        }
+        for goals in [row.home_goals, row.away_goals] {
+            require_range(goals.get(), 0, 15, "match goals")?;
+        }
+        for xg in [row.home_xg_milli, row.away_xg_milli] {
+            require_range(xg.get(), 0, 20_000, "match xG")?;
+        }
+        require_range(row.event_seed.get(), 0, 0xffff_ffff, "event seed")?;
+        let events = row
+            .timeline
+            .as_array()
+            .ok_or_else(|| SnapshotError::Invalid("timeline".into()))?;
+        require_len(events.len(), 0, 80, "timeline events")?;
+        if !row.input_snapshot.is_object() {
+            return Err(SnapshotError::Invalid("input snapshot".into()));
+        }
+        for value in [&row.timeline, &row.input_snapshot] {
+            check_payload(value, 1)?;
+            reject_attribute_blobs(value)?;
+            if serde_json::to_vec(value)
+                .map_err(|_| SnapshotError::Invalid("match JSON".into()))?
+                .len()
+                > MAX_STRING
+            {
+                return Err(SnapshotError::Invalid("match JSON size".into()));
+            }
+        }
+    }
+    let mut appearances = BTreeSet::new();
+    for row in &tables.simulated_appearances {
+        if !appearances.insert((
+            row.campaign_id.as_str(),
+            row.fixture_id.as_str(),
+            row.player_id.as_str(),
+        )) {
+            return Err(SnapshotError::Invalid("duplicate appearance".into()));
+        }
+        for (value, max, name) in [
+            (row.minutes, 90, "minutes"),
+            (row.goals, 15, "goals"),
+            (row.assists, 15, "assists"),
+            (row.rating, 100, "rating"),
+            (row.yellow_cards, 2, "yellow cards"),
+            (row.red_cards, 1, "red cards"),
+        ] {
+            require_range(value.get(), 0, max, name)?;
+        }
+    }
+
     for row in &tables.campaigns {
         validate_campaign(row)?;
     }
@@ -475,6 +554,26 @@ fn validate_receipt(row: &SimulationReceiptRow) -> Result<(), SnapshotError> {
         }
     }
     require_timestamp(&row.created_at, "receipt createdAt")
+}
+
+fn reject_attribute_blobs(value: &Value) -> Result<(), SnapshotError> {
+    match value {
+        Value::Object(map) => {
+            if map.contains_key("attributes") {
+                return Err(SnapshotError::Invalid("nested attributes".into()));
+            }
+            for item in map.values() {
+                reject_attribute_blobs(item)?;
+            }
+        }
+        Value::Array(items) => {
+            for item in items {
+                reject_attribute_blobs(item)?;
+            }
+        }
+        _ => {}
+    }
+    Ok(())
 }
 
 fn validate_payload(payload: &AuditPayload) -> Result<(), SnapshotError> {

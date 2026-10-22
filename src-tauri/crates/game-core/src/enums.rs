@@ -253,4 +253,13 @@ pub enum AuditAction {
     SimulationInitialize,
     #[serde(rename = "simulation.advance")]
     SimulationAdvance,
+    #[serde(rename = "simulation.matchday")]
+    SimulationMatchday,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "lowercase")]
+pub enum FixtureStatus {
+    Scheduled,
+    Played,
 }
