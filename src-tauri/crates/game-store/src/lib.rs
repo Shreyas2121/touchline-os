@@ -7,9 +7,15 @@ mod queries;
 mod snapshots;
 pub use queries::ScreenRead;
 pub fn creation_fingerprint(canonical: &str) -> String {
+    hashed_fingerprint("native-create:1:", canonical)
+}
+pub fn advance_fingerprint(canonical: &str) -> String {
+    hashed_fingerprint("native-advance:1:", canonical)
+}
+fn hashed_fingerprint(prefix: &str, canonical: &str) -> String {
     use sha2::{Digest, Sha256};
     format!(
-        "native-create:1:{}",
+        "{prefix}{}",
         Sha256::digest(canonical.as_bytes())
             .iter()
             .map(|b| format!("{b:02x}"))
@@ -124,6 +130,10 @@ enum Request {
         game_core::management::ManagementCommand,
         Reply<game_core::management::ManagementOutcome>,
     ),
+    Advance(
+        game_core::progression::AdvanceRequest,
+        Reply<game_core::progression::AdvanceOutcome>,
+    ),
     Create(
         game_core::management::CreationRequest,
         Value,
@@ -167,6 +177,12 @@ impl Store {
         command: game_core::management::ManagementCommand,
     ) -> Result<game_core::management::ManagementOutcome> {
         self.call(|reply| Request::Manage(command, reply))
+    }
+    pub fn advance(
+        &self,
+        request: game_core::progression::AdvanceRequest,
+    ) -> Result<game_core::progression::AdvanceOutcome> {
+        self.call(|reply| Request::Advance(request, reply))
     }
     pub fn creation_probe(
         &self,
@@ -237,6 +253,9 @@ impl Store {
                         }
                         Request::Manage(command, reply) => {
                             let _ = reply.send(mutations::manage(&mut connection, command));
+                        }
+                        Request::Advance(request, reply) => {
+                            let _ = reply.send(mutations::advance(&mut connection, request));
                         }
                         Request::Create(request, tables, fingerprint, reply) => {
                             let _ = reply.send(mutations::create(

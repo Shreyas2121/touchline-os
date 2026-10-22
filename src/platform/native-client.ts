@@ -43,6 +43,8 @@ export function createNativeClient(): GameClient {
     createCareer: (request) => call('create_career', { request }),
     previewCreation: (request) => call('preview_creation', { request }),
     manage: (command) => call('manage_campaign', { command }),
+    previewTime: (campaignId) => call('preview_time', { campaignId }),
+    advanceTime: (request) => call('advance_time', { request }),
   }
 }
 

@@ -87,12 +87,12 @@ Unit/integration tests cover July 1 creation, both transitions, consumed deadlin
 
 ## 10. Definition of done
 
-- [ ] NM-G09 gate verified before implementation.
-- [ ] Rust preview/command/UI agree; no TS/Dexie authority.
-- [ ] Retry/concurrency/rollback/SQLite store-reopen integration checks pass.
-- [ ] Kickoff is a guarded hard stop.
-- [ ] No new match/market/lifecycle or migration work concealed here.
-- [ ] README and Phase 7 evidence match actual implementation.
+- [x] NM-G09 gate verified before implementation.
+- [x] Rust preview/command/UI agree; no TS/Dexie authority.
+- [x] Retry/concurrency/rollback/SQLite store-reopen integration checks pass.
+- [x] Kickoff is a guarded hard stop.
+- [x] No new match/market/lifecycle or migration work concealed here.
+- [x] README and Phase 7 evidence match actual implementation.
 
 ## 11. Commit instructions
 

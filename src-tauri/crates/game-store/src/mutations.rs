@@ -2,6 +2,7 @@ use super::{invalid, mapping::TABLES, snapshots, Kind, Result, StoreError};
 use game_core::{
     guards::{next_revision, require_revision},
     management::*,
+    progression::{self, AdvanceOutcome, AdvancePlan, AdvanceRequest},
     CommandError, EntityId, SnapshotTables,
 };
 use rusqlite::{
@@ -120,6 +121,28 @@ fn write_diff(db: &Connection, before: &Value, after: &Value, campaign: &str) ->
 }
 fn empty() -> Value {
     serde_json::to_value(SnapshotTables::default()).expect("empty tables")
+}
+pub(super) fn advance(db: &mut Connection, request: AdvanceRequest) -> Result<AdvanceOutcome> {
+    let tx = db.transaction_with_behavior(TransactionBehavior::Immediate)?;
+    let before = snapshots::read_from(&tx, request.campaign_id.as_str())?;
+    let mut tables: SnapshotTables = serde_json::from_value(before.clone())?;
+    let material =
+        progression::critical_material(&tables, &request).map_err(StoreError::Command)?;
+    let fingerprint = super::advance_fingerprint(&material);
+    let plan =
+        progression::evaluate(&tables, &request, &fingerprint).map_err(StoreError::Command)?;
+    let outcome = match plan {
+        AdvancePlan::Replay(outcome) => outcome,
+        AdvancePlan::Commit(planned) => {
+            let outcome = progression::commit(&mut tables, *planned);
+            let after = serde_json::to_value(&tables)?;
+            snapshots::envelope(after.clone(), "native-advance", &request.now)?;
+            write_diff(&tx, &before, &after, request.campaign_id.as_str())?;
+            outcome
+        }
+    };
+    tx.commit()?;
+    Ok(outcome)
 }
 pub(super) fn manage(db: &mut Connection, command: ManagementCommand) -> Result<ManagementOutcome> {
     let canonical = fingerprint(&command).map_err(StoreError::Command)?;

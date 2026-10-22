@@ -12,6 +12,9 @@ import type { ManagementCommand } from './generated/ManagementCommand'
 import type { ManagementOutcome } from './generated/ManagementOutcome'
 import type { ClubChoices } from './generated/ClubChoices'
 import type { PlayerPlanning } from './generated/PlayerPlanning'
+import type { TimePreview } from './generated/TimePreview'
+import type { AdvanceRequest } from './generated/AdvanceRequest'
+import type { AdvanceOutcome } from './generated/AdvanceOutcome'
 import {
   clientOperations,
   operationMethod,
@@ -38,6 +41,8 @@ export type GameClient = ClientCalls & {
   createCareer(request: CreationRequest): Promise<ManagementOutcome>
   previewCreation(request: CreationRequest): Promise<ClubChoices>
   manage(command: ManagementCommand): Promise<ManagementOutcome>
+  previewTime(campaignId: string): Promise<TimePreview>
+  advanceTime(request: AdvanceRequest): Promise<AdvanceOutcome>
 }
 
 export function unavailableNativeReads() {
@@ -60,6 +65,8 @@ export function unavailableNativeReads() {
     createCareer: reject,
     previewCreation: reject,
     manage: reject,
+    previewTime: reject,
+    advanceTime: reject,
   }
 }
 

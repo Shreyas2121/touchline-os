@@ -30,6 +30,22 @@ async fn preview_creation(
     blocking(move || game_app::preview_creation(request)).await
 }
 #[tauri::command]
+async fn preview_time(
+    store: tauri::State<'_, Store>,
+    campaign_id: game_app::EntityId,
+) -> Result<game_app::TimePreview, CommandError> {
+    let store = store.inner().clone();
+    blocking(move || game_app::preview_time(&store, campaign_id)).await
+}
+#[tauri::command]
+async fn advance_time(
+    store: tauri::State<'_, Store>,
+    request: game_app::AdvanceRequest,
+) -> Result<game_app::AdvanceOutcome, CommandError> {
+    let store = store.inner().clone();
+    blocking(move || game_app::advance_time(&store, request)).await
+}
+#[tauri::command]
 async fn manage_campaign(
     store: tauri::State<'_, Store>,
     command: game_app::ManagementCommand,
@@ -238,6 +254,8 @@ pub fn run() {
             preview_policy,
             manage_campaign,
             preview_creation,
+            preview_time,
+            advance_time,
             create_career,
             select_import,
             confirm_import,

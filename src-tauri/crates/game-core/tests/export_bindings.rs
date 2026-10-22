@@ -25,4 +25,7 @@ fn export_bindings() {
     game_core::queries::MigrationResult::export_all(&config).expect("import outcome bindings");
     game_core::queries::PreviewQuery::export_all(&config).expect("preview input bindings");
     game_core::queries::NativePreview::export_all(&config).expect("preview bindings");
+    game_core::progression::TimePreview::export_all(&config).expect("time preview bindings");
+    game_core::progression::AdvanceRequest::export_all(&config).expect("advance bindings");
+    game_core::progression::AdvanceOutcome::export_all(&config).expect("advance result bindings");
 }

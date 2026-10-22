@@ -167,7 +167,8 @@ export function NativeCareerForm({ client }: { client: GameClient }) {
           )}
           <p>
             Preview the seeded clubs, choose your club and confirm creation.
-            Standalone careers begin on July 1; Continue is unavailable.
+            Standalone careers begin on July 1. Continue from the Command Center
+            after the career is saved.
           </p>
           <Button type="submit" disabled={busy}>
             {busy

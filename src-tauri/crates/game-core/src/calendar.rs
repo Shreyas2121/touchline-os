@@ -3,7 +3,8 @@ use crate::{
     random::{derive_event_seed, EventKind},
     CalendarPhase, CoreError, CoreResult, SeasonRow, SeasonStatus, SimulationStateRow,
 };
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 
 pub const MATCH_SIMULATION_UNAVAILABLE: &str = "Match simulation arrives in Phase 8.";
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
@@ -36,7 +37,7 @@ pub fn transfer_window_on(date: &DateOnly) -> Option<TransferWindow> {
         _ => None,
     }
 }
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "kebab-case")]
 pub enum BoundaryKind {
     SummerDeadline,

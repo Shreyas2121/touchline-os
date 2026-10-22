@@ -563,6 +563,59 @@ fn app_local_paths_are_stable_and_isolated() {
 }
 
 #[test]
+fn injected_advance_failure_rolls_back_clock_revision_audit_and_receipt() {
+    use game_core::{progression::AdvanceRequest, EntityId, SafeInt};
+    let dir = Directory::new();
+    let path = dir.file("advance-rollback.sqlite3");
+    let store = Store::open(&path).unwrap();
+    store.import_snapshot(&fixture("standalone-v2")).unwrap();
+    let before = tables(&store, "standalone-v2");
+    let request = AdvanceRequest {
+        campaign_id: EntityId::new("standalone-v2").unwrap(),
+        expected_revision: SafeInt::new(before["campaigns"][0]["revision"].as_i64().unwrap())
+            .unwrap(),
+        source_date: "2026-07-01".into(),
+        source_boundary_key: None,
+        target_boundary_key: "season:2026:summer-deadline".into(),
+        action_id: EntityId::new("advance-fault-action").unwrap(),
+        audit_id: EntityId::new("advance-fault-audit").unwrap(),
+        receipt_id: EntityId::new("advance-fault-receipt").unwrap(),
+        now: "2026-10-22T08:00:00.000Z".into(),
+    };
+    Connection::open(&path).unwrap().execute_batch("CREATE TRIGGER reject_advance_audit BEFORE INSERT ON auditEvents BEGIN SELECT RAISE(ABORT,'injected advance failure'); END;").unwrap();
+    assert!(store.advance(request.clone()).is_err());
+    assert_eq!(tables(&store, "standalone-v2"), before);
+    Connection::open(&path)
+        .unwrap()
+        .execute_batch("DROP TRIGGER reject_advance_audit")
+        .unwrap();
+    let outcome = store.advance(request.clone()).unwrap();
+    assert!(!outcome.replayed);
+    assert_eq!(outcome.current_date, "2026-08-31");
+    let saved = tables(&store, "standalone-v2");
+    assert_eq!(saved["simulationStates"][0]["currentDate"], "2026-08-31");
+    assert_eq!(
+        saved["campaigns"][0]["revision"],
+        before["campaigns"][0]["revision"].as_i64().unwrap() + 1
+    );
+    assert_eq!(
+        saved["simulationReceipts"].as_array().unwrap().len(),
+        before["simulationReceipts"].as_array().unwrap().len() + 1
+    );
+    assert_eq!(
+        saved["players"].as_array().unwrap().len(),
+        before["players"].as_array().unwrap().len()
+    );
+    let replay = store.advance(request).unwrap();
+    assert!(replay.replayed);
+    assert_eq!(replay.revision.get(), outcome.revision.get());
+    assert_eq!(
+        tables(&store, "standalone-v2")["campaigns"][0]["revision"],
+        saved["campaigns"][0]["revision"]
+    );
+}
+
+#[test]
 fn concurrent_retries_share_one_commit_and_reads_use_committed_wal_state() {
     let dir = Directory::new();
     let path = dir.file("concurrent.sqlite3");

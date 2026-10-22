@@ -59,6 +59,21 @@ function client(): GameClient {
       replayed: false,
       deleted: false,
     }),
+    previewTime: vi.fn().mockResolvedValue({
+      campaignId: campaign.id,
+      revision: campaign.revision,
+      fromDate: '2026-07-01',
+      sourceBoundaryKey: null,
+      phase: 'preseason',
+      allowed: true,
+      targetBoundaryKey: 'season:2026:summer-deadline',
+      targetDate: '2026-08-31',
+      targetKind: 'summer-deadline',
+      nextEvent: 'Summer deadline',
+      eventSeed: 1,
+      reason: null,
+    }),
+    advanceTime: vi.fn(),
   }
 }
 function show(api: GameClient, section?: string) {
@@ -123,6 +138,11 @@ describe('native management forms', () => {
       ).toBeNull()
       expect(screen.queryByLabelText('Campaign name')).toBeNull()
     }
+    fireEvent.click(screen.getByRole('link', { name: 'Command Center' }))
+    await screen.findByRole('heading', { name: 'Command Center', level: 1 })
+    expect(screen.queryByRole('button', { name: 'Continue' })).toBeNull()
+    expect(api.previewTime).not.toHaveBeenCalled()
+    expect(api.advanceTime).not.toHaveBeenCalled()
     expect(api.planning).not.toHaveBeenCalled()
     expect(api.manage).not.toHaveBeenCalled()
     fireEvent.click(screen.getByRole('button', { name: 'Delete campaign' }))

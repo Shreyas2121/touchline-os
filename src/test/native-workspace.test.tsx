@@ -56,6 +56,21 @@ function client(): GameClient {
     cancelImport: vi.fn().mockResolvedValue(undefined),
     backupDatabase: vi.fn().mockResolvedValue(false),
     exportCampaign: vi.fn().mockResolvedValue(false),
+    previewTime: vi.fn().mockResolvedValue({
+      campaignId: campaign.id,
+      revision: campaign.revision,
+      fromDate: '2026-07-01',
+      sourceBoundaryKey: null,
+      phase: 'preseason',
+      allowed: true,
+      targetBoundaryKey: 'season:2026:summer-deadline',
+      targetDate: '2026-08-31',
+      targetKind: 'summer-deadline',
+      nextEvent: 'Summer deadline',
+      eventSeed: 1,
+      reason: null,
+    }),
+    advanceTime: vi.fn(),
   }
 }
 function show(api: GameClient, route = '/') {

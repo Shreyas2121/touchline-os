@@ -22,9 +22,10 @@ import { Button } from '../../components/ui/Button'
 import { NativeScreenTables } from './NativeScreenTables'
 import { NativeCareerForm } from './NativeCareerForm'
 import { NativeManagementPanel } from './NativeManagementPanel'
+import { NativeProgression } from './NativeProgression'
 
 const readOnly =
-  'Standalone career management is available. Match simulation and negotiations arrive in later phases. Manual campaign gameplay is retired. Continue is not available.'
+  'Standalone career management is available. Continue on the Command Center advances the foundation calendar. Match simulation and negotiations arrive in later phases. Manual campaign gameplay is retired.'
 
 export function NativeWorkspace({ client }: { client: GameClient }) {
   return (
@@ -81,8 +82,9 @@ export function NativeRoutes({ client }: { client: GameClient }) {
                   not certify a real competition.
                 </p>
                 <p>
-                  Continue and match simulation are unavailable at this
-                  milestone.
+                  Continue on the Command Center advances a standalone career
+                  from July 1 to the summer deadline and then to league kickoff.
+                  Match simulation arrives in Phase 8.
                 </p>
               </>
             }
@@ -474,18 +476,17 @@ function ScreenContent({
                 </dl>
               )}
             {campaign.mode === 'standalone' && screen === 'command-center' && (
-              <>
-                <p>
-                  Current date:{' '}
-                  {data.rows.simulationStates[0]?.currentDate ??
-                    season?.startDate ??
-                    'Unknown'}
-                </p>
-                <p>
-                  Continue is unavailable until P07-G06. Match simulation
-                  arrives in Phase 8.
-                </p>
-              </>
+              <NativeProgression
+                client={client}
+                campaignId={campaignId}
+                revision={data.revision}
+                refresh={retry}
+                onAdvanced={() => {
+                  setNotice('Advanced the saved career.')
+                  setRetry((value) => value + 1)
+                }}
+                onReload={() => setRetry((value) => value + 1)}
+              />
             )}
             {playerScreen && (
               <div className="flex gap-4">
