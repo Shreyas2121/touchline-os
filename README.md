@@ -6,6 +6,8 @@ The web implementation is complete through **Phase 7 Guide 5**. The native appli
 
 Native standalone careers start on July 1 with generated clubs and Challenge/Sandbox rules. Continue on the Command Center advances that date to the August 31 summer deadline and then to September 1 kickoff. Each new boundary is saved once; repeating it does not move time again. At kickoff the career stops with `Match simulation arrives in Phase 8.` Negotiations remain unavailable. Loading, relaunching, or waiting on the clock never advances the career. See [MASTER_PLAN.md](MASTER_PLAN.md), [Phase 7](plans/phase7.md) and [DECISIONS.md](DECISIONS.md).
 
+P07-G07 integration coverage is implemented: 64 Rust tests, 699 frontend tests and the Windows release builds pass. Certification remains pending because Windows Application Control blocks the pinned Clippy executable (OS error 4551), including the outside-sandbox retry. See [verification evidence](plans/phase7.md#p07-g07-verification-evidence). After the native check passes, the next task is Phase 8 planning for fixtures and instant match simulation.
+
 ## Non-goals
 
 - No live match ticker in the initial standalone release

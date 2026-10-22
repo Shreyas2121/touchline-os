@@ -627,7 +627,7 @@ Completed G01–G05 retain their original subjects and implementation evidence:
 - `P07-G04` — playable generator v2; `feat(p07-g04): generate playable club worlds`.
 - `P07-G05` — web career creation/guards; `feat(p07-g05): start standalone careers safely`.
 
-**Current execution:** P07-G07 certification → Phase 8 planning. P07-G06 and P07-G07a are complete.
+**Current execution:** P07-G07 certification → Phase 8 planning. P07-G06 and P07-G07a are complete. G07 cross-feature coverage passes (64 Rust / 699 frontend tests and Windows packaging); certification awaits resolution of Windows Application Control blocking pinned Clippy (OS error 4551). See Phase 7 verification evidence; the native check remains required.
 
 The native migration prerequisite is complete through NM-G09. Its plan, nine guides, actual SHAs, service audit and passed unit/integration cutover gate are preserved under `plans/archive/native-migration/`. It is no longer an active work stage. Continue and later gameplay were not added by the bridge.
 

@@ -319,6 +319,144 @@ fn imported_and_seeded_careers_advance_once_through_kickoff_and_survive_reopen()
 }
 
 #[test]
+fn progressed_saves_keep_guards_and_receipts_across_export_backup_and_demo_reset() {
+    let dir = Dir::new();
+    let store = dir.store();
+    import(&store, "standalone-v2");
+    let mut demo = CreationRequest {
+        kind: CreationKind::StandaloneDemo,
+        reset_revision: None,
+        career: CareerInput {
+            campaign_id: id(STANDALONE_DEMO_ID),
+            name: "Foundation demo".into(),
+            seed: "native-standalone-demo-v2".into(),
+            start_year: n(2026),
+            club_key: "club:01".into(),
+            rules_mode: RulesMode::Sandbox,
+            preset: Preset::Balanced,
+            now: "2026-10-22T12:00:00.000Z".into(),
+            season_id: id("demo-season"),
+            clock_id: id("demo-clock"),
+            constitution_id: id("demo-constitution"),
+            allocation_id: id("demo-allocation"),
+            receipt_id: id("demo-receipt"),
+            audit_event_id: id("demo-audit"),
+            action_id: id("demo-action"),
+        },
+    };
+    create_career(&store, demo.clone()).unwrap();
+    let restored_path = dir.0.join("restored.sqlite3");
+    let restored = NativeStore::open(&restored_path).unwrap();
+    let mut expected = Vec::new();
+    for campaign in ["standalone-v2", STANDALONE_DEMO_ID] {
+        let original = tables(&store, campaign);
+        let deadline = request(
+            &original,
+            "season:2026:summer-deadline",
+            "2026-10-22T13:00:00.000Z",
+        );
+        let receipt = advance_time(&store, deadline.clone()).unwrap().receipt_id;
+        advance_time(
+            &store,
+            request(
+                &tables(&store, campaign),
+                "season:2026:league-kickoff",
+                "2026-10-22T14:00:00.000Z",
+            ),
+        )
+        .unwrap();
+        let kickoff = tables(&store, campaign);
+        unchanged(&original, &kickoff);
+        let mut constitution = kickoff.constitutions[0].clone();
+        constitution.id = id(&format!("{campaign}-strict"));
+        constitution.rules = game_core::policy::constitution_preset(Preset::Strict);
+        let edit = ManagementCommand {
+            campaign_id: id(campaign),
+            expected_revision: kickoff.campaigns[0].revision,
+            action_id: id(&format!("{campaign}-edit")),
+            audit_id: id(&format!("{campaign}-edit-audit")),
+            now: "2026-10-22T15:00:00.000Z".into(),
+            action: ManagementAction::SaveConstitution {
+                constitution,
+                allocation_id: id(&format!("{campaign}-no-extra-allocation")),
+            },
+        };
+        if campaign == STANDALONE_DEMO_ID {
+            assert!(!manage(&store, edit.clone()).unwrap().replayed);
+            let edited = tables(&store, campaign);
+            assert!(manage(&store, edit).unwrap().replayed);
+            assert_eq!(tables(&store, campaign), edited);
+            assert_eq!(edited.constitutions.len(), kickoff.constitutions.len() + 1);
+            assert_eq!(edited.ledger_entries, kickoff.ledger_entries);
+            assert_eq!(edited.players, kickoff.players);
+            assert_eq!(edited.simulation_states, kickoff.simulation_states);
+        } else {
+            assert!(manage(&store, edit).is_err());
+            assert_eq!(tables(&store, campaign), kickoff);
+        }
+        let saved = tables(&store, campaign);
+        let path = dir.0.join(format!("{campaign}.json"));
+        assert!(export_file(
+            &store,
+            campaign,
+            Some(&path),
+            "foundation-export",
+            "2026-10-22T16:00:00.000Z",
+        )
+        .unwrap());
+        restored
+            .import_snapshot(&std::fs::read(path).unwrap())
+            .unwrap();
+        expected.push((campaign, saved, deadline, receipt));
+    }
+    let backup_path = dir.0.join("backup.sqlite3");
+    assert!(backup_file(&store, Some(&backup_path)).unwrap());
+    drop(restored);
+    drop(store);
+
+    let source = dir.store();
+    let backup = NativeStore::open(backup_path).unwrap();
+    let restored = NativeStore::open(restored_path).unwrap();
+    for reopened in [&source, &backup, &restored] {
+        for (campaign, saved, deadline, receipt) in &expected {
+            assert_eq!(tables(reopened, campaign), *saved);
+            let replay = advance_time(reopened, deadline.clone()).unwrap();
+            assert!(replay.replayed);
+            assert_eq!(replay.receipt_id, *receipt);
+            assert_eq!(replay.revision, saved.campaigns[0].revision);
+            assert_eq!(replay.current_date, "2026-09-01");
+            assert_eq!(
+                advance_time(
+                    reopened,
+                    request(saved, "season:2026:matchday", "2026-10-22T17:00:00.000Z"),
+                )
+                .unwrap_err()
+                .to_string(),
+                MATCH_SIMULATION_UNAVAILABLE
+            );
+            assert_eq!(tables(reopened, campaign), *saved);
+        }
+    }
+    import(&source, "standalone-v2");
+    assert_eq!(tables(&source, "standalone-v2"), expected[0].1);
+    demo.reset_revision = Some(expected[1].1.campaigns[0].revision);
+    demo.career.action_id = id("progressed-demo-reset");
+    demo.career.audit_event_id = id("progressed-demo-reset-audit");
+    let reset = create_career(&source, demo.clone()).unwrap();
+    assert_eq!(
+        reset.revision,
+        Some(n(demo.reset_revision.unwrap().get() + 1))
+    );
+    assert!(create_career(&source, demo).unwrap().replayed);
+    let reset_tables = tables(&source, STANDALONE_DEMO_ID);
+    assert_eq!(reset_tables.simulation_states[0].current_date, "2026-07-01");
+    assert_eq!(reset_tables.players.len(), 3000);
+    assert_eq!(tables(&source, "standalone-v2"), expected[0].1);
+    assert_eq!(tables(&backup, STANDALONE_DEMO_ID), expected[1].1);
+    assert_eq!(tables(&restored, STANDALONE_DEMO_ID), expected[1].1);
+}
+
+#[test]
 fn concurrent_same_event_calls_leave_one_clock_change() {
     let dir = Dir::new();
     let store = Arc::new(dir.store());

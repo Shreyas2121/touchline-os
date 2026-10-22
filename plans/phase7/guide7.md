@@ -71,12 +71,12 @@ Use Phase 7 §8 unit/integration coverage for standalone-only contracts, fixed-s
 
 ## 10. Definition of done
 
-- [ ] NM bridge, P07-G06 and P07-G07a evidence verified.
-- [ ] No runtime manual mode, legacy generator/demo, v1 normalization or historical-save workspace remains.
+- [x] NM bridge, P07-G06 and P07-G07a evidence verified.
+- [x] No runtime manual mode, legacy generator/demo, v1 normalization or historical-save workspace remains.
 - [ ] Native acceptance criteria and required checks pass.
-- [ ] Completed G01–G05 artifacts and evidence remain unchanged.
-- [ ] Supported standalone snapshot/backup/clock/receipt integrity and native authority verified.
-- [ ] Time progresses once and stops at kickoff.
+- [x] Completed G01–G05 artifacts and evidence remain unchanged.
+- [x] Supported standalone snapshot/backup/clock/receipt integrity and native authority verified.
+- [x] Time progresses once and stops at kickoff.
 - [ ] No match engine, full-season or broad release claim.
 - [ ] Phase 8 handoff accurately names Rust/SQLite/IPC contracts.
 
