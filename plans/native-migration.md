@@ -1,6 +1,6 @@
 # Native migration bridge — standalone native foundation
 
-> **Authority:** `MASTER_PLAN.md` 3.0.2 / DEC-002 / DEC-003 / DEC-004
+> **Authority:** `MASTER_PLAN.md` 3.0.3 / DEC-002 / DEC-003 / DEC-004 / DEC-005
 > **Placement:** after completed P07-G05, before P07-G06
 > **Status:** NM-G01 through NM-G08 complete; NM-G09 pending. Gate not passed.
 > **Next execution:** [NM-G09 — native cutover certification](native-migration/guide9.md)
@@ -9,6 +9,8 @@
 ## 1. Parent plan contract
 
 Master §§0, 2, 4.4–4.6, 8, 9 and 12 define the native architecture, source-save contract, native correctness, execution gate and verification. DEC-003 removes previous-logic compatibility; DEC-004 removes manual campaign gameplay. Only standalone gameplay is in scope. Existing save-data preservation and completed history remain required. Completed guide files and progress evidence below describe historical implementation, not obligations to keep manual creation/demos/editing or port additional manual commands.
+
+DEC-005 makes unit/integration tests sufficient for testing gates, alongside existing code/build checks. It supersedes desktop/browser E2E, manual acceptance and packaged-app smoke requirements in completed guides and historical handoffs. Preserve their actual evidence; no manual checklist, user sign-off or new automation setup is required.
 
 `P07-G01–G05` and their evidence remain unchanged. Preserve the original browser implementation and saved data as migration/reference material. Resume G06 only after NM-G09 is committed with passing bridge evidence.
 
@@ -150,7 +152,7 @@ NM-G09 must prove:
 - actual standalone import and preservation of already supported historical records/source data, without a manual-play journey;
 - legal deterministic native fresh careers and intended reads/writes;
 - direct Rust scope/Challenge/standalone guard enforcement;
-- transactional rollback, collision/retry handling, backup and app restart;
+- transactional rollback, collision/retry handling, backup and real SQLite store close/reopen;
 - real SQLite/native tests and generated-contract freshness;
 - no Dexie fallback, production test instrumentation or fake completed features.
 
@@ -186,7 +188,7 @@ The original pending web G06/G07 are superseded; active guides retain their orig
 6. Rust passes deterministic PRNG/Unicode/fingerprint, valid date, checked money and policy tests. Old TypeScript equality is optional reference evidence.
 7. Native creation produces a legal reproducible 72-club/3,000-player world and one opening allocation.
 8. Every supported standalone feature uses typed native services; direct calls reject retired manual creation/gameplay and enforce read-only historical saves and Challenge guards.
-9. Native save/read/write survives close/relaunch; browser/other campaigns stay isolated.
+9. Native save/read/write survives real SQLite store close/reopen in integration tests; browser/other campaigns stay isolated.
 10. Desktop has no raw SQL command or Dexie fallback.
 11. Existing frontend tests and actual Cargo/native tests are distinguished and pass.
 12. July 1 remains unchanged during this bridge: no Continue or later gameplay implemented.
@@ -201,7 +203,6 @@ pnpm lint
 pnpm typecheck
 pnpm test
 pnpm build
-pnpm test:e2e
 ```
 
 NM-G02 introduces:
@@ -216,9 +217,9 @@ pnpm tauri build
 
 native:check runs locked workspace rustfmt/clippy/tests; binding check compares temporary generated output without silently editing tracked files. native build is separate from frontend build.
 
-NM-G09 adds `pnpm test:desktop` against a dedicated native test binary, using test-only automation excluded from normal release artifacts. Also manually smoke the normal packaged app. Browser/mocked tests do not certify Rust/SQLite.
+Unit/integration tests satisfy testing gates (DEC-005). Rust tests use real temporary SQLite files and filesystem fixtures; frontend mocks do not replace them. Retain binding, formatting, lint, type and frontend/native build checks. Existing browser E2E is optional; no desktop automation, dedicated binary, manual testing or user sign-off is required.
 
-Final journey: original-origin export → native import standalone → inspect counts/nulls/balances → reimport harmlessly → create fixed-seed native career → edit allowed standalone planning/tactics/registration/board → close/relaunch → verify Challenge and retired-command rejection → export/backup/reopen → confirm historical rows/source untouched and no clock progression → record gate evidence.
+Integration coverage: source snapshot export/import, counts/nulls/balances, harmless reimport, fixed-seed creation, allowed planning/tactics/registration/board edits, real store close/reopen, Challenge and retired-command rejection, export/backup/reopen, unchanged historical/source rows and no clock progression. Add missing cases only; reuse meaningful existing tests.
 
 ## 9. Risks and rollback
 
@@ -230,7 +231,7 @@ Main risks: origin mismatch, changed Unicode/seed algorithm, unsafe i64/JS trans
 
 - [ ] NM-G01–NM-G09 committed in order with actual check evidence.
 - [ ] Supported standalone foundations work on Rust/SQLite; manual workflows are retired under DEC-004.
-- [ ] Import/export/backup and native close/relaunch pass.
+- [ ] Import/export/backup and SQLite store-reopen integration tests pass.
 - [ ] Native core/generator correctness, reproducibility and direct-call guards pass.
 - [ ] Source browser data and completed guide history are preserved.
 - [ ] No new game progression or match simulation is falsely certified.

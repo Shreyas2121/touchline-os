@@ -5,13 +5,13 @@
 > **Product choice:** **Standalone Sporting Director Sim**
 > **Target:** Offline desktop application: Tauri 2 + React/Vite UI + Rust game backend + SQLite
 > **Status:** Web implementation complete through P07-G05; native bridge NM-G01–NM-G08 implemented, cutover gate pending
-> **Plan version:** `3.0.2` (product release target remains v1)
+> **Plan version:** `3.0.3` (product release target remains v1)
 > **Last revised:** 2026-10-22
 > **Execution chain:** master → active phase → guide → one reviewed Git commit per guide
 
 ## 0. HOW AN AI CODING AGENT MUST USE THIS FILE
 
-This is the source of truth for current scope, data semantics, invariants, milestone order and release gates. Plan 3.0.0 changes platform/backend at the P07-G05 checkpoint; the standalone game-design decisions from 2.0.0 remain. Plan 3.0.1 / DEC-003 removes compatibility with previous TypeScript business logic as a requirement. Plan 3.0.2 / DEC-004 removes companion/manual campaign gameplay from the product. Native correctness, deterministic execution and intended standalone rules govern remaining implementation. Historical parity and manual-feature requirements are superseded; existing save-data preservation remains in scope.
+This is the source of truth for current scope, data semantics, invariants, milestone order and release gates. Plan 3.0.0 changes platform/backend at the P07-G05 checkpoint; the standalone game-design decisions from 2.0.0 remain. Plan 3.0.1 / DEC-003 removes compatibility with previous TypeScript business logic as a requirement. Plan 3.0.2 / DEC-004 removes companion/manual campaign gameplay from the product. Plan 3.0.3 / DEC-005 makes unit and integration tests sufficient for testing gates, alongside existing formatting, lint, type, binding and build checks. Desktop/browser E2E, manual acceptance, packaged-app smoke and user sign-off are not required; do not add automation dependencies, a manual checklist or a pending manual-testing gate. This supersedes testing requirements in completed guides and archives without rewriting their history. Native correctness, deterministic execution and intended standalone rules govern remaining implementation. Historical parity and manual-feature requirements are superseded; existing save-data preservation remains in scope.
 
 ### Hierarchy and execution
 
@@ -133,8 +133,7 @@ The SVG board supplies tactical decisions to the match engine. A simulated resul
 | Progress                  | Typed ordered channels for long operations                                                       | Progress is not authority; only committed results become visible                                          |
 | Native files              | App-local data directory; native dialogs and scoped file access                                  | Stable bundle identifier; distinct dev/test paths; no save DB in install assets                           |
 | Versions                  | Application, SQLite schema, export format, generator, calendar and simulation tracked separately | Preserve supported old behavior or apply an explicit tested migration                                     |
-| Tests                     | Cargo core/SQLite tests; existing Vitest/React tests; native E2E                                 | Mocked invoke/browser tests do not certify a desktop DB                                                   |
-| Desktop E2E               | WebdriverIO with official Tauri service/embedded driver, configured after core integration       | Test-only instrumentation excluded from release builds                                                    |
+| Tests                     | Cargo core/real SQLite integration and Vitest/React unit/integration tests                         | Frontend mocks do not replace real Rust/SQLite integration coverage                                      |
 | Delivery                  | Native installers; optional signed updater                                                       | Gameplay offline; updates must not silently invalidate saves                                              |
 | Browser compatibility     | Frozen existing app plus migration-export route                                                  | No native fallback to Dexie; no ongoing dual-write synchronization                                        |
 | Data visuals/UI libraries | Keep current frontend; add planned charting/accessibility libraries only in their phase          | Preserve unrelated package versions                                                                       |
@@ -502,7 +501,6 @@ src-tauri/
 scripts/
   native-check.mjs
   native-bindings.mjs
-desktop-e2e/
 compatibility/                            # NM-G01 committed JSON golden fixtures
 plans/native-migration/guide1.md ... guide9.md
 plans/phase7/guide6.md ... guide7.md
@@ -529,9 +527,9 @@ One worker owns the rusqlite connection and serializes DB operations. Do not hol
 
 serde DTOs use documented camelCase fields/tagged results and generated TS bindings via ts-rs. Keep runtime validation in Rust; form Zod schemas do not authorize writes. Return bounded screen projections/paged results, not all 3,000 players on every invoke.
 
-NM-G02 introduces `pnpm tauri dev`, `pnpm tauri build`, `pnpm native:check`, `pnpm native:bindings` and `pnpm native:bindings:check`. Native checks run rustfmt, clippy with warnings denied and locked workspace tests. Binding check generates to a temporary location and compares against committed output without silently rewriting it. NM-G09 adds `pnpm test:desktop` for real packaged application tests.
+NM-G02 introduces `pnpm tauri dev`, `pnpm tauri build`, `pnpm native:check`, `pnpm native:bindings` and `pnpm native:bindings:check`. Native checks run rustfmt, clippy with warnings denied and locked workspace tests. Binding check generates to a temporary location and compares against committed output without silently rewriting it. NM-G09 audits and runs unit/integration coverage; it adds no desktop automation.
 
-Existing `pnpm build` remains the frontend build; it is not proof that a desktop installer or Rust database works. Existing Vitest/Playwright tests remain browser/UI compatibility tests; Rust and desktop checks are separate gates.
+Existing `pnpm build` remains the frontend build; it is not proof that a desktop installer or Rust database works. Vitest/React unit and integration tests cover the frontend; Cargo tests exercise real Rust/SQLite behavior. Existing Playwright suites may remain but are not required gates (DEC-005).
 
 ### Development and release
 
@@ -652,7 +650,7 @@ Authority: `plans/native-migration.md`; executable files: `plans/native-migratio
 | `NM-G08` | Retire manual workflows; standalone-only surface | `refactor(nm-g08): retire manual campaign workflows`             |
 | `NM-G09` | Native cutover and compatibility certification    | `test(nm-g09): certify the native migration bridge`              |
 
-**Bridge exit gate:** intended workflows run through Rust/SQLite in a packaged Tauri app; imported/browser snapshots, valid deterministic native careers, native reopen/backup, command guards and direct-call tests pass. Exact compatibility with previous TypeScript logic is not required (DEC-003). Record bridge SHAs/checks in its own plan. Only then resume Phase 7.
+**Bridge exit gate:** unit/integration tests prove intended Rust/SQLite workflows, imported/browser snapshot preservation, valid deterministic native careers, store reopen/backup and direct command guards. Normal frontend/native builds pass; no desktop automation, manual run or user sign-off is required (DEC-005). Exact compatibility with previous TypeScript logic is not required (DEC-003). Record bridge SHAs/checks in its own plan. Only then resume Phase 7.
 
 #### Resume Phase 7 after NM-G09
 
@@ -776,7 +774,7 @@ A phase planner must generate a self-contained file with **all** of these sectio
 
 ## 8. Verification
 
-- Exact native/frontend commands and appropriate desktop/browser flows; failure cases.
+- Exact native/frontend unit/integration and code-check commands; failure cases. No E2E or manual acceptance gate (DEC-005).
 
 ## 9. Risks, mitigations, rollback
 
@@ -828,15 +826,15 @@ A guide should be executable by a fresh AI agent that has the repository and mas
 
 ## 7. Tests to add/change
 
-- Named unit/integration/e2e tests and fixtures; negative cases.
+- Named unit/integration tests and fixtures; negative cases.
 
 ## 8. Verification commands
 
 - Exact local scripts available at that phase; expected results.
 
-## 9. Manual acceptance check
+## 9. Acceptance coverage
 
-- Reproducible click/keyboard steps and expected state.
+- Map acceptance criteria to meaningful unit/integration coverage. No manual checklist or sign-off.
 
 ## 10. Definition of done
 
@@ -863,7 +861,7 @@ A guide should be executable by a fresh AI agent that has the repository and mas
 2. Confirm predecessor guide's commit exists and tests pass.
 3. Implement only the active guide.
 4. Add tests for changed behavior and run targeted checks.
-5. Run required full checks (`lint`, `typecheck`, `test`, `build`; relevant E2E suites).
+5. Run required full checks (`lint`, `typecheck`, `test`, `build`; native bindings, Rust formatting/Clippy/workspace tests and native build when applicable).
 6. Inspect `git diff`, ensure no credentials, binaries, datasets, unrelated files, or generated artifacts.
 7. Commit with prescribed message; record commit SHA and evidence in the phase progress log or commit body.
 8. Continue only after a successful commit.
@@ -885,8 +883,8 @@ A guide should be executable by a fresh AI agent that has the repository and mas
 - SQLite integration: actual schema upgrades, constraints, scoped references, rollback, revisions, logical retries, deletion scope and consistent backup/reopen.
 - Migration: actual browser v1/v2 snapshot fixtures, all 23 source stores, null/optional preservation, no regeneration, import collision/retry/fault behavior.
 - Contract/UI: generated DTO freshness, Rust runtime rejection, native adapter errors, mocked GameClient rendering and accessible workflows.
-- Native E2E: packaged standalone creation/import → reopen → selection/board/planning writes → Continue → close/relaunch; historical manual saves remain unchanged/read-only. Later phases add simulated match/transfer/season/restore journeys.
-- Existing browser Vitest/Playwright suites remain compatibility evidence during the port. Mocked invoke or browser-only tests do not certify SQLite/native behavior.
+- Native integration: real temporary SQLite files cover standalone creation/import, reads/writes, store close/reopen, selection/board/planning and later Continue. Historical manual saves remain unchanged/read-only. Later phases add match/transfer/season/restore use cases at the Rust service/storage boundary.
+- Frontend Vitest/React unit/integration coverage and real Cargo/SQLite integration coverage satisfy testing gates. Existing Playwright suites remain optional. No WebdriverIO setup, desktop/browser E2E, manual acceptance, packaged-app smoke, manual checklist or user sign-off is required (DEC-005). Mocked invoke does not replace actual SQLite integration tests.
 
 ### 12.2 Explicit invariants
 
@@ -924,7 +922,6 @@ pnpm lint
 pnpm typecheck
 pnpm test
 pnpm build
-pnpm test:e2e
 ```
 
 NM-G02 introduces:
@@ -935,7 +932,7 @@ pnpm native:check
 pnpm tauri build
 ```
 
-NM-G09 introduces `pnpm test:desktop`. Keep Rust formatting/clippy/tests and generated-contract checks in CI. Native prerequisites and packaged-app/manual smoke are recorded honestly; a frontend build or mock cannot replace a failed native check.
+Keep Rust formatting/Clippy/workspace tests and generated-contract checks in CI. Unit/integration tests are sufficient for testing gates; retain lint, type, formatting, binding and build checks. Native prerequisites must be resolved, and a frontend build or mock cannot replace a failed native integration check. No desktop automation or manual verification is required; absence of those runs does not leave a gate pending (DEC-005).
 
 For documentation-only changes, run formatting, link/guide/roadmap consistency and preservation checks. No native tests are claimed before native code exists.
 
@@ -986,9 +983,9 @@ Rollback uses preserved browser/export files, consistent native backups and comp
 
 ---
 
-## 15. DEMO / PORTFOLIO ACCEPTANCE SCRIPT
+## 15. DEMO / PORTFOLIO PRODUCT SCENARIO
 
-At release a reviewer can:
+These describe intended release behavior, not a required manual test or acceptance checklist (DEC-005). At release a reviewer can:
 
 1. Install/open the desktop demo, choose a club and start a seeded Challenge career.
 2. Review board rules, finite funds, wage tiers and the game date.
@@ -1039,10 +1036,11 @@ Material changes require a master version update, a DECISIONS entry, affected pe
 - DEC-002: plan 2.0.0 → 3.0.0 at P07-G05, web/Dexie → native Tauri/Rust/SQLite before match-engine implementation.
 - DEC-003: plan 3.0.0 → 3.0.1 during NM-G04; previous-logic compatibility is no longer required. Native correctness and determinism govern remaining work.
 - DEC-004: plan 3.0.1 → 3.0.2 before NM-G08; standalone simulation is the only gameplay mode. Retire manual campaign options instead of porting their remaining workflows; preserve stored history and completed evidence.
+- DEC-005: plan 3.0.2 to 3.0.3 during NM-G09; unit/integration tests satisfy testing gates. Retain code/build checks; remove E2E, manual verification and sign-off requirements across pending work and future phases. Completed evidence remains historical.
 - Keep standalone game design and Phases 8–12 outcomes. Insert a separate migration bridge before pending Phase 7 G06/G07; update release Phase 13 and preserve completed work.
 - The browser remains the migration/export source and optional test reference. Desktop is the primary game; a complete second web edition is deferred. Previous-logic parity is not required (DEC-003).
 
-**Next execution:** `plans/native-migration/guide9.md` (standalone native cutover certification) after this master, DEC-002/DEC-003/DEC-004 and the bridge plan. P07-G06 is blocked until NM-G09 passes; then implement Rust Continue and P07-G07 certification. Match simulation starts in Phase 8.
+**Next execution:** `plans/native-migration/guide9.md` (standalone native cutover certification) after this master, DEC-002/DEC-003/DEC-004/DEC-005 and the bridge plan. P07-G06 is blocked until NM-G09 passes; then implement Rust Continue and P07-G07 certification. Match simulation starts in Phase 8.
 
 ---
 
@@ -1055,7 +1053,6 @@ Primary documentation supports implementation; it does not override the product 
 - [Tauri channels](https://v2.tauri.app/develop/calling-frontend/#channels) — ordered progress transport.
 - [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/) — native platform toolchain.
 - [Tauri capabilities](https://v2.tauri.app/security/capabilities/) — native command/plugin access.
-- [Tauri desktop tests](https://v2.tauri.app/develop/tests/webdriver/) — packaged application automation.
 - [Tauri updater](https://v2.tauri.app/plugin/updater/) — signed update artifacts.
 - [rusqlite](https://github.com/rusqlite/rusqlite) — bundled SQLite and backup support.
 - [ts-rs](https://github.com/Aleph-Alpha/ts-rs) — Rust-to-TypeScript DTO generation.

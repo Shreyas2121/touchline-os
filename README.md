@@ -38,11 +38,9 @@ pnpm lint
 pnpm typecheck
 pnpm test
 pnpm build
-pnpm exec playwright install chromium
-pnpm test:e2e
 ```
 
-Install Chromium once per machine, before `pnpm test:e2e`.
+Unit and integration tests satisfy testing gates ([DEC-005](DECISIONS.md#dec-005--unit-and-integration-tests-satisfy-verification-gates)). Existing browser E2E tests are optional; desktop automation, manual testing and user sign-off are not required. Formatting, lint, type, binding and build checks remain required.
 
 ## Desktop setup and checks
 

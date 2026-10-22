@@ -1,6 +1,6 @@
 # Phase 7 — Standalone foundations with a native migration prerequisite
 
-> **Authority:** `MASTER_PLAN.md` 3.0.2 / DEC-002 / DEC-003 / DEC-004
+> **Authority:** `MASTER_PLAN.md` 3.0.3 / DEC-002 / DEC-003 / DEC-004 / DEC-005
 > **Completed:** P07-G01–G05; files and evidence preserved unchanged
 > **Checkpoint:** `df23431abf8807cf61d2d1b63c66d6f7ef6a4cd3` (G05), followed by `7b3c6a0`
 > **Current stage:** [Native migration bridge](native-migration.md), next [NM-G09](native-migration/guide9.md)
@@ -9,7 +9,9 @@
 
 ## 1. Parent plan contract
 
-Master 3.0.2 → active bridge/phase → guide → implementation. Preserve historical web G01–G05. Read [DEC-002/003/004](../DECISIONS.md) for native architecture, native correctness and standalone-only scope, and [the bridge](native-migration.md) for prerequisites. Completed manual-feature instructions are historical; they do not require continued companion gameplay.
+Master 3.0.3 → active bridge/phase → guide → implementation. Preserve historical web G01–G05. Read [DEC-002/003/004/005](../DECISIONS.md) for native architecture, native correctness and standalone-only scope, and [the bridge](native-migration.md) for prerequisites. Completed manual-feature instructions are historical; they do not require continued companion gameplay.
+
+DEC-005 governs verification: unit/integration tests plus existing code/build checks satisfy gates. Completed guides and historical evidence remain unchanged; desktop/browser E2E, manual acceptance, packaged-app smoke and user sign-off are not required.
 
 Execution order is fixed:
 
@@ -51,7 +53,7 @@ Inspect `plans/native-migration.md` §10 and the actual Cargo/native/DTO code be
 
 G06: pure Rust progression preview, authoritative native advance command, logical receipts/revisions and Command Center UI.
 
-G07: native integration/desktop certification of full foundation, including migrated saves and time progression.
+G07: unit/integration certification of the full native foundation, including migrated saves and time progression.
 
 Out of scope: additional platform migration (belongs to bridge), match engine/fixtures, AI offers, injuries/recovery effects, growth, contract expiry, academy, awards, rollover, broad dataset import, PWA or live ticker.
 
@@ -99,7 +101,7 @@ See [guide6](phase7/guide6.md) and [guide7](phase7/guide7.md) for exact implemen
 
 1. Bridge gate is actually passed before G06 begins.
 2. Original G01–G05 files and recorded rows stay unchanged.
-3. Native July→deadline→kickoff transitions commit exactly once and survive app close/relaunch.
+3. Native July→deadline→kickoff transitions commit exactly once and survive real SQLite store close/reopen in integration tests.
 4. Retry cannot advance the next boundary, duplicate audit or report a fictitious revision.
 5. Concurrent/stale/faulted commands leave no partial state.
 6. Kickoff blocks UI and direct calls with the Phase 8 message.
@@ -119,12 +121,11 @@ pnpm typecheck
 pnpm test
 pnpm build
 pnpm tauri build
-pnpm test:desktop
 ```
 
-Run relevant browser compatibility checks when touched. Native tests use temporary DBs/app-local paths, and test automation stays out of normal release builds.
+Unit/integration tests and the listed code/build checks are sufficient (DEC-005). Native tests use real temporary SQLite/file paths. Existing browser E2E is optional; no desktop automation, manual checklist or user sign-off is required.
 
-Journey: open/import standalone career → create fixed-seed Challenge → July 1 → Continue/deadline → close/relaunch → Continue/kickoff → repeated request/next action refused → inspect/export historical manual data without edits → inspect no unrelated effects.
+Integration coverage: imported and fixed-seed standalone careers, July 1 → deadline → kickoff, store close/reopen, repeated-request handling, next-action refusal, historical data inspection/export without edits and no unrelated effects. Frontend unit/integration tests cover Continue, blockers and persisted-state refresh.
 
 No new implementation checks have run during this scope amendment. Preserved progress rows below are historical web evidence; their manual-feature statements predate DEC-004 and do not create current product requirements.
 
@@ -160,4 +161,4 @@ The completed rows below are preserved verbatim. They describe checks at their h
 
 ### Handoff
 
-Generate Phase 8 and all its guides from master 3.0.2 after G07 passes. Add fixtures/results/both-team appearances to Rust/SQLite with one shared match engine. Historical journal rows remain separate/read-only; preserve seed/version behavior. Future market/lifecycle/analytics/import phases remain 9/10/11/12; Phase 13 is desktop release hardening.
+Generate Phase 8 and all its guides from master 3.0.3 / DEC-005 after G07 passes. Add fixtures/results/both-team appearances to Rust/SQLite with one shared match engine. Historical journal rows remain separate/read-only; preserve seed/version behavior. Future market/lifecycle/analytics/import phases remain 9/10/11/12; Phase 13 is desktop release hardening. Unit/integration tests and code/build checks remain the verification gates; do not reintroduce E2E or manual sign-off requirements.

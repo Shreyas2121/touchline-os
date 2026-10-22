@@ -2,7 +2,7 @@
 
 ## 1. Context and authority
 
-- Master 3.0.2 / DEC-003 / DEC-004 §§4.6, 7.1, 8 and 9; parent [Phase 7](../phase7.md).
+- Master 3.0.3 / DEC-003 / DEC-004 / DEC-005 §§4.6, 7.1, 8 and 9; parent [Phase 7](../phase7.md).
 - Historical predecessor: completed P07-G05 at `df23431abf8807cf61d2d1b63c66d6f7ef6a4cd3`.
 - **Mandatory prerequisite:** [native migration bridge](../native-migration.md) through committed NM-G09 with passed cutover gate.
 - Commit: `feat(p07-g06): advance native careers deterministically`.
@@ -26,7 +26,7 @@ Inspect working tree; preserve completed G01–G05 files and browser source data
 - game-store simulation-state/receipt and optimistic transaction APIs.
 - Thin Tauri command registration and GameClient/generated DTOs.
 - Native Command Center and existing structured error/loading behavior.
-- Bridge native E2E harness, source snapshots and cutover evidence.
+- Bridge Rust/SQLite integration suites, source snapshots and cutover evidence.
 
 These native paths are created by the bridge, not present at the initial G05 code checkpoint.
 
@@ -37,7 +37,7 @@ These native paths are created by the bridge, not present at the initial G05 cod
 - game-store narrow state/receipt atomic commit.
 - Thin Tauri preview/advance commands and generated DTO/GameClient methods.
 - Command Center: Game date, Next event, Continue and kickoff stop.
-- Rust calendar/advance fault/retry tests, UI tests and native progression E2E.
+- Rust calendar/advance fault/retry and store-reopen integration tests, plus frontend unit/integration tests.
 - README and phase progress evidence.
 
 Request includes campaign ID, expected revision, source date/cursor and target boundary identity. It cannot supply an arbitrary future date or precomputed result.
@@ -61,7 +61,7 @@ Request includes campaign ID, expected revision, source date/cursor and target b
 - Altered fresh transport IDs do not produce another operation; altered critical fingerprint/stale source fails.
 - Concurrent same-event calls produce one effect, whether another call returns a replay or conflict.
 - Inject transaction failure: no partial clock/cursor/revision/audit/receipt.
-- UI reload and actual native close/relaunch preserve time. Different audit time has no gameplay effect.
+- UI remount and real SQLite store close/reopen preserve time. Different audit time has no gameplay effect.
 - Kickoff direct service refuses; other entity/finance/history rows stay unchanged.
 - Historical manual saves refuse progression and editing without changing rows/revision; campaign isolation remains intact.
 
@@ -77,24 +77,19 @@ pnpm typecheck
 pnpm test
 pnpm build
 pnpm tauri build
-pnpm test:desktop
 ```
 
-Run focused Rust/UI progression tests first. Browser compatibility checks remain separate when touched. No mocked invoke test can replace actual SQLite/native checks.
+Run focused Rust/UI progression unit/integration tests first. No mocked invoke test can replace real SQLite integration checks. Unit/integration tests and the listed code/build checks are sufficient; desktop/browser E2E and manual sign-off are not required (DEC-005).
 
-## 9. Manual acceptance check
+## 9. Acceptance coverage
 
-1. Open/create native Balanced Challenge career at July 1, 2026.
-2. Continue to August 31; close/relaunch; confirm same date and consumed deadline.
-3. Continue to September 1; close/relaunch; verify kickoff stop and no further advancement.
-4. Replay a prior request in integration/native tests; time must remain at the persisted latest date.
-5. Inspect/export historical manual history if present; confirm edits and progression are refused. No fixtures, offers or growth appeared in those records.
+Unit/integration tests cover July 1 creation, both transitions, consumed deadlines, persisted clock after store reopen, kickoff refusal, replay after later progress and historical-save preservation. No desktop session, manual checklist or user sign-off is required.
 
 ## 10. Definition of done
 
 - [ ] NM-G09 gate verified before implementation.
 - [ ] Rust preview/command/UI agree; no TS/Dexie authority.
-- [ ] Retry/concurrency/rollback/native relaunch checks pass.
+- [ ] Retry/concurrency/rollback/SQLite store-reopen integration checks pass.
 - [ ] Kickoff is a guarded hard stop.
 - [ ] No new match/market/lifecycle or migration work concealed here.
 - [ ] README and Phase 7 evidence match actual implementation.

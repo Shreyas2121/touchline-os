@@ -1,6 +1,6 @@
 # Architecture and product decisions
 
-> Current architecture: DEC-002 + DEC-003 + DEC-004 / master 3.0.2. Earlier decisions and completed evidence are historical where superseded. DEC-004 makes standalone simulation the only supported gameplay mode.
+> Current architecture and verification: DEC-002 + DEC-003 + DEC-004 + DEC-005 / master 3.0.3. Earlier decisions and completed evidence are historical where superseded. DEC-004 makes standalone simulation the only supported gameplay mode.
 
 ## DEC-001 — Pivot to Standalone Sporting Director Sim
 
@@ -123,3 +123,15 @@ NM-G07 and earlier commits remain completed history. Discard the uncommitted NM-
 NM-G09 certifies the standalone native product and data preservation, not every old companion feature. Future Phase 7 guides must not require a working manual-mode journey. Keep historical plans, completed guides, tests/fixtures and recorded checks as evidence; they do not create new feature obligations. Remove obsolete tests only alongside the corresponding retirement implementation, replacing feature-availability expectations with meaningful refusal and preservation checks.
 
 The bridge order remains NM-G07 → revised NM-G08 → NM-G09 → P07-G06 → P07-G07 → Phase 8. This decision does not mark NM-G08 or the bridge complete, authorize Continue early, or bring simulated matches, negotiations or lifecycle work forward. Those remain in their assigned phases.
+
+## DEC-005 — Unit and integration tests satisfy verification gates
+
+- **Date:** 2026-10-22
+- **Status:** Accepted; user explicitly stated unit/integration tests are enough and requested all affected docs be updated, without a manual-testing checklist.
+- **Plan change:** 3.0.2 → 3.0.3
+
+Use meaningful Rust unit and real SQLite/file integration tests, plus frontend Vitest/React unit and integration tests. Retain existing formatting, lint, type, generated-binding and frontend/native build checks. Frontend mocks cannot substitute for real Rust/SQLite integration coverage. Verify persistence by closing/reopening stores in integration tests; no actual app close/relaunch run is required.
+
+Remove mandatory desktop/browser E2E, WebdriverIO dependencies/configuration, dedicated automation binaries, packaged-app smoke and manual acceptance/sign-off from remaining bridge work, Phase 7 and future phase/release gates. Do not create a manual checklist, require a user result, or leave a gate pending because desktop/manual testing was not performed. Existing browser E2E scripts/tests may remain optional; no new automation setup is needed.
+
+This decision supersedes older testing instructions throughout the plans, including completed guides and archives. Preserve those files, SHAs and actual historical results. Pending guides use the revised checks directly. Unit/integration evidence does not claim that desktop interactions or installers were exercised. NM-G09 still requires its audit, required tests/code checks and committed gate evidence before P07-G06; this documentation amendment alone does not pass that gate or authorize Continue.

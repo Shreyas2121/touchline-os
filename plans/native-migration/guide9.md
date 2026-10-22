@@ -2,7 +2,7 @@
 
 ## 1. Context and authority
 
-Master 3.0.2 / DEC-003 / DEC-004 → [native migration plan](../native-migration.md) → this guide. Certification covers the standalone product and save-data preservation, not previous-logic equality or continued manual campaign gameplay.
+Master 3.0.3 / DEC-003 / DEC-004 / DEC-005 → [native migration plan](../native-migration.md) → this guide. Certification covers the standalone product and save-data preservation, not previous-logic equality or continued manual campaign gameplay.
 Predecessor: revised NM-G08 `refactor(nm-g08): retire manual campaign workflows`; locate its actual commit in the bridge progress log and verify it is an ancestor. The canceled manual-workflow port is not a prerequisite.
 Commit: `test(nm-g09): certify the native migration bridge`.
 
@@ -14,7 +14,7 @@ Certify the standalone native foundations and retirement of manual workflows, th
 
 ## 3. Preconditions
 
-Read master, DEC-002/003/004 and bridge plan. Inspect git status; preserve completed P07-G01–G05 and unrelated work. Verify predecessor evidence before code. Introduce only dependencies assigned to this guide, with verified versions/lockfiles. Missing future feature is an unavailable state, never permission to fall back to Dexie.
+Read master, DEC-002/003/004/005 and bridge plan. Inspect git status; preserve completed P07-G01–G05 and unrelated work. Verify predecessor evidence before code. Unit/integration tests satisfy testing gates under DEC-005; no new automation dependencies are needed. Missing future feature is an unavailable state, never permission to fall back to Dexie.
 
 ## 4. Files to inspect
 
@@ -27,9 +27,8 @@ Paths under new native directories exist only after their introducing guide; do 
 
 ## 5. Files to create/modify
 
-- desktop-e2e/ native migration/current-workflow journeys
-- Test-only native automation configuration and pnpm test:desktop
 - Cross-feature native integration tests only where coverage is missing
+- Frontend unit/integration tests only where coverage is missing
 - README/bridge progress and explicit cutover gate evidence
 
 Preserve existing schema/identity/version/nullable contracts. No real user save is a test fixture.
@@ -37,20 +36,20 @@ Preserve existing schema/identity/version/nullable contracts. No real user save 
 ## 6. Implementation steps
 
 1. Audit the GameClient inventory: every supported standalone read/write has an authoritative native path. Manual creation/demo/editing paths are absent or reject direct calls, including retries. No TS gameplay fallback, arbitrary SQL or accidentally callable retired handler.
-2. Add real native desktop automation using current official Tauri/WebdriverIO service. Use isolated paths/test-only instrumentation; exclude automation from normal release builds.
-3. Run standalone source-export/import, same-file retry/collision/rollback, native core/world correctness and reproducibility, allowed management writes, retired-command refusal and source preservation checks. Historical manual rows remain inspectable/exportable without edits, regeneration or conversion. No previous-logic or manual-feature parity gate remains.
-4. Close/relaunch actual app and verify imported/new careers, revisions/receipts and backup/reopen. Browser/mocked tests are labeled as compatibility only.
-5. Build/smoke the normal native artifact as well as the dedicated E2E test binary; record Windows support honestly and do not claim other OS/signing/updater release coverage.
+2. Audit existing Rust and frontend unit/integration coverage. Add meaningful missing cases using synthetic fixtures and temporary SQLite paths; no desktop automation or dedicated test binary is required.
+3. Run source-export/import integration tests, same-file retry/collision/rollback, native core/world correctness and reproducibility, allowed management writes, retired-command refusal and source preservation checks. Historical manual rows remain inspectable/exportable without edits, regeneration or conversion. No previous-logic or manual-feature parity gate remains.
+4. Close/reopen real SQLite stores in integration tests and verify imported/new careers, revisions/receipts and consistent backup/reopen. Frontend mocks do not replace these Rust integration tests.
+5. Build the normal native artifact; record the actual build target without claiming installer interaction, other OS/signing/updater coverage. No packaged-app smoke, manual test or user sign-off is required.
 6. Confirm game date remains July 1 and no Continue/fixtures/AI/growth/rollover was added while migrating.
 7. Run full required checks; update README to verified native workflow coverage. Record all NM SHAs/results and gate PASS only when every required item actually passes.
 8. Handoff to P07-G06; do not implement its progression here or skip straight to Phase 8.
 
 ## 7. Tests to add/change
 
-- Actual Tauri/SQLite import/new career/read/write/relaunch journey.
+- Rust application/storage integration for import/new career/read/write/store reopen with real temporary SQLite files.
 - Consistent native backup/export, failed/colliding/repeated import and source preservation.
 - Direct Rust rule/scope/mode guards and dependency/capability boundaries.
-- Relevant browser regression evidence plus native rule/world correctness and reproducibility, with no test instrumentation in normal build.
+- Frontend unit/integration regression coverage plus native rule/world correctness and reproducibility; production configuration remains free of test instrumentation.
 
 Prefer compatibility/integration properties over tests that mirror implementation. Keep golden data independent of the Rust port.
 
@@ -66,16 +65,14 @@ pnpm typecheck
 pnpm test
 pnpm build
 pnpm tauri build
-pnpm test:desktop
 ```
 
 The native scripts are introduced by NM-G02. Missing prerequisites or failed native checks must be resolved; a frontend/mock pass is not a substitute.
-Run relevant browser compatibility/E2E when its flows are touched; NM-G09 records the complete cutover evidence.
+Unit/integration tests and the listed code/build checks are sufficient. Existing browser E2E is optional. Do not add a desktop automation setup, manual checklist or pending manual-testing gate (DEC-005).
 
-## 9. Manual acceptance check
+## 9. Acceptance coverage
 
-1. Export a standalone save from the original browser, import native, run permitted standalone management workflows, create a fixed-seed career and relaunch. Verify historical manual data remains read-only and no manual creation/editing is offered.
-2. Inspect preserved browser data, native backup and normal release artifact; verify July 1 is unchanged and no Continue yet.
+Use unit/integration results for the criteria above, including saved-row preservation, fixed-seed creation, permitted management, retired-command refusal, store/backup reopen and unchanged July 1. No actual desktop session or manual sign-off is required.
 
 ## 10. Definition of done
 
