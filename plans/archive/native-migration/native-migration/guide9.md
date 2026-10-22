@@ -76,11 +76,11 @@ Use unit/integration results for the criteria above, including saved-row preserv
 
 ## 10. Definition of done
 
-- [ ] The narrow outcome is implemented and verified.
-- [ ] Source/browser data and completed guide history are preserved.
-- [ ] Standalone correctness, retired-command refusal, preservation and rollback checks pass.
-- [ ] No new gameplay or false native/release claim is introduced.
-- [ ] Evidence and limitations are recorded in bridge §10.
+- [x] The narrow outcome is implemented and verified.
+- [x] Source/browser data and completed guide history are preserved.
+- [x] Standalone correctness, retired-command refusal, preservation and rollback checks pass.
+- [x] No new gameplay or false native/release claim is introduced.
+- [x] Evidence and limitations are recorded in bridge §10.
 
 ## 11. Commit instructions
 
@@ -95,3 +95,5 @@ Do not commit failing required checks. Record actual SHA and commands/results; b
 ## 12. Handoff
 
 Only a committed passed NM-G09 gate authorizes P07-G06 Rust Continue. P07-G07 then certifies the complete foundation before Phase 8.
+
+Completed on 2026-10-22. See the archived bridge progress log for the service audit, actual checks and PASS gate. This guide is implementation history; the next active task is P07-G06.

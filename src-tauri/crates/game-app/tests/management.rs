@@ -79,6 +79,72 @@ fn command(t: &SnapshotTables, action: ManagementAction) -> ManagementCommand {
 }
 
 #[test]
+fn migrated_standalone_edits_and_retry_receipts_survive_export_backup_and_reopen() {
+    let dir = Dir::new();
+    let store = dir.store();
+    let source = include_bytes!("../../../../compatibility/snapshots/standalone-v2.json");
+    let source_file = dir.0.join("browser-export.json");
+    std::fs::write(&source_file, source).unwrap();
+    let session = MigrationSession::default();
+    let summary = session.select(Some(&source_file)).unwrap().unwrap();
+    session.confirm(&store, &summary.token).unwrap();
+    let original = tables(&store, "standalone-v2");
+    let rename = command(
+        &original,
+        ManagementAction::Rename {
+            name: "Managed after migration".into(),
+        },
+    );
+    let result = manage(&store, rename.clone()).unwrap();
+    assert!(!result.replayed);
+    assert_eq!(
+        result.revision,
+        Some(n(original.campaigns[0].revision.get() + 1))
+    );
+    let changed = tables(&store, "standalone-v2");
+    assert_eq!(changed.campaigns[0].name, "Managed after migration");
+    assert_eq!(changed.audit_events.len(), original.audit_events.len() + 1);
+    assert_eq!(changed.simulation_states, original.simulation_states);
+    assert_eq!(changed.simulation_receipts, original.simulation_receipts);
+    assert_eq!(changed.ledger_entries, original.ledger_entries);
+
+    create_career(&store, request("isolated-native", RulesMode::Sandbox)).unwrap();
+    let other = tables(&store, "isolated-native");
+    let backup = dir.0.join("cutover-backup.sqlite3");
+    assert!(backup_file(&store, Some(&backup)).unwrap());
+    let exported = dir.0.join("managed-export.json");
+    assert!(export_file(
+        &store,
+        "standalone-v2",
+        Some(&exported),
+        "cutover-export",
+        "2026-10-22T12:00:00.000Z"
+    )
+    .unwrap());
+    let encoded = std::fs::read(&exported).unwrap();
+    assert_eq!(parse_snapshot(&encoded).unwrap().tables, changed);
+    drop(store);
+
+    for reopened in [dir.store(), NativeStore::open(&backup).unwrap()] {
+        // Both transport and management receipts must survive storage reopen.
+        let retry_session = MigrationSession::default();
+        let review = retry_session.select(Some(&source_file)).unwrap().unwrap();
+        retry_session.confirm(&reopened, &review.token).unwrap();
+        assert!(manage(&reopened, rename.clone()).unwrap().replayed);
+        let mut collision = source.to_vec();
+        collision.push(b' ');
+        assert!(reopened.import_snapshot(&collision).is_err());
+        assert_eq!(tables(&reopened, "standalone-v2"), changed);
+        assert_eq!(tables(&reopened, "isolated-native"), other);
+    }
+    let restored = NativeStore::open(dir.0.join("restored.sqlite3")).unwrap();
+    restored.import_snapshot(&encoded).unwrap();
+    assert!(manage(&restored, rename).unwrap().replayed);
+    assert_eq!(tables(&restored, "standalone-v2"), changed);
+    assert_eq!(std::fs::read(&source_file).unwrap(), source);
+}
+
+#[test]
 fn full_native_creation_retries_without_preparing_again_and_preserves_changed_revision() {
     let dir = Dir::new();
     let store = dir.store();

@@ -249,6 +249,33 @@ export default defineConfig(
     },
   },
   {
+    files: [
+      'src/app/native/**/*.{ts,tsx}',
+      'src/app/NativeBootstrap.tsx',
+      'src/platform/native-client.ts',
+    ],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: ['dexie', 'fake-indexeddb'],
+          patterns: [
+            {
+              group: ['dexie/**', 'fake-indexeddb/**'],
+              message: 'Native UI uses typed Rust services.',
+            },
+            {
+              regex:
+                '(^|/)(data|features)(/|$)|(^|/)domain/(?!graphics(/|$))|(^|/)providers/database',
+              message:
+                'Native UI cannot use browser storage or TypeScript gameplay logic. Pure graphics are presentation only.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     files: ['src/app/providers/database.tsx'],
     rules: {
       'no-restricted-imports': [

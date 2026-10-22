@@ -2,8 +2,8 @@
 
 > **Authority:** `MASTER_PLAN.md` 3.0.3 / DEC-002 / DEC-003 / DEC-004 / DEC-005
 > **Placement:** after completed P07-G05, before P07-G06
-> **Status:** NM-G01 through NM-G08 complete; NM-G09 pending. Gate not passed.
-> **Next execution:** [NM-G09 — native cutover certification](native-migration/guide9.md)
+> **Status:** NM-G01–NM-G09 complete. Gate PASS (2026-10-22); archived implementation history.
+> **Next execution:** [P07-G06 — Rust Continue](../../phase7/guide6.md)
 > **Exit:** standalone foundations work natively; Continue still belongs to resumed P07-G06
 
 ## 1. Parent plan contract
@@ -229,13 +229,13 @@ Main risks: origin mismatch, changed Unicode/seed algorithm, unsafe i64/JS trans
 
 ## 10. Exit and handoff
 
-- [ ] NM-G01–NM-G09 committed in order with actual check evidence.
-- [ ] Supported standalone foundations work on Rust/SQLite; manual workflows are retired under DEC-004.
-- [ ] Import/export/backup and SQLite store-reopen integration tests pass.
-- [ ] Native core/generator correctness, reproducibility and direct-call guards pass.
-- [ ] Source browser data and completed guide history are preserved.
-- [ ] No new game progression or match simulation is falsely certified.
-- [ ] Resume pointer is P07-G06, with native APIs/scripts documented.
+- [x] NM-G01–NM-G09 committed in order with actual check evidence.
+- [x] Supported standalone foundations work on Rust/SQLite; manual workflows are retired under DEC-004.
+- [x] Import/export/backup and SQLite store-reopen integration tests pass.
+- [x] Native core/generator correctness, reproducibility and direct-call guards pass.
+- [x] Source browser data and completed guide history are preserved.
+- [x] No new game progression or match simulation is falsely certified.
+- [x] Resume pointer is P07-G06, with native APIs/scripts documented.
 
 ### Progress log
 
@@ -251,7 +251,7 @@ Completed rows and narrative below preserve actual historical checks. Their manu
 | `NM-G06` | `8f131b5f608dbbb5eccdc81687818f4d5e389074` | `cargo test -p game-app --test reads_migration --locked` (5 real SQLite/file integration tests), `pnpm native:bindings:check`, `pnpm native:check` (rustfmt, locked Clippy and 47 Rust tests), `pnpm lint`, `pnpm typecheck`, `pnpm test --maxWorkers=2` (53 files / 687 passed), focused native UI tests (11 passed across 2 files), `pnpm test:e2e` (7 browser tests passed, including build), and `pnpm tauri build` (frontend build, MSI and NSIS). Native screen queries and 50-row player pages share a consistent saved revision. Rust owns finance, policy and saved-selection reports. Scoped file dialogs expose reviewed import, consistent export and verified online backup; unsupported writes remain unavailable. |
 | `NM-G07` | `56933186b29fd1511f94b243252fc0e3f70789ed` | `pnpm native:bindings:check`, `pnpm native:check` (rustfmt, locked Clippy and 56 Rust tests), `pnpm lint`, `pnpm typecheck`, `pnpm test --maxWorkers=2` (54 files / 694 passed), targeted Prettier check, `pnpm test:e2e` (7 browser tests, including frontend build), and `pnpm tauri build` (frontend build, MSI and NSIS). Seven new app integration tests and two new store fault tests verify native creation, management, guards, retries, concurrent revisions and rollback. Real native forms, direct calls, close/relaunch and isolated demo reset passed in the test profile. |
 | `NM-G08` | `17a47db635637db5a8cd473c7f0ebd72cfc18c96` | `pnpm native:bindings:check`, `pnpm native:check` (rustfmt, locked Clippy and 57 Rust tests), `pnpm lint`, `pnpm typecheck`, `pnpm test --maxWorkers=2` (54 files / 696 passed), focused native UI tests (15 passed across 2 files), targeted Prettier checks, and `pnpm tauri build` (includes `pnpm build`, MSI and NSIS). Native test-profile acceptance verified standalone-only creation, historical read-only inspection/export, direct retired-command refusal, unchanged historical rows, permitted management, allocation limits, scoped standalone demo reset and normal close/relaunch. |
-| `NM-G09` | Pending | Not run |
+| `NM-G09` | Certification commit; SHA recorded by the following evidence commit | `pnpm native:bindings:check`; `pnpm native:check` (rustfmt, locked Clippy and 58 Rust tests); `pnpm lint`; `pnpm typecheck`; `pnpm test --maxWorkers=2` (54 files / 696 passed); `pnpm format:check`; `pnpm build`; `pnpm tauri build` (Windows x64 release executable, MSI and NSIS). Service/boundary audit, native lint rejection probes, fixture SHA-256/byte checks and archive/link/history preservation checks passed. Native CI workflow added; hosted CI not run locally. Gate PASS under DEC-005. |
 
 NM-G03 verification used only synthetic committed source fixtures and injected temporary SQLite paths. The schema-0 upgrade fixture is an empty native SQLite file: there is no earlier deployed native schema to migrate. The harness imported and reopened indexeddb 1/2 and native sqlite 1 snapshots, compared all arrays/nullable values, tested concurrent retries and committed read isolation, rejected unsafe/oversized/future/cross-campaign inputs, and reopened consistent backups. Browser migrations, compatibility fixtures and completed P07-G01–G05 files are unchanged. The frontend dependency-boundary assertion now permits the guide's storage dependencies; the first run found that stale assertion, and a later default-concurrency run alongside the release build hit timing failures. The final full suite passed with two workers and unchanged test timeouts. No browser flow changed, so browser E2E was not repeated. Packaged-app interaction, native import/read UI and final release certification remain later bridge work; no Continue or new gameplay is implemented.
 
@@ -289,4 +289,29 @@ Native acceptance on 2026-10-22 used the isolated test profile and synthetic sav
 
 Verification-only dialog filename detection and close/export ordering needed harness corrections. An overlapping shutdown/export left a verification process running; that test process was stopped, then the persistence checks were repeated successfully with a confirmed normal exit before relaunch. No product change was needed for those harness issues. The final verification app closed normally. Config, helper scripts, screenshots and exports remain ignored under `test-results/nm-g08`. Normal release MSI/NSIS builds contain no verification configuration. This is native integration evidence; NM-G09 still owns independent packaged-release cutover certification, and Continue and later simulation remain unavailable.
 
-**Gate status: NOT PASSED.** NM-G09 certifies the standalone native product and data preservation; only then execute [P07-G06](phase7/guide6.md).
+**Gate status: PASS (2026-10-22, DEC-005).** Required unit/integration and code/build checks passed. NM-G09 closes the bridge; execute [P07-G06](../../phase7/guide6.md) after the certification commit. Older pending cutover/release statements above are historical and superseded by this result. No desktop/manual testing is required or claimed.
+
+### NM-G09 cutover audit (DEC-005)
+
+The native service inventory was audited on 2026-10-22 against `GameClient`, `native-client.ts`, the Tauri handler registration and Rust application/storage services:
+
+| Supported surface | Native commands / authority | Verification |
+| --- | --- | --- |
+| Health and profile isolation | `health`, `game-app::health`, Rust-owned app-local paths | App/shell unit tests and store path tests |
+| Campaign lists, all workspace screens and player pages | `list_campaigns`, `read_screen`, `read_player`, `player_planning` | App `reads_migration` and `management` integration suites; React workspace tests |
+| Policy/finance previews | `preview_policy`, persisted inputs and `game-core` policy/finance | Core foundations and app preview integration tests |
+| Reviewed import and cancellation | `select_import`, `confirm_import`, `cancel_import`, retained source bytes and transport receipts | App migration and store persistence suites; frontend review/cancel/error tests |
+| Export and consistent backup | `export_campaign`, `backup_database`, dialog-selected destinations and SQLite online backup | Real-file export/reimport, WAL backup/reopen and failure tests |
+| Standalone creation and demo/reset | `preview_creation`, `create_career`, native generation and transactional creation | Legal 72-club/3,000-player worlds, creation/retry/reset/rollback and UI tests |
+| Save lifecycle, planning, tactics, registration and board | `manage_campaign`, Rust scope/rule/revision guards and atomic store commits | App management, store fault/concurrency and React form tests |
+| Retired manual commands and future gameplay | Retired creation/player/club variants reject before receipt replay; generic `client_operation` inventory rejects; no Continue handler | Direct-call retirement, Challenge/scope and unchanged historical-row tests |
+
+The old no-argument operation inventory is an unavailable boundary, not an alternate gameplay API. Supported UI paths use the typed commands above. The native branch never mounts the browser database provider. Native forms retain only presentation helpers for SVG pitch geometry; Rust owns policies, eligibility, money and writes. A new native-specific ESLint restriction rejects browser data/features/provider imports and TypeScript domain logic, while allowing pure graphics. Its negative probes rejected all four forbidden import categories and allowed pitch presentation. No SQL/path input command, automation dependency, test instrumentation or production capability expansion was added. Existing CSP/platform release hardening remains Phase 13 work, outside this bridge gate.
+
+The added `migrated_standalone_edits_and_retry_receipts_survive_export_backup_and_reopen` app integration test imports a synthetic browser standalone snapshot through review/confirm, performs a real guarded management write, creates a separate native career, exports and backs up current state, and closes/reopens both the original store and backup. Original-file retries and repeated management actions preserve the latest rows/revision; a different-byte collision refuses. Native JSON reimport retains the management receipt. The game clock, ledger and simulation receipts stay unchanged; the other career and source file remain intact. Existing suites retain transaction fault, historical-save preservation and deterministic world coverage without duplicating those tests.
+
+Final verification on 2026-10-22 passed all commands in the NM-G09 progress row. The final native workspace has 58 passing tests, including nine app management integration tests; the frontend has 696 passing tests across 54 files. No test timeout or product rule was relaxed. The normal release build produced Windows x64 MSI (5.17 MiB) and NSIS (3.53 MiB) bundles. Vite retained its existing large-chunk warning; it did not fail either build. These are build and unit/integration results, with no desktop interaction, installer execution, signing, updater or other-platform certification claim. Browser E2E was not required or run under DEC-005.
+
+The Windows CI job now checks generated bindings, Rust formatting, locked Clippy and real workspace unit/integration tests alongside the existing frontend job. It uses the committed Rust toolchain and existing action versions, and requires no GUI automation. Hosted CI execution remains unobserved; the same native checks passed locally. Source fixtures, browser domain/data, dependency manifests and lockfiles remain unchanged. Completed NM-G01–NM-G08 guides were moved byte-for-byte, with all eight ancestor SHAs and progress rows verified. The bridge plan and nine guides were removed from active planning paths and archived here at the user’s request.
+
+**Handoff:** [P07-G06 — Rust Continue](../../phase7/guide6.md) is next: July 1 → August 31 deadline → September 1 kickoff, with atomic receipts/revisions, retry/rollback/store-reopen integration coverage and an explicit Phase 8 stop. No Continue, fixtures, match engine, AI market, growth or season rollover was implemented during NM-G09. P07-G07 follows; Phase 8 starts only after that foundation gate.

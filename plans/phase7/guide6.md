@@ -4,7 +4,7 @@
 
 - Master 3.0.3 / DEC-003 / DEC-004 / DEC-005 §§4.6, 7.1, 8 and 9; parent [Phase 7](../phase7.md).
 - Historical predecessor: completed P07-G05 at `df23431abf8807cf61d2d1b63c66d6f7ef6a4cd3`.
-- **Mandatory prerequisite:** [native migration bridge](../native-migration.md) through committed NM-G09 with passed cutover gate.
+- **Mandatory prerequisite:** [native migration bridge](../archive/native-migration/native-migration.md) through committed NM-G09 with passed cutover gate.
 - Commit: `feat(p07-g06): advance native careers deterministically`.
 
 This guide remains Continue. It cannot start on the web/Dexie stack or perform the migration itself.

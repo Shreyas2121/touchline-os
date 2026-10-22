@@ -1,15 +1,15 @@
-# Phase 7 — Standalone foundations with a native migration prerequisite
+# Phase 7 — Native standalone foundations
 
 > **Authority:** `MASTER_PLAN.md` 3.0.3 / DEC-002 / DEC-003 / DEC-004 / DEC-005
 > **Completed:** P07-G01–G05; files and evidence preserved unchanged
 > **Checkpoint:** `df23431abf8807cf61d2d1b63c66d6f7ef6a4cd3` (G05), followed by `7b3c6a0`
-> **Current stage:** [Native migration bridge](native-migration.md), next [NM-G09](native-migration/guide9.md)
-> **P07-G06/G07:** Pending and blocked until NM-G09 passes
-> **Status:** Native bridge implemented through NM-G08; cutover certification and progression remain pending
+> **Current stage:** Phase 7; next [P07-G06 — Rust Continue](phase7/guide6.md)
+> **P07-G06/G07:** Pending; native migration prerequisite passed
+> **Status:** NM-G01–NM-G09 complete and [archived](archive/native-migration/native-migration.md); progression remains pending
 
 ## 1. Parent plan contract
 
-Master 3.0.3 → active bridge/phase → guide → implementation. Preserve historical web G01–G05. Read [DEC-002/003/004/005](../DECISIONS.md) for native architecture, native correctness and standalone-only scope, and [the bridge](native-migration.md) for prerequisites. Completed manual-feature instructions are historical; they do not require continued companion gameplay.
+Master 3.0.3 → active bridge/phase → guide → implementation. Preserve historical web G01–G05. Read [DEC-002/003/004/005](../DECISIONS.md) for native architecture, native correctness and standalone-only scope, and [the bridge](archive/native-migration/native-migration.md) for prerequisites. Completed manual-feature instructions are historical; they do not require continued companion gameplay.
 
 DEC-005 governs verification: unit/integration tests plus existing code/build checks satisfy gates. Completed guides and historical evidence remain unchanged; desktop/browser E2E, manual acceptance, packaged-app smoke and user sign-off are not required.
 
@@ -26,7 +26,7 @@ P07-G05 → NM-G01 … NM-G09 → P07-G06 → P07-G07 → Phase 8
 | P07-G03       | TS calendar/streams                                | `feat(p07-g03): define deterministic game time`           | Complete            |
 | P07-G04       | Playable world generator                           | `feat(p07-g04): generate playable club worlds`            | Complete            |
 | P07-G05       | Web career creation/guards                         | `feat(p07-g05): start standalone careers safely`          | Complete            |
-| Native bridge | Native standalone foundations, retire manual workflows, no progression | See own nine-guide plan                       | Required before G06 |
+| Native bridge | Native standalone foundations, retire manual workflows, no progression | See own nine-guide plan                       | Complete (NM-G09 PASS) |
 | P07-G06       | Rust Continue / next-event UI                      | `feat(p07-g06): advance native careers deterministically` | Pending             |
 | P07-G07       | Native foundation certification                    | `test(p07-g07): verify native standalone foundations`     | Pending             |
 
@@ -47,7 +47,7 @@ Do not execute G06 based only on the G05 web SHA. First require:
 - SQLite read/write/import/backup/reopen, standalone guards and retired-manual-command refusal pass (DEC-004).
 - Existing native features use GameClient; no Dexie fallback.
 
-Inspect `plans/native-migration.md` §10 and the actual Cargo/native/DTO code before trusting a checkbox. Missing bridge code is a blocked prerequisite, not permission to implement Continue in TS.
+Inspect `plans/archive/native-migration/native-migration.md` §10 and the actual Cargo/native/DTO code before trusting a checkbox. Missing bridge code is a blocked prerequisite, not permission to implement Continue in TS.
 
 ## 4. Scope
 
@@ -137,7 +137,7 @@ No unsupported fixture/market event may be skipped. A Rust build or mock UI pass
 
 ## 10. Exit and handoff
 
-- [ ] NM-G09 prerequisite evidence exists and passed.
+- [x] NM-G09 prerequisite evidence exists and passed.
 - [ ] P07-G06/G07 have actual native commits/checks.
 - [ ] Game time advances idempotently and stops at kickoff.
 - [ ] Existing features/import/reopen/backup and protection remain sound.
