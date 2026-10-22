@@ -1,23 +1,23 @@
 # Phase 7 — Native standalone foundations
 
-> **Authority:** `MASTER_PLAN.md` 3.0.3 / DEC-002 / DEC-003 / DEC-004 / DEC-005
+> **Authority:** `MASTER_PLAN.md` 3.0.4 / DEC-002 / DEC-003 / DEC-004 / DEC-005 / DEC-006
 > **Completed:** P07-G01–G05; files and evidence preserved unchanged
 > **Checkpoint:** `df23431abf8807cf61d2d1b63c66d6f7ef6a4cd3` (G05), followed by `7b3c6a0`
-> **Current stage:** Phase 7; next [P07-G07](phase7/guide7.md)
+> **Current stage:** Phase 7; next [P07-G07a](phase7/guide7a.md)
 > **Native prerequisite:** NM-G09 certified at `93e4ad192010bd660d5d0388e7b60bc7404c1d83`; archived check evidence records gate PASS
-> **P07-G06:** Complete. **P07-G07:** Pending
-> **Status:** NM-G01–NM-G09 complete and [archived](archive/native-migration/native-migration.md). Continue advances July 1 to the summer deadline and September 1 kickoff, then stops for Phase 8.
+> **P07-G06:** Complete. **P07-G07a/G07:** Cleanup and certification pending
+> **Status:** Continue implemented; DEC-006 standalone-only cleanup and foundation certification pending
 
 ## 1. Parent plan contract
 
-Master 3.0.3 → active bridge/phase → guide → implementation. Preserve historical web G01–G05. Read [DEC-002/003/004/005](../DECISIONS.md) for native architecture, native correctness and standalone-only scope, and [the bridge](archive/native-migration/native-migration.md) for prerequisites. Completed manual-feature instructions are historical; they do not require continued companion gameplay.
+Master 3.0.4 → active bridge/phase → guide → implementation. Preserve historical web G01–G05. Read [DEC-002/003/004/005/006](../DECISIONS.md) for native architecture, native correctness and standalone-only scope, and [the bridge](archive/native-migration/native-migration.md) for prerequisites. Completed manual-feature instructions are historical; they do not require continued companion gameplay.
 
 DEC-005 governs verification: unit/integration tests plus existing code/build checks satisfy gates. Completed guides and historical evidence remain unchanged; desktop/browser E2E, manual acceptance, packaged-app smoke and user sign-off are not required.
 
 Execution order is fixed:
 
 ```text
-P07-G05 → NM-G01 … NM-G09 → P07-G06 → P07-G07 → Phase 8
+P07-G05 → NM-G01 … NM-G09 → P07-G06 (complete) → P07-G07a cleanup → P07-G07 certification → Phase 8
 ```
 
 | Guide         | Outcome                                            | Commit subject                                            | State               |
@@ -29,6 +29,7 @@ P07-G05 → NM-G01 … NM-G09 → P07-G06 → P07-G07 → Phase 8
 | P07-G05       | Web career creation/guards                         | `feat(p07-g05): start standalone careers safely`          | Complete            |
 | Native bridge | Native standalone foundations, retire manual workflows, no progression | See own nine-guide plan                       | Complete (NM-G09 PASS) |
 | P07-G06       | Rust Continue / next-event UI                      | `feat(p07-g06): advance native careers deterministically` | Complete            |
+| P07-G07a      | Remove non-standalone compatibility | `refactor(p07-g07a): remove non-standalone compatibility` | Pending |
 | P07-G07       | Native foundation certification                    | `test(p07-g07): verify native standalone foundations`     | Pending             |
 
 Only pending G07 instructions change. Previous plan-2 phase/pending guides are archived at `plans/archive/web-standalone-v2/`.
@@ -37,7 +38,9 @@ Only pending G07 instructions change. Previous plan-2 phase/pending guides are a
 
 After bridge completion, finish the standalone foundation in the native app: Continue advances a complete seeded career from July 1 through the summer deadline to September 1 kickoff, persists once, survives relaunch and refuses unsupported further simulation.
 
-Supported standalone management remains usable. Historical manual saves are preserved/read-only, without gameplay edits or conversion. This phase still ends before match simulation; Phase 8 adds fixtures/results/league tables in Rust.
+Standalone is the only campaign model. Remove remaining old-save compatibility code and preservation tests in G07a; no manual read-only workspace, normalization or historical import/export support is required. This phase still ends before match simulation; Phase 8 adds fixtures/results/league tables in Rust.
+
+DEC-006 supersedes old-save preservation requirements in completed guides and bridge evidence. Those actual results remain history; they do not satisfy or override the new cleanup gate.
 
 ## 3. Prerequisites
 
@@ -54,7 +57,9 @@ Inspect `plans/archive/native-migration/native-migration.md` §10 and the actual
 
 G06: pure Rust progression preview, authoritative native advance command, logical receipts/revisions and Command Center UI.
 
-G07: unit/integration certification of the full native foundation, including migrated saves and time progression.
+G07a: standalone-only native model, contracts, storage/import/UI cleanup and replacement tests under DEC-006.
+
+G07: unit/integration certification of the cleaned standalone foundation, supported save round trips and time progression.
 
 Out of scope: additional platform migration (belongs to bridge), match engine/fixtures, AI offers, injuries/recovery effects, growth, contract expiry, academy, awards, rollover, broad dataset import, PWA or live ticker.
 
@@ -62,7 +67,7 @@ Out of scope: additional platform migration (belongs to bridge), match engine/fi
 
 ### 5.1 Retain the completed model
 
-Current campaign mode (legacy/standalone), rules mode (Challenge/Sandbox), source kind, identities, root seeds and generator/simulation/calendar versions remain unchanged. SQLite has ported all 23 game stores plus transport metadata. Do not reinterpret legacy logs as simulated results.
+Standalone is the sole campaign model; Challenge/Sandbox are rule choices and fictional/imported are dataset kinds. Remove manual-mode variants, generator/demo, v1 normalization and read-only history branches. Retain only contracts needed for standalone progression, management and supported snapshots. Schema or format changes may reject unsupported prior data without deleting, rewriting or converting user files.
 
 ### 5.2 Rust clock progression
 
@@ -88,15 +93,16 @@ Preserve consumed-boundary semantics: a deadline just processed must not remain 
 
 GameClient exposes native preview/advance. Show Game date, Next event, Continue, pending feedback, structured validation and stale-save remedy. Disable duplicate submit and re-read persisted state after success.
 
-At kickoff, replace progression with explicit Phase 8 message. Direct Rust calls must stop too. Manual creation/gameplay forms are retired in every mode; historical manual saves remain read-only and cannot use Continue.
+At kickoff, replace progression with explicit Phase 8 message. Direct Rust calls must stop too. No manual campaign mode, historical workspace or old-client command compatibility remains after G07a.
 
 ## 6. Dependencies and guide work
 
 - G06 depends on passed NM-G09. Modify game-core calendar/progression, game-app use case, game-store receipt transaction, thin IPC/DTO/GameClient and Command Center.
-- G07 depends on G06. Add only meaningful cross-feature/native tests and docs/evidence; no new engine feature.
+- G07a depends on G06; remove remaining compatibility code and obsolete tests before certification.
+- G07 depends on G06 and G07a. Add only meaningful cross-feature/native tests and docs/evidence; no new engine feature.
 - Phase 8 depends on completed G07. Introduce future fixture/result/performance entities through later SQLite migrations.
 
-See [guide6](phase7/guide6.md) and [guide7](phase7/guide7.md) for exact implementation/checks.
+See completed [guide6](phase7/guide6.md), pending [guide7a](phase7/guide7a.md) and [guide7](phase7/guide7.md) for exact implementation/checks.
 
 ## 7. Acceptance criteria
 
@@ -106,7 +112,7 @@ See [guide6](phase7/guide6.md) and [guide7](phase7/guide7.md) for exact implemen
 4. Retry cannot advance the next boundary, duplicate audit or report a fictitious revision.
 5. Concurrent/stale/faulted commands leave no partial state.
 6. Kickoff blocks UI and direct calls with the Phase 8 message.
-7. Imported histories and seed keys remain intact; standalone management works, while historical manual saves reject edits and progression.
+7. Supported standalone snapshots retain seed keys, clock and receipts; management works after progression. No manual mode, v1 normalization or historical-save viewer is supported.
 8. Command Center never uses Dexie or TS policy/clock authority.
 9. No later gameplay or production-platform claim is fabricated.
 
@@ -126,22 +132,22 @@ pnpm tauri build
 
 Unit/integration tests and the listed code/build checks are sufficient (DEC-005). Native tests use real temporary SQLite/file paths. Existing browser E2E is optional; no desktop automation, manual checklist or user sign-off is required.
 
-Integration coverage: imported and fixed-seed standalone careers, July 1 → deadline → kickoff, store close/reopen, repeated-request handling, next-action refusal, historical data inspection/export without edits and no unrelated effects. Frontend unit/integration tests cover Continue, blockers and persisted-state refresh.
+Integration coverage: imported and fixed-seed standalone careers, July 1 → deadline → kickoff, store close/reopen, repeated-request handling, next-action refusal, supported standalone snapshot export/import and backup and no unrelated effects. Frontend unit/integration tests cover Continue, blockers and persisted-state refresh.
 
 No new implementation checks have run during this scope amendment. Preserved progress rows below are historical web evidence; their manual-feature statements predate DEC-004 and do not create current product requirements.
 
 ## 9. Risks and rollback
 
-The native bridge owns data migration/recovery. G06/G07 preserve its schemas, app identity and source exports. Use logical receipts and transaction fault tests to prevent duplicate progression; never reset a campaign to simplify a failed transition.
+The native bridge owns data migration/recovery. G07a removes old-save compatibility; G07 certifies supported standalone storage. Unsupported user files remain untouched. Use logical receipts and transaction fault tests to prevent duplicate progression; never reset a campaign to simplify a failed transition.
 
 No unsupported fixture/market event may be skipped. A Rust build or mock UI pass alone is insufficient without SQLite/native integration evidence.
 
 ## 10. Exit and handoff
 
 - [x] NM-G09 prerequisite evidence exists and passed.
-- [ ] P07-G06/G07 have actual native commits/checks.
+- [ ] P07-G06/G07a/G07 have actual native commits/checks.
 - [x] Game time advances idempotently and stops at kickoff.
-- [x] Existing features/import/reopen/backup and protection remain sound.
+- [ ] Standalone-only cleanup and supported import/reopen/backup/protection checks pass.
 - [x] README accurately records native status.
 - [ ] Phase 8 can start with pure Rust core and versioned SQLite/IPC services.
 
@@ -158,8 +164,9 @@ The completed rows below are preserved verbatim. They describe checks at their h
 | `P07-G05`     | `df23431abf8807cf61d2d1b63c66d6f7ef6a4cd3` | `pnpm lint`, `pnpm typecheck`, `pnpm test` (49 files / 665 passed), `pnpm build`, and `pnpm test:e2e` (6 passed) passed. A Balanced Challenge career starts on 2026-07-01 with one opening allocation, a fixed club, and a retry that does not rebuild the world. Conflicting settings, the legacy demo id, a missing club, and an injected write failure leave no partial save. Sandbox policy edits do not post a second allocation. Standalone match, negotiation, player, contract, ledger, club-switch, and Challenge constitution writes are refused; the legacy demo can still record a match. Browser pass: Harbor Challenge, seed browser-career-2026, year 2026, Ashford, survived reload with squad 36, contract rows, €5,000,000 capacity, locked Challenge rules, no manual match or negotiation forms, and registration drafts prefilled without saving rows. The fictional demo match form stayed available. |
 | Native bridge | `93e4ad192010bd660d5d0388e7b60bc7404c1d83` | Gate PASS. Evidence stays in the archived bridge progress log.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | P07-G06       | `3b190ba255ae8a56670c571b10bf235119fe4211` | `pnpm native:bindings:check`; `pnpm native:check` (rustfmt, locked Clippy and 64 Rust tests); `pnpm lint`; `pnpm typecheck`; `pnpm test` (55 files / 701 passed); `pnpm build`; `pnpm tauri build` (Windows x64 release executable, MSI 5.20 MiB and NSIS 3.55 MiB). Real SQLite tests cover July 1 to the summer deadline and September 1 kickoff, stable operation keys, replay of the first request after later progress, transport-id retries, fingerprint and stale-source conflicts, one effect from concurrent same-event calls, injected audit-insert rollback, close/reopen, the Phase 8 kickoff stop, unchanged entity and finance rows, historical read-only refusal, and campaign isolation. Command Center Continue advances only after an explicit click. |
+| P07-G07a      | Pending | Not run |
 | P07-G07       | Pending                                    | Not run                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 
 ### Handoff
 
-Generate Phase 8 and all its guides from master 3.0.3 / DEC-005 after G07 passes. Add fixtures/results/both-team appearances to Rust/SQLite with one shared match engine. Historical journal rows remain separate/read-only; preserve seed/version behavior. Future market/lifecycle/analytics/import phases remain 9/10/11/12; Phase 13 is desktop release hardening. Unit/integration tests and code/build checks remain the verification gates; do not reintroduce E2E or manual sign-off requirements.
+Generate Phase 8 and all its guides from master 3.0.4 / DEC-005 / DEC-006 after G07a and G07 pass. Add fixtures/results/both-team appearances to Rust/SQLite with one shared match engine. No manual journal or old-save compatibility is required; preserve supported standalone seed/version behavior. Future market/lifecycle/analytics/import phases remain 9/10/11/12; Phase 13 is desktop release hardening. Unit/integration tests and code/build checks remain the verification gates; do not reintroduce E2E or manual sign-off requirements.

@@ -1,15 +1,10 @@
 # Native SQLite store
 
+> **Current contract:** [DEC-006](../../../DECISIONS.md) / master 3.0.4 makes standalone the only campaign model. Old/manual generators, modes, normalization, historical save readers and preservation tests are not product requirements. The implementation notes below include completed pre-decision behavior; [P07-G07a](../../../plans/phase7/guide7a.md) must remove those paths before certification. Existing user files remain untouched.
+
 `Store::open` starts one connection worker with an eight-request queue. Its blocking
 methods belong on the native adapter's blocking executor, not the UI thread.
-Tauri startup manages its lifetime. Native bounded reads, migration dialogs and
-guarded management writes and manual-workflow retirement are exposed through
-NM-G08; Continue remains a later guide. DEC-004 makes standalone careers the only
-gameplay mode. Retained historical manual rows and schema fields do not require
-manual command ports. Their editing is rejected before audit/receipt replay;
-inspection, export/backup and explicit deletion remain available. Creation probes
-check both the supported request kind and saved campaign mode before returning a
-receipt. The write transaction rechecks these guards; stored data is not converted.
+Tauri startup manages its lifetime. Native reads, guarded standalone management, snapshot export/backup and deterministic Continue are implemented through P07-G06. P07-G07a removes the remaining non-standalone storage/import/read branches and compatibility tests under DEC-006. Supported writes keep revision, scope and receipt checks inside their transaction.
 
 `database_path` takes Tauri's app-local data directory. Production uses
 `touchline.sqlite3` directly under that directory; development and test profiles use
@@ -25,8 +20,7 @@ SQL columns; colors, attributes, rules, lineups, audit payloads and other nested
 collections use JSON columns. `mapping.rs` explicitly maps all 23 source arrays.
 
 Import parses, checks limits/types/references/identities/revision and computes the
-actual input bytes' SHA-256 before queueing. Only source v1 missing legacy/sandbox
-metadata and simulation arrays are normalized. A single immediate transaction
+actual input bytes' SHA-256 before queueing. The supported product accepts standalone snapshots only; P07-G07a removes browser-v1/manual normalization and related acceptance tests. A single immediate transaction
 inserts all rows and a separate `transportImports` receipt. Exact-byte retries return
 the original campaign ID and imported revision, even after later play. Different
 content with an existing campaign ID is refused. No gameplay audit or revision is
@@ -52,8 +46,7 @@ See [rusqlite backup](https://docs.rs/rusqlite/0.40.2/rusqlite/backup/index.html
 
 Run `cargo test -p game-store --locked` from `src-tauri` for real temporary-file
 schema/import/retry/rollback/export/backup/concurrency tests against the independently
-committed TypeScript fixtures. Browser compatibility fixtures and source schemas are
-unchanged. Native creation and management tests additionally exercise complete
+committed TypeScript fixtures. Archived browser fixtures do not impose runtime compatibility requirements. Native creation and management tests additionally exercise complete
 3,000-player insertion, transaction races and late trigger failures. Generation
 and its first shape/reference checks happen before queueing; commit rechecks saved
 identities, revision and scope. Mutations read a consistent scoped snapshot, apply
@@ -62,4 +55,4 @@ campaign blob is stored. Audit action IDs and canonical SHA-256 fingerprints mak
 retries harmless; creation receipts are checked before regeneration. Physical
 schema and the 23-array snapshot contract remain version 1. Deletion cascades the
 selected save's history and transport receipts; reset is one delete/insert
-transaction restricted to the matching native demo. Continue is still unavailable.
+transaction restricted to the matching native demo. Continue is implemented through P07-G06; P07-G07a cleanup precedes final certification.

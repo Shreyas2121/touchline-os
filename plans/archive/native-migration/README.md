@@ -6,4 +6,6 @@ See the [bridge progress and cutover gate](native-migration.md#10-exit-and-hando
 
 Current authority: [master](../../../MASTER_PLAN.md), [Phase 7](../../phase7.md) and [decisions](../../../DECISIONS.md).
 
-Next task: [P07-G06 — Rust Continue](../../phase7/guide6.md), followed by P07-G07 foundation certification. Match simulation starts in Phase 8.
+Next task: [P07-G07a — standalone-only cleanup](../../phase7/guide7a.md), then P07-G07 certification. P07-G06 is complete. Match simulation starts in Phase 8.
+
+Current scope is [master 3.0.4 / DEC-006](../../../DECISIONS.md#dec-006--standalone-is-the-only-campaign-model-remove-old-save-compatibility). Old/manual save preservation and compatibility requirements in this archive are superseded. Next is [P07-G07a cleanup](../../phase7/guide7a.md), then P07-G07 certification. Do not re-execute archived guides.

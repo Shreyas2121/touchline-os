@@ -4,14 +4,14 @@
 > **Product:** Touchline OS (working name)
 > **Product choice:** **Standalone Sporting Director Sim**
 > **Target:** Offline desktop application: Tauri 2 + React/Vite UI + Rust game backend + SQLite
-> **Status:** Native migration NM-G01–NM-G09 complete; Phase 7 resumes at P07-G06 (Rust Continue)
-> **Plan version:** `3.0.3` (product release target remains v1)
+> **Status:** P07-G06 complete; standalone-only cleanup P07-G07a required before P07-G07 certification
+> **Plan version:** `3.0.4` (product release target remains v1)
 > **Last revised:** 2026-10-22
 > **Execution chain:** master → active phase → guide → one reviewed Git commit per guide
 
 ## 0. HOW AN AI CODING AGENT MUST USE THIS FILE
 
-This is the source of truth for current scope, data semantics, invariants, milestone order and release gates. Plan 3.0.0 changes platform/backend at the P07-G05 checkpoint; the standalone game-design decisions from 2.0.0 remain. Plan 3.0.1 / DEC-003 removes compatibility with previous TypeScript business logic as a requirement. Plan 3.0.2 / DEC-004 removes companion/manual campaign gameplay from the product. Plan 3.0.3 / DEC-005 makes unit and integration tests sufficient for testing gates, alongside existing formatting, lint, type, binding and build checks. Desktop/browser E2E, manual acceptance, packaged-app smoke and user sign-off are not required; do not add automation dependencies, a manual checklist or a pending manual-testing gate. This supersedes testing requirements in completed guides and archives without rewriting their history. Native correctness, deterministic execution and intended standalone rules govern remaining implementation. Historical parity and manual-feature requirements are superseded; existing save-data preservation remains in scope.
+This is the source of truth for current scope, data semantics, invariants, milestone order and release gates. Plan 3.0.0 changes platform/backend at the P07-G05 checkpoint; the standalone game-design decisions from 2.0.0 remain. Plan 3.0.1 / DEC-003 removes compatibility with previous TypeScript business logic as a requirement. Plan 3.0.2 / DEC-004 removes companion/manual campaign gameplay from the product. Plan 3.0.3 / DEC-005 makes unit and integration tests sufficient for testing gates, alongside existing formatting, lint, type, binding and build checks. Desktop/browser E2E, manual acceptance, packaged-app smoke and user sign-off are not required; do not add automation dependencies, a manual checklist or a pending manual-testing gate. This supersedes testing requirements in completed guides and archives without rewriting their history. Native correctness, deterministic execution and intended standalone rules govern remaining implementation. Plan 3.0.4 / DEC-006 removes old/manual save compatibility entirely. Build the native product as if standalone were its only campaign model: no legacy mode, generator, demo, old-client wire variants, v1 normalization, read-only history workspace or compatibility preservation gates. Completed implementation records remain historical; their requirements are superseded. Supported standalone snapshots, deterministic rules and safe storage remain in scope. Do not delete or rewrite existing user files as part of removing compatibility.
 
 ### Hierarchy and execution
 
@@ -26,19 +26,19 @@ Read master and the active bridge/phase plan before a guide. Resolve conflicts b
 
 - Phases 1–6 and `P07-G01` are completed companion foundations under plan 1.0.0.
 - `P07-G02` through `P07-G05` are completed web standalone foundations under plan 2.0.0. Preserve every completed guide file, SHA and recorded check.
-- Web checkpoint: `df23431abf8807cf61d2d1b63c66d6f7ef6a4cd3` (G05), followed by evidence commit `7b3c6a0`. New browser careers exist in IndexedDB v2. The native shell, SQLite persistence, pure core foundations, world generation, career preparation, bounded screen reads, migration UI, atomic career creation and management writes are implemented and certified through NM-G09. Manual creation/demo/editing paths are retired; historical saves remain read-only and additional manual command ports are canceled. Continue and match simulation remain pending. See the archived bridge progress log for actual native SHAs and unit/integration verification evidence.
-- **Next execution: `plans/phase7/guide6.md` (P07-G06: Rust Continue)**. The NM-G09 unit/integration cutover gate passed. Do not rerun completed guides or reset to an earlier phase.
-- Keep completed P07-G01–G05 unchanged. The completed NM-G01–NM-G09 bridge is archived at `plans/archive/native-migration/`; preserve its guide files, SHAs and check evidence. Resume P07-G06 (Rust Continue), then P07-G07 (native foundation certification).
+- Web checkpoint: `df23431abf8807cf61d2d1b63c66d6f7ef6a4cd3` (G05), followed by evidence commit `7b3c6a0`. New browser careers exist in IndexedDB v2. The native shell, SQLite persistence, pure core foundations, world generation, career preparation, bounded screen reads, migration UI, atomic career creation and management writes are implemented and certified through NM-G09. Continue was completed in P07-G06 at `3b190ba255ae8a56670c571b10bf235119fe4211`. Old-save compatibility retained by those earlier commits is no longer required and must be removed in P07-G07a. Match simulation remains pending. See the archived bridge progress log for actual native SHAs and unit/integration verification evidence.
+- **Next execution: `plans/phase7/guide7a.md` (P07-G07a: remove non-standalone compatibility)**, then P07-G07 certification. This is new forward work under DEC-006, not a rerun of the completed native bridge.
+- Keep completed P07-G01–G05 unchanged. The completed NM-G01–NM-G09 bridge is archived at `plans/archive/native-migration/`; preserve its guide files, SHAs and check evidence. P07-G06 is complete. Execute P07-G07a cleanup, then P07-G07 (native foundation certification).
 - Superseded companion instructions remain under `plans/archive/companion-v1/`. Superseded plan-2 Phase 7 and pending guides are under `plans/archive/web-standalone-v2/`. Archives are reference only.
 - Future Phases 8–12 retain their gameplay/analytics/import outcomes but execute on Rust/SQLite. Phase 13 becomes desktop release hardening.
-- Standalone careers are the only supported gameplay mode (DEC-004). Preserve existing manual campaign data for inspection/export/backup; do not continue its gameplay workflows or silently convert it into simulation history.
+- Standalone careers are the only campaign model (DEC-006). There is no product requirement to import, inspect, export, back up, convert or preserve manual-mode saves. Archived code and evidence do not create compatibility obligations.
 
 ### Engineering rules
 
 - Authoritative domain logic is pure Rust in `game-core`; no Tauri, SQL, filesystem, ambient clock, browser or network dependencies there.
 - Rust application services own validation, policies, revisions, receipts and transactions. React handles presentation/form drafts and calls a typed GameClient.
 - TypeScript business logic is a reference and browser migration path, not an authority for native behavior. Native code may correct or simplify previous logic without matching its outputs or bugs. Do not maintain two production gameplay engines.
-- Use one native DB adapter: SQLite through rusqlite. Dexie v1/v2 remain intact for reading/exporting browser saves; never replace the source browser data during migration.
+- Use one native DB adapter: SQLite through rusqlite. Archived browser schemas are reference only; do not retain runtime browser-save compatibility. Existing user files must remain untouched.
 - Native dependencies are explicitly authorized by these guides. Verify compatible stable versions when introduced, pin Rust tooling and commit both lockfiles. Preserve existing frontend versions unless a documented native compatibility issue requires a change.
 - One guide = one logical commit. If too large, split pending work in master/phase first; never rewrite completed guide identities.
 - A docs amendment does not claim native implementation or runtime verification. Record actual checks and limitations.
@@ -52,7 +52,7 @@ plans/phase1.md ... phase13.md
 plans/phase7/guide1.md ... guide5.md    # completed, unchanged
 plans/archive/native-migration/native-migration.md
 plans/archive/native-migration/native-migration/guide1.md ... guide9.md  # completed migration history
-plans/phase7/guide6.md ... guide7.md            # current pending guides
+plans/phase7/guide6.md; guide7a.md; guide7.md  # G06 complete; cleanup/certification pending
 plans/archive/companion-v1/
 plans/archive/web-standalone-v2/
 ```
@@ -94,7 +94,7 @@ No external football game is required. AI clubs are deterministic local algorith
 - AI clubs obey finite transfer and wage budgets and preserve legal player ownership/contracts.
 - A failed or repeated command never leaves partial results or duplicates money, minutes, growth or progression.
 - Save export/restore preserves history, pending negotiations and the same future simulation.
-- Historical manual campaign data is preserved without continued gameplay support or fabricated competitive history.
+- All supported saves describe standalone careers; unknown modes/formats are unsupported, with no compatibility conversion or read-only gameplay surface.
 
 ### 1.5 Scope choices and non-goals
 
@@ -135,7 +135,7 @@ The SVG board supplies tactical decisions to the match engine. A simulated resul
 | Versions                  | Application, SQLite schema, export format, generator, calendar and simulation tracked separately | Preserve supported old behavior or apply an explicit tested migration                                     |
 | Tests                     | Cargo core/real SQLite integration and Vitest/React unit/integration tests                         | Frontend mocks do not replace real Rust/SQLite integration coverage                                      |
 | Delivery                  | Native installers; optional signed updater                                                       | Gameplay offline; updates must not silently invalidate saves                                              |
-| Browser compatibility     | Frozen existing app plus migration-export route                                                  | No native fallback to Dexie; no ongoing dual-write synchronization                                        |
+| Browser reference | Historical source only; no supported migration/export workflow | No native Dexie fallback, dual writes or companion compatibility |
 | Data visuals/UI libraries | Keep current frontend; add planned charting/accessibility libraries only in their phase          | Preserve unrelated package versions                                                                       |
 
 Use serde/serde_json, ts-rs and rusqlite in the native workspace. Verify current APIs/features and pin versions at implementation; do not invent package versions. No SQL server, ORM, HTTP service or LLM is required.
@@ -144,8 +144,8 @@ Use serde/serde_json, ts-rs and rusqlite in the native workspace. Verify current
 
 - Windows is the first tested native target, matching the development environment. Rust/MSVC linker, Windows SDK and WebView2 prerequisites are checked explicitly in NM-G02; missing system installation is a prerequisite, not a reason to rewrite the platform.
 - SQLite path: `appLocalDataDir()/touchline.sqlite3`. Keep application identity stable. Dev/test runs use isolated paths, never production saves.
-- Preserve already supported imported campaign rows; only standalone saves are playable. Historical manual saves can be inspected/exported without ongoing manual workflow support. Never assume Chrome/Edge IndexedDB is automatically available in Tauri's WebView.
-- Export from the original browser origin, validate and import into desktop. Preserve the original browser DB and file until the desktop save is verified.
+- Accept supported standalone snapshots only. Old/manual saves and missing-mode/schema-v1 normalization are unsupported. Removing compatibility must not delete or rewrite actual user files.
+- Portable standalone snapshot import/export and consistent SQLite backup remain supported; an original-browser migration workflow is not a product requirement.
 - Newer unsupported DB/save/engine versions fail with an actionable compatibility state; never silently downgrade, wipe or regenerate.
 - Use a consistent SQLite backup API and tested restore; do not copy a live main DB file while ignoring its journal.
 - Native security uses scoped capabilities/CSP and local bundled content. Do not expose arbitrary SQL, filesystem paths or remote command access to UI content.
@@ -176,14 +176,14 @@ Campaign Workspace
   └─ Board Philosophies — challenge rules or Sandbox editor
 
 Global Utilities
-  ├─ Campaign Switcher (playable standalone careers / historical read-only saves labeled)
+  ├─ Campaign Switcher (standalone careers)
   ├─ Search / Command Palette
   ├─ Backup / Restore
   ├─ Settings / Accessibility
   └─ Help / Data Provenance
 ```
 
-Client-side routes work inside the desktop shell and preserve current slugs. Existing route slugs may remain; `/matches` becomes Fixtures & Results for standalone saves. Previously saved manual journals are historical data, with no new manual-entry workflow.
+Client-side routes work inside the desktop shell and preserve current slugs. Existing route slugs may remain; `/matches` becomes Fixtures & Results for standalone saves. No manual-mode workspace or historical-save viewer is part of the product.
 
 ### 3.2 Visual system
 
@@ -215,22 +215,22 @@ Client-side routes work inside the desktop shell and preserve current slugs. Exi
 3. **Money:** EUR only; nonnegative integer cents at boundaries. Typed ledger kinds express direction.
 4. **Time:** game dates are `YYYY-MM-DD`; audit timestamps are UTC. Real-world time never advances a campaign. Creation takes an explicit in-game start year.
 5. **Age:** use DOB or reported age + reference season; estimated age stays labeled. Never turn generated or inferred DOB into imported fact.
-6. **Unknown is not zero:** preserve source data and missing values. Simulation requires complete inputs or a separately labeled generated profile; legacy statistics remain incomplete where appropriate.
+6. **Unknown is not zero:** preserve source data and missing values. Simulation requires complete inputs or a separately labeled generated profile; missing source measurements remain unknown where appropriate.
 7. **Authority:** user confirmation authorizes a bounded action and its autonomous consequences. Previews and loading a screen do not write gameplay state.
 8. **Auditability:** persisted gameplay changes have operation receipts and concise audits. Financial history uses compensating entries.
 9. **Determinism:** explicit seed, versions, ordered inputs and decisions; no network, ambient clock or `Math.random` in domain code.
 10. **Provenance:** distinguish original fictional/imported/user-entered data from generated profiles and simulated outcomes.
-11. **One canonical result:** one completed result per fixture and one appearance per fixture/player. Legacy journal entries never enter standalone standings.
+11. **One canonical result:** one completed result per fixture and one appearance per fixture/player. Only canonical simulated results enter standings.
 12. **Atomic progression:** Rust services commit results, appearances, availability, finances, receipt and time pointer together for each bounded event in SQLite.
-13. **Data preservation:** browser-to-native import and SQLite upgrades preserve stored modes, identities and history; historical manual saves remain read-only and are never silently promoted into playable simulation.
+13. **Standalone saves:** native snapshots and supported SQLite versions preserve standalone identities, history, clock and receipts. Old/manual saves have no compatibility or conversion requirement. Never delete existing user files to remove product support.
 
 ### 4.2 Existing entities retained
 
-These are domain contracts, not literal Dexie store declarations. Existing IDs and historical rows remain valid.
+These are domain contracts, not literal Dexie store declarations. Only supported standalone contracts are authoritative; old manual row compatibility is not required.
 
 | Entity                             | Standalone treatment                                                                                                                                                      |
 | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Campaign`                         | Retain kind/seed/generatorVersion/managed club/active season/revision; add `mode: legacy \| standalone` and `rulesMode: challenge \| sandbox`, separate from dataset kind |
+| `Campaign`                         | Retain kind/seed/generatorVersion/managed club/active season/revision; use standalone-only identity and `rulesMode: challenge \| sandbox`, separate from dataset kind |
 | `Season`                           | Retain ordinal/status; standalone dates are explicit July–June, exactly one active season                                                                                 |
 | `League` / `Club`                  | Retain identities, colors, prestige and academy tier; leagues remain independent                                                                                          |
 | `Player`                           | Retain source identity, attributes, potential and value; no unsourced imported data overwrite                                                                             |
@@ -238,10 +238,9 @@ These are domain contracts, not literal Dexie store declarations. Existing IDs a
 | `Constitution`                     | Versioned rule snapshot; Challenge locks it, Sandbox allows audited edits                                                                                                 |
 | `LedgerEntry`                      | Append-only typed money effects; awards identify the earning season and settlement                                                                                        |
 | `Transfer`                         | Completed world moves only; buyer and seller are explicit, never an unconfirmed proposal                                                                                  |
-| `Offer`                            | AI incoming bid with origin, deadline, qualification snapshot and resolution; extend the legacy shape through migrations when needed                                      |
+| `Offer`                            | AI incoming bid with origin, deadline, qualification snapshot and resolution; define the standalone shape in its assigned phase                                      |
 | `Lineup`                           | Reusable planning artifact; selected snapshot validated again at kickoff                                                                                                  |
 | `Registration`                     | Competition-scoped eligibility; generated players have explicit fictional homegrown metadata                                                                              |
-| `MatchRecord` / `Appearance`       | Historical manual journal; remain legacy-only, with their existing units and nullability                                                                                  |
 | `ShortlistItem` / `ScoutingReport` | Retain target tracking and evidence; simulated records are labeled                                                                                                        |
 | `DevelopmentPlan`                  | Target role controls bounded future development; free text alone does not grant growth                                                                                    |
 | `AuditEvent` / `ImportReceipt`     | Retain command/import history; add typed action names without deleting old variants                                                                                       |
@@ -262,14 +261,14 @@ These are domain contracts, not literal Dexie store declarations. Existing IDs a
 | `SeasonSettlement` / `DevelopmentSnapshot` | Immutable final table/awards and player before/after progression, uniquely applied per period                                                                          | 10          |
 
 - Keep v1 `Appearance.rating` and simulation ratings on 0–100; a UI may render 68 as 6.8/10 with an explicit scale.
-- xG stays integer milli-units, reusing the existing parse/format convention. Do not change legacy units.
+- xG stays integer milli-units, reusing the existing parse/format convention. Keep explicit standalone units.
 - Both teams' simulated appearances are canonical. Use read adapters for common player reports, not duplicate manual match rows.
 - Future entities receive SQLite migrations in their owning phase; the native bridge ports only the 23 existing game stores and transport metadata.
 - Large world snapshots/results belong in their own stores, not the bounded audit payload.
 
 ### 4.4 Native ownership and storage boundary
 
-- `game-core`: domain models, schemas/invariants and pure computations. Port current TypeScript behavior using golden fixtures; all new engine/market/lifecycle work is Rust.
+- `game-core`: domain models, schemas/invariants and pure computations. Implement intended standalone rules with native invariant tests; previous TypeScript behavior is not an authority.
 - `game-store`: SQLite mappings for the 23 current game stores, scoped queries, constraints, migrations and consistent backups. Preserve rows and null/optional semantics.
 - `game-app`: use cases, fresh-state validation, policy preview/commit, optimistic revisions, receipts and atomic business effects.
 - `src-tauri/src`: thin Tauri bootstrap/commands, app paths, file dialogs, ID/time providers and progress transport.
@@ -277,24 +276,21 @@ These are domain contracts, not literal Dexie store declarations. Existing IDs a
 
 Use normalized entity tables with typed IDs, money, dates and queried/indexed fields. JSON columns are allowed for attributes, rule arrays, formations and audit payloads, not one opaque whole-campaign blob. Enforce campaign-scoped references and uniqueness; map enum/field names explicitly.
 
-The frozen Dexie v1/v2 schemas remain migration sources and test fixtures. SQLite starts its own independent schema version 1; it is not Dexie version 3. Later native schema versions are forward migrations with backup and actual upgrade tests.
+Archived browser schemas are historical references only. Native SQLite and portable snapshot versions are independent. Scope future schema changes to the standalone product; there is no obligation to upgrade manual saves. Unsupported databases must remain untouched.
 
-### 4.5 Browser-to-native save contract
+### 4.5 Standalone save contract
 
-The native bridge migration export is a complete versioned campaign snapshot, not the future CSV/JSON dataset importer.
+The product accepts supported standalone snapshots and native SQLite backups. Old/manual campaigns, browser schema-v1 normalization and migration from a companion app are out of scope (DEC-006).
 
-- Envelope: `format='touchline-campaign'`, `formatVersion=1`, `sourceStorage='indexeddb'|'sqlite'`, source-specific `sourceSchemaVersion`, `exportId`, export timestamp, campaign revision and explicit arrays for all 23 game stores.
-- Export one campaign from a consistent readonly IndexedDB transaction. Raw browser schema 1 fixtures normalize only missing mode metadata to legacy/sandbox and supply empty simulation arrays. Existing schema 2 records retain their actual modes.
-- Validate envelope, safe numeric ranges, known versions, record counts/limits, IDs, every relationship and supported simulation/generator versions. Missing fields remain null/absent according to their schema; no invented wages, dates, fixtures or contracts.
-- Import preserves IDs, revisions, seeds, logical keys, receipt fingerprints and audit strings. It never reruns generation or policies to reconstruct saved rows.
-- Import is one SQLite transaction. A separate transport import receipt records source-file digest and outcomes; do not fabricate gameplay audits or increment campaign revision merely to change storage.
-- Same-file retry is harmless, including after the imported game has progressed. A colliding campaign ID with different source content is refused; overwrite and duplicate-as-new with ID remapping are deferred to Phase 12.
-- Browser data is never deleted or modified by desktop import. Verify imported counts/balances and reopen before the user retires the source.
-- NM-G01 adds browser export/fixtures; NM-G03 implements SQLite import, native snapshot export and consistent backups; NM-G06 connects native dialogs/UI. IndexedDB source versions 1/2 and SQLite source version 1 are distinct supported origins. Phase 12 expands formats, remapping and dataset readiness.
+- Validate the standalone envelope, supported versions, numeric/row limits, IDs, references, ownership, clock and receipts before one atomic import. Missing required fields are invalid; do not fabricate a playable state or convert another mode.
+- Export a consistent standalone snapshot. Preserve its IDs, revisions, seeds, receipt fingerprints, audit records and null/optional values. Snapshot import never regenerates saved football content.
+- Keep transport import receipts separate from gameplay receipts. Exact-byte retry cannot overwrite later play; different-content identity collisions refuse without partial writes.
+- Use SQLite online backup and verify store close/reopen, current clock and receipt behavior. General restore/remapping and dataset readiness remain Phase 12.
+- No legacy generator, demo, DTO variant, reader/editor branch or old-save preservation suite is required. Keep unsupported user files untouched; do not silently convert, reset, downgrade or delete them.
 
 ### 4.6 Determinism and engine upgrade protocol
 
-- Keep root seeds, generator v1/v2, simulation/calendar version 1 and stable logical keys unchanged across this port.
+- Use the supported standalone generator and simulation/calendar versions with explicit root seeds and stable logical keys. No generator-v1 or previous-world compatibility requirement remains.
 - Native PRNGs, stream identities and fingerprints must be explicit, deterministic and tested, including Unicode seeds and ordered inputs. They need not reproduce previous TypeScript draws, worlds or fingerprints. Imported stored fingerprints and seeds remain unchanged data.
 - Historical TypeScript golden fixtures are optional reference evidence. Native tests assert product invariants, integer arithmetic, valid dates, policy decisions, legal worlds and reproducibility; old-output equality is not an acceptance gate.
 - Persist integer cents in checked i64; IPC/JSON numeric values remain within the JavaScript safe-integer range. Reject overflow and unsafe transport values; do not silently round a save.
@@ -371,7 +367,7 @@ Kickoff validates a legal selection, registered or age-exempt players, active ow
 
 ### 6.1 Loader A — versioned fictional world
 
-Retain the deterministic 4-league / 72-club / 3,000-player playable-world generator framework. Native generator v2 produces playable worlds; v1 is historical implementation/fixture support with no new manual demo requirement. Each retained version is reproducible; DEC-003 does not require previous JavaScript outputs. Import existing saved rows directly without regeneration.
+Retain the deterministic 4-league / 72-club / 3,000-player standalone generator. Remove the old manual generator and its APIs/tests. DEC-003 requires native reproducibility, not previous JavaScript output equality. Supported standalone snapshots retain their saved content.
 
 - Four independent leagues of 18 clubs; fictional players, names and crests.
 - Preserve the total of 2,880 owned players and 120 free agents; improve squad composition, not the scale.
@@ -381,13 +377,13 @@ Retain the deterministic 4-league / 72-club / 3,000-player playable-world genera
 - Owned active players receive exactly one complete contract: wage, tier and expiry. Free agents have no active contract.
 - Every club has a finite transfer balance and weekly wage ceiling; initial contracts fit that ceiling. The selected challenge has a feasible starting registration and XI.
 - Standalone calendars start July 1 of an explicit year. Root seeds are user supplied or explicitly generated at the native application boundary and then persisted; audit time does not select world content.
-- Offer a standalone playable demo. Its reset affects only that demo; preserve any previously saved manual demo as historical data without a creation/reset gameplay option.
+- Offer one standalone demo. Its explicit reset affects only that demo; no manual demo identity or compatibility path remains.
 - Rust world computation/validation precedes one atomic SQLite creation transaction. No partially initialized save is listed as playable.
-- Featured gameplay history is produced by the engine or explicitly labeled scripted tutorial state; do not mix authored legacy scores into a competitive table.
+- Featured gameplay history is produced by the engine or explicitly labeled scripted tutorial state; do not mix scripted scores into a competitive table.
 
 ### 6.2 Loader B — local CSV/JSON import (Phase 12)
 
-The general dataset importer is planned, not implemented at the pivot checkpoint. Phase 12 uses Rust background parsing and native file selection, retaining field mapping, sample preview, units, row limits, source labels, safe staging and receipts. The bridge's browser-save exporter is a separate compatibility path. No hosted proprietary player data or automatic licensing assertions.
+The general dataset importer is planned, not implemented at the pivot checkpoint. Phase 12 uses Rust background parsing and native file selection, retaining field mapping, sample preview, units, row limits, source labels, safe staging and receipts. There is no required browser-save compatibility path. No hosted proprietary player data or automatic licensing assertions.
 
 An imported dataset does not necessarily describe a playable world. Before career creation:
 
@@ -397,13 +393,13 @@ An imported dataset does not necessarily describe a playable world. Before caree
 4. Use 18-club leagues for v1; explicitly complete a partial league with fictional clubs or refuse playable creation. General arbitrary competition formats are deferred.
 5. Preview all additions and assumptions before committing a new standalone campaign.
 
-Imported data may remain a non-playable preview until requirements are met; never claim sparse identity-only rows are simulation ready. Existing legacy campaigns are not automatically converted. Target 25,000 imported players with measured reference-hardware results in Phase 13.
+Imported data may remain a non-playable preview until requirements are met; never claim sparse identity-only rows are simulation ready. No old/manual campaign import or conversion is supported. Target 25,000 imported players with measured reference-hardware results in Phase 13.
 
 ### 6.3 Academy, retirement and development (Phase 10)
 
 Newgens in standalone careers are real fictional gameplay participants. Generate and offer academy intakes for every club, using academy tier and stable season keys; acceptance/promotion establishes an actual contract and roster place through the same eligibility rules.
 
-Use the standalone planning-candidate workflow. Import-created careers disclose fictional replenishment during setup; it cannot be silently presented as real-world data. Historical manual saves retain their recorded data, without continued gameplay behavior.
+Use the standalone planning-candidate workflow. Import-created careers disclose fictional replenishment during setup; it cannot be silently presented as real-world data. Old/manual save data has no supported product workflow.
 
 Bounded role-targeted development uses age, potential, simulated minutes and development plans at midseason and season end. Split an annual growth budget across these checkpoints; do not automatically add 1–4 twice. Age-related decline is position-aware, and retirement plus youth intake maintain a playable world over multiple seasons.
 
@@ -413,7 +409,7 @@ Bounded role-targeted development uses age, potential, simulated minutes and dev
 
 ### 7.1 Campaigns, clock and command center
 
-- New Career selects seed, start year, club and Challenge/Sandbox. Previously imported manual saves are labeled historical/read-only; they cannot start or resume standalone simulation.
+- New Career selects seed, start year, club and Challenge/Sandbox. There is no other campaign mode or historical-save workspace.
 - `Continue` advances to the earliest due decision boundary, never the browser clock. Show current date, next event, progress and blockers.
 - Calendar v1: July 1–June 30 seasons; summer transfers July 1–August 31; winter transfers January 1–31; league round 1 September 1, then 33 weekly rounds. This is a fictional game calendar, not a real league schedule.
 - Same-day order: user-required decisions and deadline guards → closing/opening window transitions → kickoff/results → post-match recovery/development boundaries. Contract expiry and year-end settlement are handled before next-season initialization.
@@ -455,20 +451,20 @@ Injury duration is 7–28 game days; recovery uses game-date differences. A stra
 - Scores equal goal-event totals; scorer/assist/minute/card records reconcile. An own-goal representation must be explicit if supported. A precomputed final score is not an independent second source of truth.
 - Derive standings: 3 points for win, 1 for draw; order by points, goal difference, goals scored, then stable club simulation key. Show this fictional tiebreak rule.
 - Historical lineups/club identity and performance survive later transfers and growth.
-- Simulated results are immutable. Historical manual journals remain read-only and never change standalone fixtures, finances or standings.
+- Simulated results are immutable and canonical; no manual journal reader or compatibility table is required.
 - Phase 10 rollover requires all fixtures resolved, obligations cleared and an explicit review/preview/confirm. Settle awards, contracts, growth, academy and next-season data once.
 
 ### 7.7 Moneyball analytics and scouting (Phase 11)
 
-Retain age/minutes scatter, wage pyramid, six-attribute radar, transparent archetype scores, comparisons and grounded insight text. Source metrics from canonical simulated history or labeled legacy logs.
+Retain age/minutes scatter, wage pyramid, six-attribute radar, transparent archetype scores, comparisons and grounded insight text. Source metrics from canonical standalone simulated history and explicitly labeled dataset facts.
 
 No fabricated radar axes or percentiles for missing imported data. Separate goalkeeper-specific evaluation from outfield six-axis comparisons. Cite source records and formula versions; call this Insights or Scouting Signals, not LLM predictions.
 
 ### 7.8 Save migration, backup and dataset import
 
-The prerequisite native bridge delivers browser-to-native import, basic complete native snapshots and consistent SQLite backups before Phase 7 G06. Phase 12 expands portable backup/restore, remapped duplicate campaigns and CSV/JSON dataset imports. Each export covers every store implemented at that point, including keys, versions and receipts; future fixtures/offers/development must be added when introduced.
+The completed native bridge introduced snapshot import/export and consistent SQLite backups. DEC-006 removes its old-save compatibility obligations. Phase 12 expands portable backup/restore, remapped duplicate campaigns and CSV/JSON dataset imports. Each export covers every store implemented at that point, including keys, versions and receipts; future fixtures/offers/development must be added when introduced.
 
-The native bridge import preserves IDs and refuses different-content collisions. Phase 12 restore-as-new remaps IDs while preserving simulation keys, root/event seeds and identical future outcomes. Validate versions, limits, relationships, ownership and source labels before promotion; failed import leaves existing saves intact. Destructive overwrite is out of scope. SQLite backup files are native recovery artifacts, distinct from portable JSON exports.
+Supported standalone snapshot import preserves IDs and refuses different-content collisions. Phase 12 restore-as-new remaps IDs while preserving simulation keys, root/event seeds and identical future outcomes. Validate versions, limits, relationships, ownership and source labels before promotion; failed import leaves existing saves intact. Destructive overwrite is out of scope. SQLite backup files are native recovery artifacts, distinct from portable JSON exports.
 
 Use native save paths, disk/permission errors, backup reminders and recovery controls, with no telemetry by default. Import/export is not available merely because the data model contains an ImportReceipt.
 
@@ -482,9 +478,9 @@ src/
   platform/
     game-client.ts                        # application-facing query/command interface
     native-client.ts                      # typed invoke transport
-    browser-client.ts                     # frozen browser compatibility only
+    browser-client.ts                     # historical reference; remove unused native compatibility API
     generated/                            # generated Rust DTO TypeScript
-  domain/ data/                           # frozen TS oracle + browser exporter during migration
+  domain/ data/                           # historical TS reference; not a supported gameplay engine
 src-tauri/
   Cargo.toml                              # workspace and desktop package
   Cargo.lock
@@ -503,7 +499,7 @@ scripts/
   native-bindings.mjs
 compatibility/                            # NM-G01 committed JSON golden fixtures
 plans/archive/native-migration/native-migration/guide1.md ... guide9.md
-plans/phase7/guide6.md ... guide7.md
+plans/phase7/guide6.md; guide7a.md; guide7.md
 ```
 
 New directories are planned, not present at the P07-G05 checkpoint. Preserve the frontend build and established styling/routing.
@@ -533,7 +529,7 @@ Existing `pnpm build` remains the frontend build; it is not proof that a desktop
 
 ### Development and release
 
-- Freeze the browser app at G05 plus export/recovery fixes; no new web simulation, service worker or Dexie v3 is required.
+- Browser code is historical reference only; no companion/migration workflow or second playable product is required.
 - Desktop uses no Dexie fallback or dual writes. Missing native service is an explicit unavailable state.
 - Pin native toolchain/dependencies and commit Cargo.lock. Install system prerequisites only through normal authorization.
 - Keep logs local and exclude imported private content and debug automation from release artifacts.
@@ -631,14 +627,15 @@ Completed G01–G05 retain their original subjects and implementation evidence:
 - `P07-G04` — playable generator v2; `feat(p07-g04): generate playable club worlds`.
 - `P07-G05` — web career creation/guards; `feat(p07-g05): start standalone careers safely`.
 
-**Current execution:** P07-G06 → P07-G07 → Phase 8.
+**Current execution:** P07-G07a standalone-only cleanup → P07-G07 certification → Phase 8 planning. P07-G06 is complete.
 
 The native migration prerequisite is complete through NM-G09. Its plan, nine guides, actual SHAs, service audit and passed unit/integration cutover gate are preserved under `plans/archive/native-migration/`. It is no longer an active work stage. Continue and later gameplay were not added by the bridge.
 
 #### Remaining Phase 7 work
 
-- `P07-G06` — Rust Continue/command-center progression to kickoff. Commit: `feat(p07-g06): advance native careers deterministically`.
-- `P07-G07` — Native foundation/clock certification. Commit: `test(p07-g07): verify native standalone foundations`.
+- `P07-G06` — Completed Rust Continue/command-center progression to kickoff. Commit: `feat(p07-g06): advance native careers deterministically`.
+- `P07-G07a` — Remove non-standalone model, compatibility paths and obsolete tests. Commit: `refactor(p07-g07a): remove non-standalone compatibility`.
+- `P07-G07` — Native foundation/clock certification after P07-G07a. Commit: `test(p07-g07): verify native standalone foundations`.
 
 **Phase exit:** a native career reaches kickoff exactly once; no match engine yet. Generate Phase 8 plans only after the resumed foundation passes.
 
@@ -697,7 +694,7 @@ Former unimplemented Phase 9, expanded for playable-world validation and determi
 - `P12-G03` — Rust background CSV/JSON parsing, native file selection, limits and malformed-input handling.
 - `P12-G04` — Field mapping, units and explicit simulation-profile completion preview.
 - `P12-G05` — Atomic/staged imported-career creation and readiness validation.
-- `P12-G06` — Cross-version/legacy round trips, deterministic continuation and 25k-row fixtures.
+- `P12-G06` — Supported standalone-format round trips, deterministic continuation and 25k-row fixtures.
 
 ### PHASE 13 — Desktop accessibility, performance and release
 
@@ -864,9 +861,9 @@ A guide should be executable by a fresh AI agent that has the repository and mas
 
 - Rust core: policy/money/rounding, eligibility/selection, pure dates, deterministic seeded randomness, generators and all future match/market/development formulas. DEC-003 requires native correctness, not previous-logic parity.
 - SQLite integration: actual schema upgrades, constraints, scoped references, rollback, revisions, logical retries, deletion scope and consistent backup/reopen.
-- Migration: actual browser v1/v2 snapshot fixtures, all 23 source stores, null/optional preservation, no regeneration, import collision/retry/fault behavior.
+- Standalone persistence: supported snapshots, null/optional preservation, import collision/retry/fault behavior, current clock and receipt retention. No old-save preservation or schema-v1 normalization gate.
 - Contract/UI: generated DTO freshness, Rust runtime rejection, native adapter errors, mocked GameClient rendering and accessible workflows.
-- Native integration: real temporary SQLite files cover standalone creation/import, reads/writes, store close/reopen, selection/board/planning and later Continue. Historical manual saves remain unchanged/read-only. Later phases add match/transfer/season/restore use cases at the Rust service/storage boundary.
+- Native integration: real temporary SQLite files cover standalone creation/import, reads/writes, store close/reopen, selection/board/planning and later Continue. Unsupported modes/formats refuse without creating a compatibility workflow. Later phases add match/transfer/season/restore use cases at the Rust service/storage boundary.
 - Frontend Vitest/React unit/integration coverage and real Cargo/SQLite integration coverage satisfy testing gates. Existing Playwright suites remain optional. No WebdriverIO setup, desktop/browser E2E, manual acceptance, packaged-app smoke, manual checklist or user sign-off is required (DEC-005). Mocked invoke does not replace actual SQLite integration tests.
 
 ### 12.2 Explicit invariants
@@ -876,12 +873,12 @@ A guide should be executable by a fresh AI agent that has the repository and mas
 3. EUR46k/week violates an enabled EUR45k Key cap; unknown is not zero.
 4. Concurrent/stale operations cannot spend the same funds or run an event twice.
 5. Ownership, contracts, money, receipt and audit commit together or not at all.
-6. Imported nullable/optional values, historical IDs and modes survive storage migration.
+6. Supported standalone snapshots retain nullable/optional values, IDs, clock and receipts through storage round trips.
 7. Fixture/player performance is unique; history never doubles minutes.
 8. Settlement/growth/academy/award periods apply once.
 9. Failed import/restore leaves existing native and browser saves untouched.
 10. All queries/commands validate campaign scope and gameplay mode in Rust.
-11. JS/Rust generator v1/v2 and calendar/PRNG/fingerprints match committed vectors, including Unicode and floor/overflow boundaries.
+11. The supported standalone generator, calendar, PRNG and fingerprints pass native reproducibility and boundary tests, including Unicode and overflow; no old JS/generator-v1 equality gate.
 12. Missing scouting data never becomes fabricated measurements.
 13. 18-club leagues have 34 rounds/306 fixtures with one home/away meeting per pair.
 14. A full-world round commits 36 results or none; retry cannot reroll.
@@ -890,7 +887,7 @@ A guide should be executable by a fresh AI agent that has the repository and mas
 17. AI offers remain affordable and compulsory sales are completable.
 18. Awards are credited to the opening season once and excluded from closing carryover.
 19. Future restore remapping preserves next-event outcomes; initial migration preserves IDs.
-20. Challenge protections cannot be bypassed through native or legacy commands.
+20. Native commands enforce Challenge protections; removed manual variants are not a supported alternate API.
 21. Multi-season squads remain viable across all clubs.
 22. Desktop gameplay never writes IndexedDB or accepts arbitrary frontend SQL.
 23. Migration preserves original gameplay revisions/receipts; separate transport receipts track import.
@@ -935,7 +932,7 @@ Keyboard users can create/import/open a native save, select a team, resolve bloc
 
 | Risk                                               | Mitigation                                                                       |
 | -------------------------------------------------- | -------------------------------------------------------------------------------- |
-| Browser saves are inaccessible from native WebView | Original-origin JSON export, explicit native import; preserve source             |
+| Unsupported save formats reach native storage | Validate supported standalone snapshots before atomic import; reject other formats |
 | Native worlds are invalid or nondeterministic       | Native legality/count/reproducibility tests; explicit generator/simulation versions |
 | Rust i64 values lose precision through JS          | Safe-integer transport bounds and checked money arithmetic                       |
 | React still mutates Dexie                          | GameClient conversion, no desktop fallback, dependency-boundary checks           |
@@ -943,13 +940,13 @@ Keyboard users can create/import/open a native save, select a team, resolve bloc
 | Import reruns history or changes revisions         | Row-preserving transaction and separate transport receipt                        |
 | Live SQLite file copy is inconsistent              | Supported backup API, temp snapshot validation and reopen tests                  |
 | UI freezes or transaction waits on heavy work      | CPU tasks outside DB worker/short transactions                                   |
-| Retired commands bypass standalone/read-only guards | Remove UI paths; direct-call refusal and unchanged-history tests                |
+| Unsupported commands or formats reach gameplay | Remove obsolete paths/types; validate standalone requests and reject unsupported input |
 | App update breaks saves                            | Independent schema/engine/save versions, backup and actual upgrade tests         |
 | Native migration becomes one unreviewable rewrite  | NM-G01–NM-G09 bridge commits; preserve old code as reference until cutover       |
 | Game loop expands into live manager                | Instant results/auto-substitutions; live ticker deferred                         |
 | World/finance/compulsory offers become unplayable  | Existing legality, budget, settlement and multi-season invariants                |
 
-Rollback uses preserved browser/export files, consistent native backups and compatible forward fixes. Do not wipe sources, downgrade a migrated live DB or reset completed history.
+Rollback uses supported standalone exports, consistent native backups and compatible forward fixes. Do not wipe sources, downgrade a migrated live DB or reset completed history.
 
 ---
 
@@ -959,7 +956,7 @@ Rollback uses preserved browser/export files, consistent native backups and comp
 - Treat imports/backups/IPC requests as untrusted: bounded sizes, strings and row counts, schema/relationship checks, no HTML evaluation.
 - Ship fictional identities, independently designed SVG crests and no commercial player databases or licensed photos.
 - Personal imports remain local; no assertion that personal possession grants redistribution rights.
-- Visible product statement: “Independent fictional football simulation; not affiliated with any football game, club or league.” Legacy saves may retain their historical companion label.
+- Visible product statement: “Independent fictional football simulation; not affiliated with any football game, club or league.” No historical companion save viewer is shipped.
 - Label simulated outcomes, generated profiles, estimates and imported facts distinctly.
 - Bundle native UI assets locally; scope filesystem/IPC permissions and exclude debug automation from release. No exposed API keys, mandatory hosted LLM or telemetry.
 - Backups can contain personal notes/imported data; provide sharing guidance without sending them anywhere automatically.
@@ -981,7 +978,6 @@ These describe intended release behavior, not a required manual test or acceptan
 9. Complete the season, review objectives/development, settle once and see next-season awards and capacity.
 10. Export, restore as a separate campaign and verify the same future outcome from identical decisions.
 11. Go offline and continue playing in the installed desktop application.
-12. Inspect/export a preserved historical manual campaign; its rows and revision remain intact, it has no gameplay edits, and its history has not become a simulated table.
 
 The portfolio story is a playable sporting-director loop whose board rules create meaningful recruitment decisions.
 
@@ -1000,7 +996,7 @@ The portfolio story is a playable sporting-director loop whose board rules creat
 - [ ] Save migration, mode isolation, receipts, rollback and deterministic restore have tests.
 - [ ] Moneyball, comparisons and insights trace to canonical labeled data.
 - [ ] Dataset imports validate playable readiness and preserve unknown source fields.
-- [ ] Browser-save migration, complete native JSON backup/restore and packaged offline gameplay work in production.
+- [ ] Supported standalone snapshot import/export, native backup/restore and packaged offline gameplay work in production.
 - [ ] Keyboard, responsive, contrast, errors and storage recovery meet release gates.
 - [ ] Documentation distinguishes implemented checkpoints from the final product and records measured performance/balancing.
 - [ ] Native build has no secrets, proprietary player data, debug automation or mandatory hosted services.
@@ -1020,10 +1016,11 @@ Material changes require a master version update, a DECISIONS entry, affected pe
 - DEC-003: plan 3.0.0 → 3.0.1 during NM-G04; previous-logic compatibility is no longer required. Native correctness and determinism govern remaining work.
 - DEC-004: plan 3.0.1 → 3.0.2 before NM-G08; standalone simulation is the only gameplay mode. Retire manual campaign options instead of porting their remaining workflows; preserve stored history and completed evidence.
 - DEC-005: plan 3.0.2 to 3.0.3 during NM-G09; unit/integration tests satisfy testing gates. Retain code/build checks; remove E2E, manual verification and sign-off requirements across pending work and future phases. Completed evidence remains historical.
+- DEC-006: plan 3.0.3 to 3.0.4 before P07-G07; standalone is the only campaign model, with no manual-save compatibility or preservation requirement. Add P07-G07a cleanup before certification; retain completed history.
 - Keep standalone game design and Phases 8–12 outcomes. Insert a separate migration bridge before pending Phase 7 G06/G07; update release Phase 13 and preserve completed work.
-- The browser remains the migration/export source and optional test reference. Desktop is the primary game; a complete second web edition is deferred. Previous-logic parity is not required (DEC-003).
+- Historical browser code is optional reference only. Desktop standalone is the product; no old-save compatibility or second playable edition is required (DEC-006).
 
-**Next execution:** `plans/phase7/guide6.md` (Rust Continue), after this master, DEC-002/DEC-003/DEC-004/DEC-005 and `plans/phase7.md`. NM-G09 passed and is archived. P07-G07 certifies the foundation afterward; match simulation starts in Phase 8.
+**Next execution:** `plans/phase7/guide7a.md`, after master 3.0.4, DEC-006 and `plans/phase7.md`. Remove non-standalone compatibility before P07-G07 certifies the foundation. Plan Phase 8 only after certification passes.
 
 ---
 
@@ -1039,6 +1036,6 @@ Primary documentation supports implementation; it does not override the product 
 - [Tauri updater](https://v2.tauri.app/plugin/updater/) — signed update artifacts.
 - [rusqlite](https://github.com/rusqlite/rusqlite) — bundled SQLite and backup support.
 - [ts-rs](https://github.com/Aleph-Alpha/ts-rs) — Rust-to-TypeScript DTO generation.
-- [Dexie reference](https://dexie.org/docs/API-Reference) — frozen source IndexedDB and consistent migration exports.
+- [Dexie reference](https://dexie.org/docs/API-Reference) — historical browser implementation only, not a native product dependency.
 
 **END OF MASTER IMPLEMENTATION PLAN**

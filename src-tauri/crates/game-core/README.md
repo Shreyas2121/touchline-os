@@ -1,10 +1,8 @@
 # Native foundations
 
-Product scope follows master 3.0.2 / DEC-004: standalone simulation only. NM-G08
-retires manual creation/editing paths while preserving stored rows and fixtures.
-Historical generator v1 remains reference support. Retired command wire variants
-receive an explicit refusal; they do not authorize manual gameplay. No manual
-match/finance/market command port is planned.
+> **Current contract:** [DEC-006](../../../DECISIONS.md) / master 3.0.4 makes standalone the only campaign model. Old/manual generators, modes, normalization, historical save readers and preservation tests are not product requirements. The implementation notes below include completed pre-decision behavior; [P07-G07a](../../../plans/phase7/guide7a.md) must remove those paths before certification. Existing user files remain untouched.
+
+Product scope follows master 3.0.4 / DEC-006: standalone is the sole campaign model. P07-G07a removes the remaining compatibility implementation; old-save preservation is not a requirement.
 
 The core exposes pure models and functions for the native application services.
 It has no storage, platform, network, ambient clock or ambient RNG dependency.
@@ -48,21 +46,18 @@ snapshot DTOs and generated bindings remain unchanged.
 From `src-tauri`, run `cargo test -p game-core --test foundations --locked` for
 native arithmetic, finance, policy, eligibility, selection, date, randomness,
 calendar and guard properties. Synthetic NM-G01 rows supply test data without
-using old business-rule output as an oracle. Source import compatibility remains
-covered separately by snapshot and SQLite tests. `crate_boundary` also checks all
+using old business-rule output as an oracle. Supported standalone snapshot integrity is covered by native snapshot and SQLite tests. Remove old-mode compatibility cases in P07-G07a. `crate_boundary` also checks all
 core source modules against forbidden platform/time/randomness dependencies.
 
 NM-G05 adds native generators and pure career preparation:
 
-- `generate_legacy_world` accepts native generator `1` and returns fictional
-  leagues/clubs/players plus proposed wages. It creates no simulation history.
 - `generate_playable_world` accepts native generator `2`: 4 leagues, 18 clubs per
   league, 2,880 owned players and 120 free agents. Rosters cycle from 36 to 44
   players. Each club's first 20 slots guarantee two goalkeepers, six defenders,
   seven midfielders and five forwards; its first 25 are seniors, and the first 12
   have explicit fictional club-homegrown status. Both board presets and all four
   supported formations have a feasible registration, XI and seven-player bench.
-- Stream identities are `world/native-world:1` and `world/native-world:2`. Only
+- The standalone stream identity is `world/native-world:2`. Only
   seed/version choose football content. Campaign IDs scope persistence identities;
   the explicit 1900–2198 start year determines July–June dates and contract bounds.
   Contract lengths are clipped at the supported date ceiling in 2199. Per DEC-003,
@@ -100,15 +95,9 @@ against a scoped snapshot inside its write transaction, then validates the full
 result before writing changed rows. Action fingerprints and saved audits make a
 retry return the current persisted revision. New actions advance revision and
 append one audit; deletion returns no surviving revision or fictitious audit.
-Challenge constitutions are locked in every campaign mode. Standalone player
+Challenge constitutions are locked. Standalone player
 and club edits are forbidden. Registration derives standalone homegrown facts
 and age in Rust. Constitution versions are immutable, and changing an opening
 allocation cannot issue a second allocation, including after reversal.
 
-NM-G08 checks retirement before any management receipt replay. Historical manual
-campaigns allow only explicit deletion through management; all other actions
-refuse without a revision or audit. Direct player add/update and club switching
-refuse in every mode. `require_supported_creation` rejects retired campaign/demo
-kinds and club customization before generation or initialization receipt lookup.
-The standalone fingerprint format is unchanged. Constitution edits never create
-an allocation; a missing required initialization allocation is an error.
+P07-G07a removes manual-mode variants, the unused generator/demo, compatibility-only commands and import normalization. Tests must use supported standalone inputs. Constitution edits never create an allocation; initialization, scope, revision and progression guards remain authoritative.

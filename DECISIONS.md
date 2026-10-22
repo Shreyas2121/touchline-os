@@ -1,6 +1,6 @@
 # Architecture and product decisions
 
-> Current architecture and verification: DEC-002 + DEC-003 + DEC-004 + DEC-005 / master 3.0.3. Earlier decisions and completed evidence are historical where superseded. DEC-004 makes standalone simulation the only supported gameplay mode.
+> Current architecture and verification: DEC-002 + DEC-003 + DEC-004 + DEC-005 + DEC-006 / master 3.0.4. Earlier decisions and completed evidence are historical where superseded. DEC-004 makes standalone simulation the only supported gameplay mode.
 
 ## DEC-001 — Pivot to Standalone Sporting Director Sim
 
@@ -135,3 +135,15 @@ Use meaningful Rust unit and real SQLite/file integration tests, plus frontend V
 Remove mandatory desktop/browser E2E, WebdriverIO dependencies/configuration, dedicated automation binaries, packaged-app smoke and manual acceptance/sign-off from remaining bridge work, Phase 7 and future phase/release gates. Do not create a manual checklist, require a user result, or leave a gate pending because desktop/manual testing was not performed. Existing browser E2E scripts/tests may remain optional; no new automation setup is needed.
 
 This decision supersedes older testing instructions throughout the plans, including completed guides and archives. Preserve those files, SHAs and actual historical results. Pending guides use the revised checks directly. Unit/integration evidence does not claim that desktop interactions or installers were exercised. NM-G09 still requires its audit, required tests/code checks and committed gate evidence before P07-G06; this documentation amendment alone does not pass that gate or authorize Continue.
+
+## DEC-006 — Standalone is the only campaign model; remove old-save compatibility
+
+- **Date:** 2026-10-22
+- **Status:** Accepted; the user explicitly rejected retained legacy support and requested a product built as if only standalone exists.
+- **Plan change:** 3.0.3 → 3.0.4
+
+Remove the earlier assumption that old/manual campaigns must remain importable, inspectable, exportable, backed up or read-only. No manual mode, legacy generator/demo, old-client wire variants, browser-v1 normalization, automatic conversion or historical-save UI belongs in the native product. Challenge and Sandbox are standalone rule choices, not separate gameplay modes. Supported standalone save import/export, transactional persistence, deterministic progression and consistent backups remain in scope.
+
+This supersedes the historical-save preservation parts of DEC-002/003/004, the bridge, completed guides and existing tests. Preserve their actual commit/evidence history; do not maintain runtime compatibility merely because an earlier guide implemented it. The archived browser implementation and captured fixtures may remain historical references, without shipping a second supported product or requiring native compatibility tests. Unknown modes/formats may be rejected; removing support does not authorize deleting, rewriting or silently converting actual user files.
+
+P07-G06 and NM-G09 remain completed historical milestones. Their retained compatibility code no longer satisfies the new product contract. Insert P07-G07a (`refactor(p07-g07a): remove non-standalone compatibility`) before the still-pending P07-G07 certification. Remove obsolete native/UI compatibility tests alongside the cleanup and replace them with meaningful standalone isolation, integrity and unsupported-input rejection coverage. Rebuild generated bindings and verify the normal artifact. No E2E/manual requirement is reinstated; DEC-005 continues to govern verification. Phase 8 begins only after cleanup and P07-G07 pass.
