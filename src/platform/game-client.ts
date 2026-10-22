@@ -15,18 +15,7 @@ import type { PlayerPlanning } from './generated/PlayerPlanning'
 import type { TimePreview } from './generated/TimePreview'
 import type { AdvanceRequest } from './generated/AdvanceRequest'
 import type { AdvanceOutcome } from './generated/AdvanceOutcome'
-import {
-  clientOperations,
-  operationMethod,
-  type ClientMethod,
-  type ClientOperation,
-} from './operations'
-
-type ClientCalls = {
-  [Method in ClientMethod]: () => Promise<never>
-}
-
-export type GameClient = ClientCalls & {
+export type GameClient = {
   health(): Promise<HealthReport>
   campaigns(page: number): Promise<CampaignPage>
   screen(query: ScreenQuery): Promise<ScreenModel>
@@ -68,14 +57,4 @@ export function unavailableNativeReads() {
     previewTime: reject,
     advanceTime: reject,
   }
-}
-
-export function unavailableMethods(
-  reject: (operation: ClientOperation) => Promise<never>,
-): ClientCalls {
-  const methods = {} as Record<ClientMethod, () => Promise<never>>
-  for (const operation of clientOperations) {
-    methods[operationMethod(operation)] = () => reject(operation)
-  }
-  return methods
 }

@@ -130,10 +130,9 @@ pub(super) fn screen(db: &mut Connection, query: &ScreenQuery) -> Result<ScreenR
             "developmentPlans",
             "players",
         ],
-        Screen::Matches => &["matchRecords", "appearances"],
+        Screen::Matches => &[],
         Screen::Seasons => &["seasons"],
         Screen::Constitution => &["constitutions"],
-        Screen::ChooseClub => &["clubs", "leagues"],
     };
     let mut totals = BTreeMap::new();
     for table in tables {
@@ -153,7 +152,7 @@ pub(super) fn screen(db: &mut Connection, query: &ScreenQuery) -> Result<ScreenR
                 values.push(season[1].clone());
                 "campaignId = ?1 AND clubId = ?2 AND seasonId = ?3"
             }
-            "lineups" | "registrations" | "matchRecords" | "appearances" => {
+            "lineups" | "registrations" => {
                 values.push(season[1].clone());
                 "campaignId = ?1 AND seasonId = ?2"
             }
@@ -289,8 +288,6 @@ pub(super) fn screen(db: &mut Connection, query: &ScreenQuery) -> Result<ScreenR
             }
         }
     }
-    // Historical saves can be inspected without selecting or changing their club.
-    let choose_club_required = false;
     let active_constitution = financial["constitutions"]
         .as_array()
         .and_then(|rows| rows.first())
@@ -308,7 +305,6 @@ pub(super) fn screen(db: &mut Connection, query: &ScreenQuery) -> Result<ScreenR
             finance: None,
             active_constitution,
             reports: vec![],
-            choose_club_required,
             labels,
         },
         financial: serde_json::from_value(financial)?,

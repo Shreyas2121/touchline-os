@@ -197,7 +197,7 @@ fn both_boundaries_commit_once_and_a_later_replay_does_not_roll_back() {
 }
 
 #[test]
-fn stale_changed_and_historical_inputs_do_not_change_rows() {
+fn stale_and_changed_inputs_do_not_change_rows() {
     let mut saved = tables();
     let deadline = request(4, "2026-07-01", None, "season:2026:summer-deadline");
     let material = fingerprint(&saved, &deadline);
@@ -213,16 +213,6 @@ fn stale_changed_and_historical_inputs_do_not_change_rows() {
     let mut stale = request(5, "2026-07-01", None, "season:2026:league-kickoff");
     stale.expected_revision = n(5);
     assert!(evaluate(&saved, &stale, &fingerprint(&saved, &stale)).is_err());
-    saved.campaigns[0].mode = CampaignMode::Legacy;
-    let historical = request(
-        5,
-        "2026-08-31",
-        Some("season:2026:summer-deadline"),
-        "season:2026:league-kickoff",
-    );
-    assert!(critical_material(&saved, &historical).is_err());
-    assert!(preview_saved(&saved, &id("career")).is_err());
-    saved.campaigns[0].mode = CampaignMode::Standalone;
     assert_eq!(saved.campaigns[0].revision, before.campaigns[0].revision);
     assert_eq!(saved.simulation_states, before.simulation_states);
     assert_eq!(saved.simulation_receipts, before.simulation_receipts);

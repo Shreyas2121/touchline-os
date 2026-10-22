@@ -17,7 +17,6 @@ pub enum Screen {
     Matches,
     Seasons,
     Constitution,
-    ChooseClub,
 }
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -94,7 +93,6 @@ pub struct ScreenModel {
     pub finance: Option<NativeFinance>,
     pub active_constitution: Option<ConstitutionRow>,
     pub reports: Vec<NativeReport>,
-    pub choose_club_required: bool,
     pub labels: BTreeMap<String, String>,
 }
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]

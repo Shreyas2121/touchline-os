@@ -1,3 +1,5 @@
+#[path = "../../../test-support.rs"]
+mod support;
 use game_app::*;
 use game_core::{
     calendar::MATCH_SIMULATION_UNAVAILABLE, career::CareerInput, management::*, policy::Preset, *,
@@ -56,23 +58,13 @@ fn request(saved: &SnapshotTables, target: &str, stamp: &str) -> AdvanceRequest 
     }
 }
 fn import(store: &NativeStore, name: &str) {
-    let bytes = match name {
-        "standalone-v2" => {
-            include_bytes!("../../../../compatibility/snapshots/standalone-v2.json").as_slice()
-        }
-        "legacy-v2" => {
-            include_bytes!("../../../../compatibility/snapshots/legacy-v2.json").as_slice()
-        }
-        _ => panic!("unknown fixture"),
-    };
-    store.import_snapshot(bytes).unwrap();
+    store.import_snapshot(&support::fixture(name)).unwrap();
 }
 fn unchanged(before: &SnapshotTables, after: &SnapshotTables) {
     assert_eq!(before.players, after.players);
     assert_eq!(before.contracts, after.contracts);
     assert_eq!(before.ledger_entries, after.ledger_entries);
     assert_eq!(before.registrations, after.registrations);
-    assert_eq!(before.match_records, after.match_records);
     assert_eq!(before.club_simulation_states, after.club_simulation_states);
     assert_eq!(
         before.player_simulation_states,
@@ -88,8 +80,8 @@ fn imported_and_seeded_careers_advance_once_through_kickoff_and_survive_reopen()
     let dir = Dir::new();
     let store = dir.store();
     import(&store, "standalone-v2");
-    import(&store, "legacy-v2");
-    let historical = tables(&store, "legacy-v2");
+    import(&store, "another-career");
+    let other = tables(&store, "another-career");
     let original = tables(&store, "standalone-v2");
     let preview = preview_time(&store, original.campaigns[0].id.clone()).unwrap();
     assert_eq!(preview.from_date, "2026-07-01");
@@ -234,17 +226,8 @@ fn imported_and_seeded_careers_advance_once_through_kickoff_and_survive_reopen()
     );
     changed.expected_revision = n(99);
     assert!(advance_time(&store, changed).is_err());
-    assert_eq!(tables(&store, "legacy-v2"), historical);
-    assert!(advance_time(
-        &store,
-        request(
-            &historical,
-            "season:2026:summer-deadline",
-            "2026-10-22T08:00:00.000Z"
-        )
-    )
-    .is_err());
-    assert_eq!(tables(&store, "legacy-v2"), historical);
+    assert_eq!(tables(&store, "another-career"), other);
+    assert_eq!(tables(&store, "another-career"), other);
     assert_eq!(
         tables(&store, "standalone-v2").simulation_states,
         done.simulation_states
@@ -278,7 +261,6 @@ fn imported_and_seeded_careers_advance_once_through_kickoff_and_survive_reopen()
         CreationRequest {
             kind: CreationKind::Career,
             reset_revision: None,
-            club: None,
             career: CareerInput {
                 campaign_id: id("seeded-career"),
                 name: "Seeded career".into(),
@@ -333,7 +315,7 @@ fn imported_and_seeded_careers_advance_once_through_kickoff_and_survive_reopen()
         tables(&reopened, "standalone-v2").simulation_states,
         done.simulation_states
     );
-    assert_eq!(tables(&reopened, "legacy-v2"), historical);
+    assert_eq!(tables(&reopened, "another-career"), other);
 }
 
 #[test]

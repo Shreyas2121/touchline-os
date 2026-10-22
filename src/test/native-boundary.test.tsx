@@ -8,8 +8,7 @@ import { NativeBootstrap } from '../app/NativeBootstrap'
 import { nativeShellBoundary, nativeShellRefused } from '../app/copy'
 import { createBrowserClient } from '../platform/browser-client'
 import { mapInvokeError } from '../platform/errors'
-import { clientOperations } from '../platform/operations'
-import { bootstrapPlan, detectRuntime } from '../platform/runtime'
+import { detectRuntime } from '../platform/runtime'
 import type { HealthReport } from '../platform/generated/HealthReport'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
@@ -62,8 +61,6 @@ describe('native boundary', () => {
   it('keeps the native shell off the browser database', async () => {
     expect(detectRuntime({})).toBe('browser')
     expect(detectRuntime({ __TAURI_INTERNALS__: {} })).toBe('tauri')
-    expect(bootstrapPlan('tauri')).toBe('native-shell')
-    expect(bootstrapPlan('browser')).toBe('browser-database')
 
     render(<NativeBootstrap loadHealth={async () => unavailableReport} />)
     expect(await screen.findByText('Storage: unavailable')).toBeInTheDocument()
@@ -88,7 +85,7 @@ describe('native boundary', () => {
     const health = await client.health()
     expect(health.storage).toBe('unavailable')
     expect(health.dexieFallback).toBe(false)
-    await expect(client.migrateImportSnapshot()).rejects.toMatchObject({
+    await expect(client.selectImport()).rejects.toMatchObject({
       code: 'UNAVAILABLE',
     })
     const source = readFileSync(
@@ -147,16 +144,10 @@ describe('native boundary', () => {
     expect(shell).not.toContain('game-core')
     expect(shell).not.toContain('game-store')
 
-    const operations = readFileSync(
-      path.join(root, 'src-tauri/crates/game-core/src/boundary.rs'),
-      'utf8',
-    )
-    const listed = [...operations.matchAll(/"([a-z]+(?:-[a-z]+)*)"/g)].map(
-      (match) => match[1],
-    )
-    expect(listed.filter((name) => name.includes('-'))).toEqual([
-      ...clientOperations,
-    ])
+    const entry = readFileSync(path.join(root, 'src/app/App.tsx'), 'utf8')
+    expect(entry).toContain('<NativeBootstrap />')
+    expect(entry).not.toContain('DatabaseProvider')
+    expect(entry).not.toContain('./router')
   })
 
   it('keeps generated bindings on JS-safe numbers', () => {

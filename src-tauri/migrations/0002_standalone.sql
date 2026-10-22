@@ -1,12 +1,12 @@
--- SQLite schema 1 is independent of the frozen IndexedDB versions.
+-- Fresh standalone schema 2. Earlier database versions are unsupported.
 CREATE TABLE campaigns (
   id TEXT NOT NULL PRIMARY KEY CHECK (length(id) BETWEEN 1 AND 64 AND id NOT GLOB '*[^a-zA-Z0-9-]*'),
   name TEXT NOT NULL,
   kind TEXT NOT NULL CHECK (kind IN ('fictional', 'imported')),
-  mode TEXT NOT NULL CHECK (mode IN ('legacy', 'standalone')),
+  mode TEXT NOT NULL CHECK (mode = 'standalone'),
   rulesMode TEXT NOT NULL CHECK (rulesMode IN ('challenge', 'sandbox')),
-  seed TEXT,
-  generatorVersion TEXT,
+  seed TEXT NOT NULL,
+  generatorVersion TEXT NOT NULL CHECK (generatorVersion = '2'),
   managedClubId TEXT NOT NULL CHECK (length(managedClubId) BETWEEN 1 AND 64 AND managedClubId NOT GLOB '*[^a-zA-Z0-9-]*'),
   activeSeasonId TEXT NOT NULL CHECK (length(activeSeasonId) BETWEEN 1 AND 64 AND activeSeasonId NOT GLOB '*[^a-zA-Z0-9-]*'),
   currency TEXT NOT NULL CHECK (currency = 'EUR'),
@@ -217,47 +217,6 @@ CREATE TABLE registrations (
 ) STRICT;
 CREATE INDEX idx_registrations_campaignId ON registrations (campaignId);
 CREATE INDEX idx_registrations_campaignId_competitionKey ON registrations (campaignId, competitionKey);
-CREATE TABLE matchRecords (
-  id TEXT NOT NULL PRIMARY KEY CHECK (length(id) BETWEEN 1 AND 64 AND id NOT GLOB '*[^a-zA-Z0-9-]*'),
-  campaignId TEXT NOT NULL CHECK (length(campaignId) BETWEEN 1 AND 64 AND campaignId NOT GLOB '*[^a-zA-Z0-9-]*'),
-  seasonId TEXT NOT NULL CHECK (length(seasonId) BETWEEN 1 AND 64 AND seasonId NOT GLOB '*[^a-zA-Z0-9-]*'),
-  date TEXT NOT NULL,
-  opponent TEXT NOT NULL,
-  homeAway TEXT NOT NULL CHECK (homeAway IN ('home', 'away')),
-  goalsFor INTEGER NOT NULL CHECK (goalsFor BETWEEN -9007199254740991 AND 9007199254740991),
-  goalsAgainst INTEGER NOT NULL CHECK (goalsAgainst BETWEEN -9007199254740991 AND 9007199254740991),
-  competition TEXT,
-  notes TEXT,
-  xgFor INTEGER CHECK (xgFor BETWEEN -9007199254740991 AND 9007199254740991),
-  xgAgainst INTEGER CHECK (xgAgainst BETWEEN -9007199254740991 AND 9007199254740991),
-  FOREIGN KEY (campaignId) REFERENCES campaigns(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
-  FOREIGN KEY (campaignId, seasonId) REFERENCES seasons(campaignId, id) DEFERRABLE INITIALLY DEFERRED,
-  UNIQUE (campaignId, id)
-) STRICT;
-CREATE INDEX idx_matchRecords_campaignId ON matchRecords (campaignId);
-CREATE INDEX idx_matchRecords_campaignId_seasonId ON matchRecords (campaignId, seasonId);
-CREATE INDEX idx_matchRecords_campaignId_date ON matchRecords (campaignId, date);
-CREATE TABLE appearances (
-  id TEXT NOT NULL PRIMARY KEY CHECK (length(id) BETWEEN 1 AND 64 AND id NOT GLOB '*[^a-zA-Z0-9-]*'),
-  campaignId TEXT NOT NULL CHECK (length(campaignId) BETWEEN 1 AND 64 AND campaignId NOT GLOB '*[^a-zA-Z0-9-]*'),
-  seasonId TEXT NOT NULL CHECK (length(seasonId) BETWEEN 1 AND 64 AND seasonId NOT GLOB '*[^a-zA-Z0-9-]*'),
-  matchId TEXT NOT NULL CHECK (length(matchId) BETWEEN 1 AND 64 AND matchId NOT GLOB '*[^a-zA-Z0-9-]*'),
-  playerId TEXT NOT NULL CHECK (length(playerId) BETWEEN 1 AND 64 AND playerId NOT GLOB '*[^a-zA-Z0-9-]*'),
-  minutes INTEGER NOT NULL CHECK (minutes BETWEEN -9007199254740991 AND 9007199254740991),
-  started INTEGER CHECK (started IN (0, 1)),
-  goals INTEGER CHECK (goals BETWEEN -9007199254740991 AND 9007199254740991),
-  assists INTEGER CHECK (assists BETWEEN -9007199254740991 AND 9007199254740991),
-  rating INTEGER CHECK (rating BETWEEN -9007199254740991 AND 9007199254740991),
-  FOREIGN KEY (campaignId) REFERENCES campaigns(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
-  FOREIGN KEY (campaignId, seasonId) REFERENCES seasons(campaignId, id) DEFERRABLE INITIALLY DEFERRED,
-  FOREIGN KEY (campaignId, matchId) REFERENCES matchRecords(campaignId, id) DEFERRABLE INITIALLY DEFERRED,
-  FOREIGN KEY (campaignId, playerId) REFERENCES players(campaignId, id) DEFERRABLE INITIALLY DEFERRED,
-  UNIQUE (campaignId, id),
-  UNIQUE (matchId, playerId)
-) STRICT;
-CREATE INDEX idx_appearances_campaignId ON appearances (campaignId);
-CREATE INDEX idx_appearances_campaignId_seasonId ON appearances (campaignId, seasonId);
-CREATE INDEX idx_appearances_campaignId_playerId ON appearances (campaignId, playerId);
 CREATE TABLE shortlistItems (
   id TEXT NOT NULL PRIMARY KEY CHECK (length(id) BETWEEN 1 AND 64 AND id NOT GLOB '*[^a-zA-Z0-9-]*'),
   campaignId TEXT NOT NULL CHECK (length(campaignId) BETWEEN 1 AND 64 AND campaignId NOT GLOB '*[^a-zA-Z0-9-]*'),
@@ -310,7 +269,7 @@ CREATE TABLE auditEvents (
   campaignId TEXT NOT NULL CHECK (length(campaignId) BETWEEN 1 AND 64 AND campaignId NOT GLOB '*[^a-zA-Z0-9-]*'),
   seasonId TEXT CHECK (length(seasonId) BETWEEN 1 AND 64 AND seasonId NOT GLOB '*[^a-zA-Z0-9-]*'),
   actionId TEXT NOT NULL CHECK (length(actionId) BETWEEN 1 AND 64 AND actionId NOT GLOB '*[^a-zA-Z0-9-]*'),
-  actionType TEXT NOT NULL CHECK (actionType IN ('campaign.create', 'campaign.rename', 'player.add', 'player.update', 'player.note', 'lineup.save', 'lineup.delete', 'ledger.post', 'ledger.reverse', 'constitution.save', 'campaign.seed', 'campaign.archive', 'campaign.restore', 'campaign.delete', 'campaign.select-club', 'shortlist.save', 'shortlist.close', 'transfer.record', 'offer.record', 'offer.accept', 'offer.reject', 'contract.save', 'registration.save', 'match.record', 'simulation.initialize', 'simulation.advance')),
+  actionType TEXT NOT NULL CHECK (actionType IN ('campaign.create', 'campaign.rename', 'player.note', 'lineup.save', 'lineup.delete', 'constitution.save', 'campaign.archive', 'campaign.restore', 'shortlist.save', 'shortlist.close', 'registration.save', 'simulation.initialize', 'simulation.advance')),
   createdAt TEXT NOT NULL,
   summary TEXT NOT NULL,
   payload TEXT NOT NULL CHECK (json_valid(payload)),
@@ -407,5 +366,5 @@ CREATE TABLE transportImports (
   importedRevision INTEGER NOT NULL CHECK (importedRevision BETWEEN 0 AND 9007199254740991)
 ) STRICT;
 CREATE TABLE schemaMigrations (version INTEGER PRIMARY KEY, name TEXT NOT NULL) STRICT;
-INSERT INTO schemaMigrations VALUES (1, '0001_initial');
-PRAGMA user_version = 1;
+INSERT INTO schemaMigrations VALUES (2, '0002_standalone');
+PRAGMA user_version = 2;

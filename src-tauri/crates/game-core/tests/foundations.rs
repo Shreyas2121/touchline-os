@@ -6,10 +6,7 @@ use serde_json::{json, Value};
 use std::collections::{BTreeMap, BTreeSet};
 
 fn fixture() -> CampaignSnapshot {
-    parse_snapshot(include_bytes!(
-        "../../../../compatibility/snapshots/legacy-v2.json"
-    ))
-    .unwrap()
+    parse_snapshot(include_bytes!("../../../fixtures/standalone.json")).unwrap()
 }
 fn s(value: i64) -> SafeInt {
     SafeInt::new(value).unwrap()
@@ -764,28 +761,22 @@ fn calendar_previews_stop_at_foundation_boundaries_and_never_write_time() {
 fn mode_challenge_scope_and_revision_guards_reject_direct_calls() {
     let tables = fixture().tables;
     let mut campaign = tables.campaigns[0].clone();
-    for mode in [CampaignMode::Legacy, CampaignMode::Standalone] {
-        for rules in [RulesMode::Sandbox, RulesMode::Challenge] {
-            campaign.mode = mode;
-            campaign.rules_mode = rules;
-            for operation in [
-                StandaloneWrite::Match,
-                StandaloneWrite::Negotiation,
-                StandaloneWrite::Player,
-                StandaloneWrite::Contract,
-                StandaloneWrite::Ledger,
-                StandaloneWrite::Club,
-            ] {
-                assert_eq!(
-                    reject_standalone_write(&campaign, operation).is_err(),
-                    mode == CampaignMode::Standalone
-                );
-            }
-            assert_eq!(
-                reject_challenge_constitution(&campaign).is_err(),
-                rules == RulesMode::Challenge
-            );
+    for rules in [RulesMode::Sandbox, RulesMode::Challenge] {
+        campaign.rules_mode = rules;
+        for operation in [
+            StandaloneWrite::Match,
+            StandaloneWrite::Negotiation,
+            StandaloneWrite::Player,
+            StandaloneWrite::Contract,
+            StandaloneWrite::Ledger,
+            StandaloneWrite::Club,
+        ] {
+            assert!(reject_standalone_write(&campaign, operation).is_err());
         }
+        assert_eq!(
+            reject_challenge_constitution(&campaign).is_err(),
+            rules == RulesMode::Challenge
+        );
     }
     let mut season = tables.seasons[0].clone();
     let mut player = tables.players[0].clone();

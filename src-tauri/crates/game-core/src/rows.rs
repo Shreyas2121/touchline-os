@@ -1,8 +1,8 @@
 use crate::enums::{
     AuditAction, CalendarPhase, CampaignKind, CampaignMode, CampaignStatus, Confidence,
-    ContractStatus, Formation, HomeAway, ImportSourceType, LedgerKind, OfferStatus, OpenClosed,
-    PlayerLife, Position, PositionGroup, RecordSource, RegistrationStatus, RulesMode, SeasonStatus,
-    SquadTier, TransferKind,
+    ContractStatus, Formation, ImportSourceType, LedgerKind, OfferStatus, OpenClosed, PlayerLife,
+    Position, PositionGroup, RecordSource, RegistrationStatus, RulesMode, SeasonStatus, SquadTier,
+    TransferKind,
 };
 use crate::ids::{EntityId, Euro, VersionOne};
 use crate::nulls::nullable;
@@ -310,46 +310,6 @@ pub struct RegistrationRow {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
-pub struct MatchRecordRow {
-    pub id: EntityId,
-    pub campaign_id: EntityId,
-    pub season_id: EntityId,
-    pub date: String,
-    pub opponent: String,
-    pub home_away: HomeAway,
-    pub goals_for: SafeInt,
-    pub goals_against: SafeInt,
-    #[serde(deserialize_with = "nullable")]
-    pub competition: Option<String>,
-    #[serde(deserialize_with = "nullable")]
-    pub notes: Option<String>,
-    #[serde(deserialize_with = "nullable")]
-    pub xg_for: Option<SafeInt>,
-    #[serde(deserialize_with = "nullable")]
-    pub xg_against: Option<SafeInt>,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
-pub struct AppearanceRow {
-    pub id: EntityId,
-    pub campaign_id: EntityId,
-    pub season_id: EntityId,
-    pub match_id: EntityId,
-    pub player_id: EntityId,
-    pub minutes: SafeInt,
-    #[serde(deserialize_with = "nullable")]
-    pub started: Option<bool>,
-    #[serde(deserialize_with = "nullable")]
-    pub goals: Option<SafeInt>,
-    #[serde(deserialize_with = "nullable")]
-    pub assists: Option<SafeInt>,
-    #[serde(deserialize_with = "nullable")]
-    pub rating: Option<SafeInt>,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct ShortlistItemRow {
     pub id: EntityId,
     pub campaign_id: EntityId,
@@ -511,8 +471,6 @@ pub struct SnapshotTables {
     pub offers: Vec<OfferRow>,
     pub lineups: Vec<LineupRow>,
     pub registrations: Vec<RegistrationRow>,
-    pub match_records: Vec<MatchRecordRow>,
-    pub appearances: Vec<AppearanceRow>,
     pub shortlist_items: Vec<ShortlistItemRow>,
     pub scouting_reports: Vec<ScoutingReportRow>,
     pub development_plans: Vec<DevelopmentPlanRow>,

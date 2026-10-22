@@ -1,58 +1,17 @@
-# Native SQLite store
+# Native standalone SQLite store
 
-> **Current contract:** [DEC-006](../../../DECISIONS.md) / master 3.0.4 makes standalone the only campaign model. Old/manual generators, modes, normalization, historical save readers and preservation tests are not product requirements. The implementation notes below include completed pre-decision behavior; [P07-G07a](../../../plans/phase7/guide7a.md) must remove those paths before certification. Existing user files remain untouched.
+`Store::open` starts one connection worker with an eight-request queue. Call its blocking methods from the native adapter's blocking executor. Rust owns scoped queries, validation, revisions, logical receipts and atomic writes. No SQL or arbitrary filesystem API crosses IPC.
 
-`Store::open` starts one connection worker with an eight-request queue. Its blocking
-methods belong on the native adapter's blocking executor, not the UI thread.
-Tauri startup manages its lifetime. Native reads, guarded standalone management, snapshot export/backup and deterministic Continue are implemented through P07-G06. P07-G07a removes the remaining non-standalone storage/import/read branches and compatibility tests under DEC-006. Supported writes keep revision, scope and receipt checks inside their transaction.
+The product uses fresh standalone schema 2, initialized by `migrations/0002_standalone.sql`. It contains 21 standalone collections plus schema and transport-import metadata. Campaigns allow only standalone mode; manual match journals and appearances are absent. Earlier database versions and nonempty unversioned files are refused without migration, deletion or conversion. Tests verify the rejected file remains byte-for-byte intact. Existing user files are never reset by cleanup.
 
-`database_path` takes Tauri's app-local data directory. Production uses
-`touchline.sqlite3` directly under that directory; development and test profiles use
-their own subdirectories. Integration tests inject temporary paths and never use
-application saves.
+`database_path` uses the stable Tauri app-local directory. Production uses `touchline.sqlite3`; development and test profiles have separate subdirectories. Integration tests use temporary files exclusively.
 
-SQLite schema 1 starts independently of IndexedDB 1/2. Its only predecessor is an
-empty SQLite schema 0; there is no earlier native application schema to upgrade.
-Migration is transactional, records `schemaMigrations`, and refuses unknown schemas
-or nonempty unversioned databases. Foreign keys remain enabled, including deferred
-campaign/season/managed-club cycles. All source scalar fields have individual typed
-SQL columns; colors, attributes, rules, lineups, audit payloads and other nested
-collections use JSON columns. `mapping.rs` explicitly maps all 23 source arrays.
+Portable snapshots accept only SQLite origin/source schema 2 and explicit standalone contracts. Required mode, rule choice, generator, seed and clock metadata are validated; there is no browser-v1 normalization or historical-save reader. Import validates limits, identities, numeric ranges, references and revision before one immediate transaction. A separate SHA-256 transport receipt makes exact-byte retries harmless after later management or progression. Different-content collisions refuse.
 
-Import parses, checks limits/types/references/identities/revision and computes the
-actual input bytes' SHA-256 before queueing. The supported product accepts standalone snapshots only; P07-G07a removes browser-v1/manual normalization and related acceptance tests. A single immediate transaction
-inserts all rows and a separate `transportImports` receipt. Exact-byte retries return
-the original campaign ID and imported revision, even after later play. Different
-content with an existing campaign ID is refused. No gameplay audit or revision is
-added. Deleting a campaign cascades its owned rows and transport receipts.
+Export reads all 21 collections and their campaign revision in one transaction. Online backup includes committed WAL pages, validates the staged file after reopen and preserves the previous destination on failure. Live database/sidecar destinations are refused. File selection is owned by native dialogs.
 
-Export reads every campaign array and its revision in one read transaction. Envelope
-ID/time are explicit caller inputs. The returned typed snapshot has SQLite origin
-and schema 1; serialization and final validation happen after the read transaction.
+Creation prepares the supported 72-club/3,000-player world outside the write transaction, then rechecks identities and receipts at commit. Management and Continue reload a consistent scoped snapshot, run pure core validation and commit changed rows with audit/receipt/revision together. Continue stops at September 1 kickoff. Demo reset targets only the standalone demo; other careers remain unchanged.
 
-Online backup uses a separate, exclusively created sibling staging file. It checks
-SQLite integrity, foreign keys, migration metadata and every campaign's DTOs after
-closing/reopening that file, syncs it, then replaces the destination by rename. A
-failure leaves the previous destination intact. Live database/sidecar destinations
-and destinations with active journals are refused. The backup has a 30-second
-deadline, and uses SQLite's backup API to include committed WAL pages. Destination
-files must be closed before replacement; NM-G06 owns native file selection.
+Run `cargo test -p game-store --locked` from `src-tauri`. Real-file tests cover constraints, supported snapshot round trips, concurrent retries, read isolation, partial-insert and late-audit failures, rollback, backup/reopen, scoped deletion/reset and unsupported inputs. The native fixtures under `src-tauri/fixtures` are independent standalone inputs; captured browser fixtures remain historical references, outside the supported import contract.
 
-Dependencies introduced here: pinned rusqlite 0.40.2 (`bundled`, `backup`) and sha2
-0.11.1, verified against their published APIs and the pinned Rust/MSVC toolchain.
-See [rusqlite backup](https://docs.rs/rusqlite/0.40.2/rusqlite/backup/index.html),
-[SHA-256](https://docs.rs/sha2/0.11.1/sha2/), and
-[deferred SQLite foreign keys](https://www.sqlite.org/foreignkeys.html#fk_deferred).
-
-Run `cargo test -p game-store --locked` from `src-tauri` for real temporary-file
-schema/import/retry/rollback/export/backup/concurrency tests against the independently
-committed TypeScript fixtures. Archived browser fixtures do not impose runtime compatibility requirements. Native creation and management tests additionally exercise complete
-3,000-player insertion, transaction races and late trigger failures. Generation
-and its first shape/reference checks happen before queueing; commit rechecks saved
-identities, revision and scope. Mutations read a consistent scoped snapshot, apply
-pure core guards and validate the result, then write only changed rows. No whole
-campaign blob is stored. Audit action IDs and canonical SHA-256 fingerprints make
-retries harmless; creation receipts are checked before regeneration. Physical
-schema and the 23-array snapshot contract remain version 1. Deletion cascades the
-selected save's history and transport receipts; reset is one delete/insert
-transaction restricted to the matching native demo. Continue is implemented through P07-G06; P07-G07a cleanup precedes final certification.
+Dependencies remain pinned rusqlite 0.40.2 (`bundled`, `backup`) and sha2 0.11.1. No dependency or lockfile change was required by P07-G07a.

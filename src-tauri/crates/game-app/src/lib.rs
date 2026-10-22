@@ -14,8 +14,8 @@ pub use migration::{backup_file, export_file, MigrationSession};
 pub use progression::{advance_time, preview_time};
 pub use reads::{preview, read_screen, store_error, validation};
 
-use game_core::{reject_client_operation, APP_IDENTIFIER, PRODUCT_NAME};
 pub use game_core::{CommandError, HealthReport};
+use game_core::{APP_IDENTIFIER, PRODUCT_NAME};
 pub use game_store::{database_path, Store as NativeStore};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -59,14 +59,9 @@ pub fn health(profile: Profile) -> Result<HealthReport, CommandError> {
     })
 }
 
-pub fn client_operation(name: &str) -> Result<(), CommandError> {
-    reject_client_operation(name)
-}
-
 #[cfg(test)]
 mod tests {
-    use super::{client_operation, health, Profile};
-    use game_core::CommandError;
+    use super::{health, Profile};
 
     #[test]
     fn health_reports_read_migration_capabilities() {
@@ -87,13 +82,5 @@ mod tests {
             "production"
         );
         assert!(Profile::resolve(true, Some("other")).is_err());
-    }
-
-    #[test]
-    fn known_operations_are_unavailable() {
-        let error = client_operation("clock-advance").expect_err("unavailable");
-        assert!(matches!(error, CommandError::Unavailable { .. }));
-        let unknown = client_operation("../touchline.sqlite3").expect_err("rejected");
-        assert!(matches!(unknown, CommandError::Validation { .. }));
     }
 }

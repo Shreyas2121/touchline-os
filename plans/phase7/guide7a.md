@@ -79,12 +79,12 @@ The supported native model and UI contain standalone careers only. Supported sna
 
 ## 10. Definition of done
 
-- [ ] Non-standalone model, generator/demo, compatibility normalization, wire APIs and UI branches removed.
-- [ ] No required old-save import, inspection, export/backup or preservation path remains.
-- [ ] Supported standalone contracts/bindings, storage and tests agree.
-- [ ] Creation, management, progression, receipts, rollback and reset isolation pass.
-- [ ] Normal artifact builds; no new gameplay or false verification claim.
-- [ ] Actual checks/SHA recorded; P07-G07 is next.
+- [x] Non-standalone model, generator/demo, compatibility normalization, wire APIs and UI branches removed.
+- [x] No required old-save import, inspection, export/backup or preservation path remains.
+- [x] Supported standalone contracts/bindings, storage and tests agree.
+- [x] Creation, management, progression, receipts, rollback and reset isolation pass.
+- [x] Normal artifact builds; no new gameplay or false verification claim.
+- [x] Actual checks/SHA recorded; P07-G07 is next.
 
 ## 11. Commit instructions
 
@@ -93,3 +93,5 @@ Stage this cleanup's implementation/tests/docs only. Preserve incomplete G07 cer
 ## 12. Handoff
 
 [P07-G07](guide7.md) certifies the standalone foundation after this cleanup. Then generate Phase 8 and all its guides from master 3.0.4 / DEC-006 before implementing fixtures, results or simulation.
+
+Completed 2026-10-22. Actual checks, supported schema/format changes, exclusions and commit evidence are recorded in Phase 7. P07-G07 certification is next.

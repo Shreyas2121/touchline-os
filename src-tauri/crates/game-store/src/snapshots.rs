@@ -131,7 +131,6 @@ fn validate_relationships(tables: &Value) -> Result<()> {
                 ("playerId", "players"),
                 ("seasonId", "seasons"),
                 ("activeSeasonId", "seasons"),
-                ("matchId", "matchRecords"),
                 ("reversesEntryId", "ledgerEntries"),
             ] {
                 if let Some(value) = row.get(key) {
@@ -204,7 +203,6 @@ const UNIQUE_KEYS: &[(&str, &[&str])] = &[
     ("seasons", &["ordinal"]),
     ("constitutions", &["version"]),
     ("registrations", &["seasonId", "competitionKey", "playerId"]),
-    ("appearances", &["matchId", "playerId"]),
     ("shortlistItems", &["playerId"]),
     ("developmentPlans", &["playerId", "seasonId"]),
     ("auditEvents", &["actionId"]),
@@ -336,7 +334,7 @@ pub(super) fn envelope(
     validate_relationships(&tables)?;
     let value = json!({
         "format": "touchline-campaign", "formatVersion": 1,
-        "sourceStorage": "sqlite", "sourceSchemaVersion": 1,
+        "sourceStorage": "sqlite", "sourceSchemaVersion": 2,
         "exportId": export_id, "exportedAt": exported_at,
         "campaignRevision": tables["campaigns"][0]["revision"], "tables": tables,
     });

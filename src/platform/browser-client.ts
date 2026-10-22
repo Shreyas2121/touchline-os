@@ -1,17 +1,9 @@
-import type { GameClientError } from './errors'
-import {
-  unavailableMethods,
-  unavailableNativeReads,
-  type GameClient,
-} from './game-client'
-import type { HealthReport } from './generated/HealthReport'
-import type { ClientOperation } from './operations'
+import { unavailableNativeReads, type GameClient } from './game-client'
 
-// The frozen browser entry remains `pnpm dev` / `pnpm build`. The welcome page
-// exporter reads IndexedDB directly. This client never opens that database.
+// Non-native test/development client: no browser storage or gameplay fallback.
 export function createBrowserClient(): GameClient {
   return {
-    async health(): Promise<HealthReport> {
+    async health() {
       return {
         product: 'Touchline OS',
         identifier: 'com.touchline.os',
@@ -21,15 +13,6 @@ export function createBrowserClient(): GameClient {
         dexieFallback: false,
       }
     },
-    ...unavailableMethods(rejectInBrowser),
     ...unavailableNativeReads(),
   }
-}
-
-function rejectInBrowser(operation: ClientOperation): Promise<never> {
-  const error: GameClientError = {
-    code: 'UNAVAILABLE',
-    message: `${operation} is not available in the browser shell.`,
-  }
-  return Promise.reject(error)
 }

@@ -31,7 +31,6 @@ export function NativeManagementPanel({
 }) {
   const campaign = model.rows.campaigns[0]!
   const navigate = useNavigate()
-  const historical = campaign.mode !== 'standalone'
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [confirm, setConfirm] = useState<'delete' | 'reset' | null>(null)
@@ -100,7 +99,7 @@ export function NativeManagementPanel({
     >
       <fieldset disabled={busy} className="space-y-4">
         <h2>Campaign management</h2>
-        {!historical && (
+        {
           <>
             <form
               className="flex flex-wrap gap-3"
@@ -139,16 +138,9 @@ export function NativeManagementPanel({
                 : 'Archive campaign'}
             </Button>
           </>
-        )}
-        {historical && (
-          <p>
-            This historical manual save is read-only. You can inspect, export or
-            delete it. It cannot be played or converted into a standalone
-            career.
-          </p>
-        )}
+        }
         <Button onClick={() => setConfirm('delete')}>Delete campaign</Button>
-        {!historical && campaign.id === 'native-standalone-demo' && (
+        {campaign.id === 'native-standalone-demo' && (
           <Button onClick={() => setConfirm('reset')}>Reset this demo</Button>
         )}
         {confirm && (
@@ -157,7 +149,7 @@ export function NativeManagementPanel({
               {confirm === 'delete'
                 ? 'Delete this native campaign and all its saved history?'
                 : 'Replace only this demo with its default seeded world?'}{' '}
-              Other campaigns and browser saves remain untouched.
+              Other campaigns remain untouched.
             </p>
             <Button
               onClick={() => {
@@ -172,7 +164,7 @@ export function NativeManagementPanel({
             </Button>
           </section>
         )}
-        {!historical && campaign.status === 'active' && (
+        {campaign.status === 'active' && (
           <>
             {screen === 'tactics' && <LineupEditor {...props} />}
             {screen === 'constitution' && <ConstitutionEditor {...props} />}

@@ -16,7 +16,7 @@ pub fn preview_creation(request: CreationRequest) -> Result<ClubChoices, Command
     })
 }
 fn signature(request: &CreationRequest) -> Result<String, CommandError> {
-    // Retirement precedes receipt lookup, including retries from older clients.
+    // Validate creation and scoped demo reset before receipt lookup.
     require_supported_creation(request)?;
     if request
         .reset_revision
@@ -25,10 +25,9 @@ fn signature(request: &CreationRequest) -> Result<String, CommandError> {
         return Err(validation("Reset revision must be non-negative."));
     }
     let input = input_fingerprint(&request.career).map_err(|e| validation(&e.to_string()))?;
-    // Preserve the existing standalone fingerprint format and retry identities.
-    let canonical =
-        serde_json::to_string(&(request.kind, input, &request.club, request.career.preset))
-            .map_err(|_| validation("Creation input could not be encoded."))?;
+    // Gameplay identity excludes generated transport IDs and audit time.
+    let canonical = serde_json::to_string(&(request.kind, input, &request.career.preset))
+        .map_err(|_| validation("Creation input could not be encoded."))?;
     Ok(game_store::creation_fingerprint(&canonical))
 }
 pub fn create_career(

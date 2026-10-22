@@ -10,7 +10,6 @@ export function makeCareerRequest(
   return {
     kind,
     resetRevision: null,
-    club: null,
     career: {
       campaignId: demo ? 'native-standalone-demo' : campaignId,
       name: demo ? 'Standalone demo' : 'New career',

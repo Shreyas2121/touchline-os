@@ -56,8 +56,8 @@ use std::sync::mpsc::{self, SyncSender};
 use std::thread::{self, JoinHandle};
 use std::time::Duration;
 
-pub const SCHEMA_VERSION: i64 = 1;
-pub const INITIAL_MIGRATION: &str = include_str!("../../../migrations/0001_initial.sql");
+pub const SCHEMA_VERSION: i64 = 2;
+pub const INITIAL_MIGRATION: &str = include_str!("../../../migrations/0002_standalone.sql");
 pub type Result<T> = std::result::Result<T, StoreError>;
 
 #[derive(Debug)]
@@ -313,7 +313,7 @@ impl Store {
         self.call(|reply| Request::Import(prepared, reply))
     }
 
-    /// All 23 arrays and the revision are read in one consistent transaction. IDs and
+    /// All 21 arrays and the revision are read in one consistent transaction. IDs and
     /// audit time for the envelope are explicit caller inputs, never gameplay writes.
     pub fn export_snapshot(
         &self,
@@ -389,12 +389,12 @@ fn check_database(connection: &Connection) -> Result<()> {
     }
     let migration: Option<String> = connection
         .query_row(
-            "SELECT name FROM schemaMigrations WHERE version = 1",
+            "SELECT name FROM schemaMigrations WHERE version = 2",
             [],
             |r| r.get(0),
         )
         .optional()?;
-    if migration.as_deref() != Some("0001_initial") {
+    if migration.as_deref() != Some("0002_standalone") {
         return Err(StoreError::Invalid("migration metadata".into()));
     }
     for table in mapping::TABLES {

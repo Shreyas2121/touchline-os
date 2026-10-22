@@ -12,7 +12,7 @@ import { createBrowserClient } from '../platform/browser-client'
 import type { GameClient } from '../platform/game-client'
 import type { ScreenModel } from '../platform/generated/ScreenModel'
 import type { CampaignSnapshot } from '../platform/generated/CampaignSnapshot'
-import source from '../../compatibility/snapshots/standalone-v2.json'
+import source from '../../src-tauri/fixtures/standalone.json'
 import { workspaceSections } from '../app/routes'
 
 const snapshot = source as CampaignSnapshot
@@ -33,7 +33,6 @@ function model(): ScreenModel {
     finance: { capacity: '€123.45', wages: '€67.89', tiers: { key: '€67.89' } },
     activeConstitution: snapshot.tables.constitutions[0] ?? null,
     reports: [],
-    chooseClubRequired: false,
     labels: Object.fromEntries(
       snapshot.tables.players.map((p) => [p.id, p.name]),
     ),
@@ -102,7 +101,6 @@ describe('native read and migration UI', () => {
     expect(
       screen.queryByRole('button', { name: 'Confirm import' }),
     ).not.toBeInTheDocument()
-    expect(await api.readCampaign().catch((e) => e.code)).toBe('UNAVAILABLE')
   })
   it('reviews mode, counts and collision policy before import, then reloads persisted state', async () => {
     const api = client()
@@ -188,9 +186,16 @@ describe('native read and migration UI', () => {
       ),
     )
     for (const section of workspaceSections) {
-      fireEvent.click(screen.getByRole('link', { name: section.label }))
+      fireEvent.click(
+        screen.getByRole('link', {
+          name: section.id === 'matches' ? 'Fixtures & Results' : section.label,
+        }),
+      )
       expect(
-        await screen.findByRole('heading', { name: section.label, level: 1 }),
+        await screen.findByRole('heading', {
+          name: section.id === 'matches' ? 'Fixtures & Results' : section.label,
+          level: 1,
+        }),
       ).toBeInTheDocument()
       await waitFor(() =>
         expect(api.screen).toHaveBeenLastCalledWith(
@@ -254,24 +259,8 @@ describe('native read and migration UI', () => {
     )
     expect(screen.queryByText('Exported the saved campaign.')).toBeNull()
   })
-  it('opens historical saves without a club-choice edit and shows scoped query failures', async () => {
+  it('shows scoped query failures without exposing another campaign', async () => {
     const api = client()
-    const legacy = model()
-    legacy.rows.campaigns[0]!.mode = 'legacy'
-    api.screen = vi
-      .fn()
-      .mockResolvedValue({ ...legacy, chooseClubRequired: true })
-    const view = show(api, `/app/${campaign.id}/squad`)
-    expect(
-      await screen.findByRole('heading', { name: 'Squad', level: 1 }),
-    ).toBeInTheDocument()
-    expect(
-      screen.queryByRole('button', { name: 'Select managed club' }),
-    ).toBeNull()
-    expect(
-      screen.getByText(/This historical manual save is read-only/),
-    ).toBeInTheDocument()
-    view.unmount()
     api.screen = vi.fn().mockRejectedValue({
       code: 'VALIDATION',
       message: 'This campaign was not found.',

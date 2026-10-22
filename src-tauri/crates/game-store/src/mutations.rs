@@ -187,21 +187,14 @@ pub(super) fn probe(
 ) -> Result<Option<ManagementOutcome>> {
     require_supported_creation(request).map_err(StoreError::Command)?;
     let id = request.career.campaign_id.as_str();
-    let saved: Option<(i64, String)> = db
-        .query_row(
-            "SELECT revision,mode FROM campaigns WHERE id=?1",
-            [id],
-            |r| Ok((r.get(0)?, r.get(1)?)),
-        )
+    let saved: Option<i64> = db
+        .query_row("SELECT revision FROM campaigns WHERE id=?1", [id], |r| {
+            r.get(0)
+        })
         .optional()?;
-    let Some((revision, mode)) = saved else {
+    let Some(revision) = saved else {
         return Ok(None);
     };
-    if mode != "standalone" {
-        return Err(StoreError::Command(CommandError::Scope {
-            message: "Historical manual saves cannot be recreated or reset.".into(),
-        }));
-    }
     let prior: Option<(String, String)> = db
         .query_row(
             "SELECT actionId,payload FROM auditEvents WHERE campaignId=?1 AND actionId=?2",
@@ -263,18 +256,13 @@ pub(super) fn create(
     let id = request.career.campaign_id.as_str();
     let mut revision = game_core::SafeInt::new(0).expect("zero");
     if let Some(expected) = request.reset_revision {
-        let mode: Option<(i64, String)> = tx
-            .query_row(
-                "SELECT revision,mode FROM campaigns WHERE id=?1",
-                [id],
-                |r| Ok((r.get(0)?, r.get(1)?)),
-            )
+        let current: Option<i64> = tx
+            .query_row("SELECT revision FROM campaigns WHERE id=?1", [id], |r| {
+                r.get(0)
+            })
             .optional()?;
-        let (current, mode) = mode.ok_or(StoreError::NotFound)?;
-        if !(request.kind == CreationKind::StandaloneDemo
-            && id == STANDALONE_DEMO_ID
-            && mode == "standalone")
-        {
+        let current = current.ok_or(StoreError::NotFound)?;
+        if !(request.kind == CreationKind::StandaloneDemo && id == STANDALONE_DEMO_ID) {
             return Err(reject("Only the matching native demo can be reset."));
         }
         let current = game_core::SafeInt::new(current).map_err(|e| invalid(e.to_string()))?;

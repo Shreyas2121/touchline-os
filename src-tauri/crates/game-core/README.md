@@ -1,13 +1,10 @@
 # Native foundations
 
-> **Current contract:** [DEC-006](../../../DECISIONS.md) / master 3.0.4 makes standalone the only campaign model. Old/manual generators, modes, normalization, historical save readers and preservation tests are not product requirements. The implementation notes below include completed pre-decision behavior; [P07-G07a](../../../plans/phase7/guide7a.md) must remove those paths before certification. Existing user files remain untouched.
-
-Product scope follows master 3.0.4 / DEC-006: standalone is the sole campaign model. P07-G07a removes the remaining compatibility implementation; old-save preservation is not a requirement.
+Standalone is the only campaign model ([DEC-006](../../../DECISIONS.md)). The core has one playable generator (`2`), Challenge/Sandbox rule choices and native standalone creation, management and progression. Unsupported creation/edit variants do not deserialize; no manual generator, historical reader or compatibility API remains. Portable snapshots accept SQLite origin/source schema 2 with 21 standalone collections and a required clock.
 
 The core exposes pure models and functions for the native application services.
 It has no storage, platform, network, ambient clock or ambient RNG dependency.
-NM-G04 adds rules and previews; no persisted clock advancement or IPC feature is
-enabled by this crate.
+Pure progression plans support July 1 to the summer deadline and September 1 kickoff; application/storage services commit them atomically. No Tauri command or persistence runs in this crate.
 
 - `money` parses integer euro cents, formats unknown/signed capacities and performs
   checked arithmetic. Percentage credits use exact integer flooring, including at
@@ -40,13 +37,12 @@ enabled by this crate.
   writing a clock or inventing future fixtures.
 
 Money, IDs and safe integers have validated public constructors; existing saved-row
-types are public for native services. New pure types are not IPC commands. Existing
-snapshot DTOs and generated bindings remain unchanged.
+types are public for native services. New pure types are not IPC commands. Standalone DTOs generate the frontend bindings.
 
 From `src-tauri`, run `cargo test -p game-core --test foundations --locked` for
 native arithmetic, finance, policy, eligibility, selection, date, randomness,
 calendar and guard properties. Synthetic NM-G01 rows supply test data without
-using old business-rule output as an oracle. Supported standalone snapshot integrity is covered by native snapshot and SQLite tests. Remove old-mode compatibility cases in P07-G07a. `crate_boundary` also checks all
+using old business-rule output as an oracle. Supported standalone snapshot integrity is covered by native snapshot and SQLite tests. Unknown modes and unsupported formats are rejected without normalization. `crate_boundary` also checks all
 core source modules against forbidden platform/time/randomness dependencies.
 
 NM-G05 adds native generators and pure career preparation:
@@ -82,7 +78,7 @@ NM-G05 adds native generators and pure career preparation:
   receipt and audit. Retry fingerprints exclude generated IDs and audit time;
   selected club, seed, year, rules and preset remain part of the identity.
 - `validate_prepared_career` checks world legality and exact initialization headers
-  for the supplied settings. `into_tables` maps the result to the 23 saved-row
+  for the supplied settings. `into_tables` maps the result to the 21 standalone-row
   arrays for the app/store atomic creation service; import uses saved rows directly.
 
 Run `cargo test -p game-core --test generation --locked` for complete native worlds,
@@ -100,4 +96,4 @@ and club edits are forbidden. Registration derives standalone homegrown facts
 and age in Rust. Constitution versions are immutable, and changing an opening
 allocation cannot issue a second allocation, including after reversal.
 
-P07-G07a removes manual-mode variants, the unused generator/demo, compatibility-only commands and import normalization. Tests must use supported standalone inputs. Constitution edits never create an allocation; initialization, scope, revision and progression guards remain authoritative.
+P07-G07a removed manual-mode variants, the unused generator/demo, compatibility-only commands and import normalization. Tests use supported standalone inputs. Constitution edits never create an allocation; initialization, scope, revision and progression guards remain authoritative.

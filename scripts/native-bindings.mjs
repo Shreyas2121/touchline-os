@@ -5,6 +5,8 @@ import {
   readFileSync,
   rmSync,
   existsSync,
+  copyFileSync,
+  unlinkSync,
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
@@ -13,9 +15,7 @@ import { fileURLToPath } from 'node:url'
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const tracked = path.join(root, 'src', 'platform', 'generated')
 const check = process.argv.includes('--check')
-const output = check
-  ? mkdtempSync(path.join(tmpdir(), 'touchline-bindings-'))
-  : tracked
+const output = mkdtempSync(path.join(tmpdir(), 'touchline-bindings-'))
 
 const result = spawnSync(
   'cargo',
@@ -53,7 +53,13 @@ try {
     process.exit(result.status ?? 1)
   }
   if (!check) {
-    process.exit(0)
+    const actual = filesIn(output)
+    for (const name of filesIn(tracked)) {
+      if (!actual.includes(name)) unlinkSync(path.join(tracked, name))
+    }
+    for (const name of actual) {
+      copyFileSync(path.join(output, name), path.join(tracked, name))
+    }
   }
   const expected = filesIn(tracked)
   const actual = filesIn(output)
@@ -72,5 +78,5 @@ try {
     process.exit(1)
   }
 } finally {
-  if (check) rmSync(output, { recursive: true, force: true })
+  rmSync(output, { recursive: true, force: true })
 }

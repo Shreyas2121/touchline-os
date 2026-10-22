@@ -9,7 +9,6 @@ use crate::{
 };
 use serde::{Deserialize, Serialize};
 
-pub const LEGACY_GENERATOR_VERSION: &str = "1";
 pub const PLAYABLE_GENERATOR_VERSION: &str = "2";
 pub const LEAGUE_COUNT: usize = 4;
 pub const CLUB_COUNT: usize = 72;
@@ -28,13 +27,6 @@ pub struct PlayableWorldInput {
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
-pub struct LegacyWorldInput {
-    pub seed: String,
-    pub generator_version: String,
-    pub campaign_id: EntityId,
-}
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct PlayableWorld {
     pub leagues: Vec<LeagueRow>,
     pub clubs: Vec<ClubRow>,
@@ -43,21 +35,6 @@ pub struct PlayableWorld {
     pub club_simulation_states: Vec<ClubSimulationStateRow>,
     pub player_simulation_states: Vec<PlayerSimulationStateRow>,
 }
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct LegacyPlayer {
-    #[serde(flatten)]
-    pub player: PlayerRow,
-    pub weekly_wage_cents: MoneyCents,
-}
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
-pub struct LegacyWorld {
-    pub leagues: Vec<LeagueRow>,
-    pub clubs: Vec<ClubRow>,
-    pub players: Vec<LegacyPlayer>,
-}
-
 pub(crate) fn validate_identity_seed(seed: &str, campaign: &EntityId) -> CoreResult<()> {
     if seed.is_empty() || crate::js_trim(seed) != seed || seed.encode_utf16().count() > 120 {
         return Err(CoreError::Invalid(
@@ -114,49 +91,6 @@ pub fn validate_playable_world(
     input: &PlayableWorldInput,
 ) -> CoreResult<()> {
     crate::world_validation::validate(world, input)
-}
-/// Native legacy demo data has no clock, fixtures, competitive history or profiles.
-/// Version namespaces are distinct; these are not old JavaScript output replicas.
-pub fn generate_legacy_world(input: &LegacyWorldInput) -> CoreResult<LegacyWorld> {
-    if input.generator_version != LEGACY_GENERATOR_VERSION {
-        return Err(CoreError::Invalid("Unsupported legacy generator version."));
-    }
-    validate_identity_seed(&input.seed, &input.campaign_id)?;
-    let world = build_world(
-        &input.seed,
-        &input.campaign_id,
-        2026,
-        LEGACY_GENERATOR_VERSION,
-    )?;
-    validate_playable_world(
-        &world,
-        &PlayableWorldInput {
-            seed: input.seed.clone(),
-            generator_version: PLAYABLE_GENERATOR_VERSION.into(),
-            campaign_id: input.campaign_id.clone(),
-            start_year: SafeInt::new(2026)?,
-        },
-    )?;
-    let players = world
-        .players
-        .into_iter()
-        .map(|player| {
-            let age = player
-                .reported_age
-                .ok_or(CoreError::Invalid("Missing generated age."))?
-                .get();
-            let ability = role_ability(&player.attributes, player.position_group)?.get();
-            Ok(LegacyPlayer {
-                weekly_wage_cents: settings::wage(age, ability, settings::tier_for(age, ability))?,
-                player,
-            })
-        })
-        .collect::<CoreResult<Vec<_>>>()?;
-    Ok(LegacyWorld {
-        leagues: world.leagues,
-        clubs: world.clubs,
-        players,
-    })
 }
 pub fn market_value_cents(age: i64, ability: i64, potential: i64) -> CoreResult<MoneyCents> {
     settings::value(age, ability, potential)

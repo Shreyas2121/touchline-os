@@ -4,6 +4,6 @@ Reference-only plan-2 Phase 7 and pending web Guides 6/7 before native migration
 
 Current authority: [master](../../../MASTER_PLAN.md), [native bridge](../native-migration/native-migration.md), [active Phase 7](../../phase7.md) and [DEC-002](../../../DECISIONS.md).
 
-The native bridge and P07-G06 are complete. Resume at [P07-G07a cleanup](../../phase7/guide7a.md), then P07-G07 certification. Do not execute archived web or migration instructions.
+The native bridge and P07-G06 are complete. P07-G07a cleanup is complete. Resume at [P07-G07 certification](../../phase7/guide7.md). Do not execute archived web or migration instructions.
 
-Current scope is [master 3.0.4 / DEC-006](../../../DECISIONS.md#dec-006--standalone-is-the-only-campaign-model-remove-old-save-compatibility). Old/manual save preservation and compatibility requirements in this archive are superseded. Next is [P07-G07a cleanup](../../phase7/guide7a.md), then P07-G07 certification. Do not re-execute archived guides.
+Current scope is [master 3.0.4 / DEC-006](../../../DECISIONS.md#dec-006--standalone-is-the-only-campaign-model-remove-old-save-compatibility). Old/manual save preservation and compatibility requirements in this archive are superseded. P07-G07a cleanup is complete; next is [P07-G07 certification](../../phase7/guide7.md). Do not re-execute archived guides.

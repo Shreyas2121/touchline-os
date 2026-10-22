@@ -3,10 +3,10 @@
 > **Authority:** `MASTER_PLAN.md` 3.0.4 / DEC-002 / DEC-003 / DEC-004 / DEC-005 / DEC-006
 > **Completed:** P07-G01–G05; files and evidence preserved unchanged
 > **Checkpoint:** `df23431abf8807cf61d2d1b63c66d6f7ef6a4cd3` (G05), followed by `7b3c6a0`
-> **Current stage:** Phase 7; next [P07-G07a](phase7/guide7a.md)
+> **Current stage:** Phase 7; next [P07-G07](phase7/guide7.md)
 > **Native prerequisite:** NM-G09 certified at `93e4ad192010bd660d5d0388e7b60bc7404c1d83`; archived check evidence records gate PASS
-> **P07-G06:** Complete. **P07-G07a/G07:** Cleanup and certification pending
-> **Status:** Continue implemented; DEC-006 standalone-only cleanup and foundation certification pending
+> **P07-G06/G07a:** Complete. **P07-G07:** Certification pending
+> **Status:** Standalone-only implementation complete through P07-G07a; foundation certification pending
 
 ## 1. Parent plan contract
 
@@ -17,7 +17,7 @@ DEC-005 governs verification: unit/integration tests plus existing code/build ch
 Execution order is fixed:
 
 ```text
-P07-G05 → NM-G01 … NM-G09 → P07-G06 (complete) → P07-G07a cleanup → P07-G07 certification → Phase 8
+P07-G05 → NM-G01 … NM-G09 → P07-G06 (complete) → P07-G07a (complete) → P07-G07 certification → Phase 8
 ```
 
 | Guide         | Outcome                                            | Commit subject                                            | State               |
@@ -29,7 +29,7 @@ P07-G05 → NM-G01 … NM-G09 → P07-G06 (complete) → P07-G07a cleanup → P0
 | P07-G05       | Web career creation/guards                         | `feat(p07-g05): start standalone careers safely`          | Complete            |
 | Native bridge | Native standalone foundations, retire manual workflows, no progression | See own nine-guide plan                       | Complete (NM-G09 PASS) |
 | P07-G06       | Rust Continue / next-event UI                      | `feat(p07-g06): advance native careers deterministically` | Complete            |
-| P07-G07a      | Remove non-standalone compatibility | `refactor(p07-g07a): remove non-standalone compatibility` | Pending |
+| P07-G07a      | Remove non-standalone compatibility | `refactor(p07-g07a): remove non-standalone compatibility` | Complete |
 | P07-G07       | Native foundation certification                    | `test(p07-g07): verify native standalone foundations`     | Pending             |
 
 Only pending G07 instructions change. Previous plan-2 phase/pending guides are archived at `plans/archive/web-standalone-v2/`.
@@ -38,7 +38,7 @@ Only pending G07 instructions change. Previous plan-2 phase/pending guides are a
 
 After bridge completion, finish the standalone foundation in the native app: Continue advances a complete seeded career from July 1 through the summer deadline to September 1 kickoff, persists once, survives relaunch and refuses unsupported further simulation.
 
-Standalone is the only campaign model. Remove remaining old-save compatibility code and preservation tests in G07a; no manual read-only workspace, normalization or historical import/export support is required. This phase still ends before match simulation; Phase 8 adds fixtures/results/league tables in Rust.
+Standalone is the only campaign model. P07-G07a removed old-save compatibility code and preservation tests; no manual read-only workspace, normalization or historical import/export support is required. This phase still ends before match simulation; Phase 8 adds fixtures/results/league tables in Rust.
 
 DEC-006 supersedes old-save preservation requirements in completed guides and bridge evidence. Those actual results remain history; they do not satisfy or override the new cleanup gate.
 
@@ -67,7 +67,7 @@ Out of scope: additional platform migration (belongs to bridge), match engine/fi
 
 ### 5.1 Retain the completed model
 
-Standalone is the sole campaign model; Challenge/Sandbox are rule choices and fictional/imported are dataset kinds. Remove manual-mode variants, generator/demo, v1 normalization and read-only history branches. Retain only contracts needed for standalone progression, management and supported snapshots. Schema or format changes may reject unsupported prior data without deleting, rewriting or converting user files.
+Standalone is the sole campaign model; Challenge/Sandbox are rule choices and fictional/imported are dataset kinds. Schema 2 and SQLite-origin source-schema-2 snapshots use 21 collections. Manual-mode variants, generator/demo, journal/appearance tables, browser normalization, historical views and compatibility-only commands are removed. Earlier databases and browser snapshots are rejected without converting or deleting their files. The normal frontend entry contains only the native application.
 
 ### 5.2 Rust clock progression
 
@@ -102,7 +102,7 @@ At kickoff, replace progression with explicit Phase 8 message. Direct Rust calls
 - G07 depends on G06 and G07a. Add only meaningful cross-feature/native tests and docs/evidence; no new engine feature.
 - Phase 8 depends on completed G07. Introduce future fixture/result/performance entities through later SQLite migrations.
 
-See completed [guide6](phase7/guide6.md), pending [guide7a](phase7/guide7a.md) and [guide7](phase7/guide7.md) for exact implementation/checks.
+See completed [guide6](phase7/guide6.md), completed [guide7a](phase7/guide7a.md) and [guide7](phase7/guide7.md) for exact implementation/checks.
 
 ## 7. Acceptance criteria
 
@@ -147,7 +147,7 @@ No unsupported fixture/market event may be skipped. A Rust build or mock UI pass
 - [x] NM-G09 prerequisite evidence exists and passed.
 - [ ] P07-G06/G07a/G07 have actual native commits/checks.
 - [x] Game time advances idempotently and stops at kickoff.
-- [ ] Standalone-only cleanup and supported import/reopen/backup/protection checks pass.
+- [x] Standalone-only cleanup and supported import/reopen/backup/protection checks pass.
 - [x] README accurately records native status.
 - [ ] Phase 8 can start with pure Rust core and versioned SQLite/IPC services.
 
@@ -164,8 +164,20 @@ The completed rows below are preserved verbatim. They describe checks at their h
 | `P07-G05`     | `df23431abf8807cf61d2d1b63c66d6f7ef6a4cd3` | `pnpm lint`, `pnpm typecheck`, `pnpm test` (49 files / 665 passed), `pnpm build`, and `pnpm test:e2e` (6 passed) passed. A Balanced Challenge career starts on 2026-07-01 with one opening allocation, a fixed club, and a retry that does not rebuild the world. Conflicting settings, the legacy demo id, a missing club, and an injected write failure leave no partial save. Sandbox policy edits do not post a second allocation. Standalone match, negotiation, player, contract, ledger, club-switch, and Challenge constitution writes are refused; the legacy demo can still record a match. Browser pass: Harbor Challenge, seed browser-career-2026, year 2026, Ashford, survived reload with squad 36, contract rows, €5,000,000 capacity, locked Challenge rules, no manual match or negotiation forms, and registration drafts prefilled without saving rows. The fictional demo match form stayed available. |
 | Native bridge | `93e4ad192010bd660d5d0388e7b60bc7404c1d83` | Gate PASS. Evidence stays in the archived bridge progress log.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | P07-G06       | `3b190ba255ae8a56670c571b10bf235119fe4211` | `pnpm native:bindings:check`; `pnpm native:check` (rustfmt, locked Clippy and 64 Rust tests); `pnpm lint`; `pnpm typecheck`; `pnpm test` (55 files / 701 passed); `pnpm build`; `pnpm tauri build` (Windows x64 release executable, MSI 5.20 MiB and NSIS 3.55 MiB). Real SQLite tests cover July 1 to the summer deadline and September 1 kickoff, stable operation keys, replay of the first request after later progress, transport-id retries, fingerprint and stale-source conflicts, one effect from concurrent same-event calls, injected audit-insert rollback, close/reopen, the Phase 8 kickoff stop, unchanged entity and finance rows, historical read-only refusal, and campaign isolation. Command Center Continue advances only after an explicit click. |
-| P07-G07a      | Pending | Not run |
+| P07-G07a      | Cleanup commit; SHA recorded immediately afterward | `pnpm native:bindings`; `pnpm native:bindings:check`; `pnpm native:check` (rustfmt, locked Clippy and 63 Rust tests); `pnpm lint`; `pnpm typecheck`; `pnpm format:check`; focused native UI (4 files / 23 tests); `pnpm test --maxWorkers=2` (55 files / 699 passed); `pnpm build`; `pnpm tauri build` (Windows x64 MSI 5.02 MiB, NSIS 3.40 MiB). Production bundle audit confirms browser database/gameplay and compatibility inventory are excluded. |
 | P07-G07       | Pending                                    | Not run                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+
+### P07-G07a implementation evidence
+
+Completed 2026-10-22 under DEC-006. Native DTOs accept one campaign mode, one generator, Career/StandaloneDemo creation and only supported management actions. Removed the manual generator/world models, manual player/club wire variants and customization, the old generic operation inventory/handler, browser-origin snapshots/v1 normalization, historical read-only UI and club-choice workspace route. Manual match journals/appearances and their DTOs/mappings are removed. Native audit actions now cover supported workflows. Generated bindings are rebuilt from a temporary directory and stale generated files are pruned; freshness checks pass.
+
+Fresh SQLite schema 2 (`0002_standalone.sql`) contains 21 standalone collections and requires standalone mode, seed and generator metadata. SQLite-origin snapshots must declare source schema 2 and include a clock; schema 1, browser origin, unsupported modes, missing metadata and old journal fields refuse without normalization. Real-file tests prove an earlier database is rejected byte-for-byte unchanged, and rejected imports do not alter another career or its transport receipts. No actual application save files were accessed or deleted.
+
+Native suites now use the standalone fixture and independently scoped save identities; old-mode preservation/generation tests were removed, retaining arithmetic, world legality, Challenge/scope/revision, transaction fault, retry, receipt, progression, backup/reopen and demo-isolation properties. Four rejection cases cover unsupported DTOs, snapshot metadata, partial-write refusal and old database versions. Browser source fixtures remain historical inputs to the unchanged browser unit suites, with original bytes/digests preserved. Completed guides/progress and dependency/lockfiles remain unchanged.
+
+The normal application entry renders NativeBootstrap directly and no longer imports browser routes or the database provider. Native screens have no historical branch; Fixtures & Results has no manual journal tables. The production JavaScript is 300,802 bytes (112 transformed modules), down from the earlier roughly 804 kB bundle, and excludes Dexie, TouchlineDatabase, historical-demo/workspace strings, browser snapshot origin and the compatibility command inventory. Frontend, native workspace and Windows packaging checks passed; desktop/manual testing was not required or performed. An initial empty binary-test harness was blocked by Windows Application Control, then passed on the authorized retry; the final full native check also passed normally. Hosted CI, other OS, installer interaction, signing and updater certification are not claimed.
+
+P07-G07 is next. No Phase 8 fixtures, simulation, market or lifecycle feature was added.
 
 ### Handoff
 

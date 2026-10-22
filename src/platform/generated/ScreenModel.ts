@@ -6,4 +6,4 @@ import type { PlayerFact } from "./PlayerFact";
 import type { SafeInt } from "./SafeInt";
 import type { SnapshotTables } from "./SnapshotTables";
 
-export type ScreenModel = { revision: SafeInt, rows: SnapshotTables, totals: { [key in string]: SafeInt }, page: SafeInt, playerFacts: Array<PlayerFact>, finance: NativeFinance | null, activeConstitution: ConstitutionRow | null, reports: Array<NativeReport>, chooseClubRequired: boolean, labels: { [key in string]: string }, };
+export type ScreenModel = { revision: SafeInt, rows: SnapshotTables, totals: { [key in string]: SafeInt }, page: SafeInt, playerFacts: Array<PlayerFact>, finance: NativeFinance | null, activeConstitution: ConstitutionRow | null, reports: Array<NativeReport>, labels: { [key in string]: string }, };

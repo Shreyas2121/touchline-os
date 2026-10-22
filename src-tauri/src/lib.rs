@@ -1,8 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use game_app::{
-    client_operation as reject_operation, health as app_health, CommandError, HealthReport, Profile,
-};
+use game_app::{health as app_health, CommandError, HealthReport, Profile};
 use std::sync::Arc;
 use tauri::Manager;
 use tauri_plugin_dialog::DialogExt;
@@ -227,11 +225,6 @@ fn health(app: tauri::AppHandle) -> Result<HealthReport, CommandError> {
     app_health(prepare_profile_dir(&app)?)
 }
 
-#[tauri::command]
-fn client_operation(operation: String) -> Result<(), CommandError> {
-    reject_operation(&operation)
-}
-
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -246,7 +239,6 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             health,
-            client_operation,
             list_campaigns,
             read_screen,
             read_player,

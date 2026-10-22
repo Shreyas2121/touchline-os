@@ -1,11 +1,11 @@
 use crate::enums::{position_group_for, LedgerKind, OfferStatus, TransferKind};
 use crate::numbers::JS_MAX_SAFE_INTEGER;
 use crate::rows::{
-    AppearanceRow, AuditPayload, CampaignRow, ClubRow, ConstitutionRow, ConstitutionRule,
-    ContractRow, DevelopmentPlanRow, ImportReceiptRow, LeagueRow, LineupRow, MatchRecordRow,
-    OfferRow, OutcomeRef, PlayerAttributes, PlayerRow, PlayerSimulationStateRow, RegistrationRow,
-    ScoutingReportRow, SeasonRow, ShortlistItemRow, SimulationReceiptRow, SimulationStateRow,
-    SnapshotTables, TransferRow,
+    AuditPayload, CampaignRow, ClubRow, ConstitutionRow, ConstitutionRule, ContractRow,
+    DevelopmentPlanRow, ImportReceiptRow, LeagueRow, LineupRow, OfferRow, OutcomeRef,
+    PlayerAttributes, PlayerRow, PlayerSimulationStateRow, RegistrationRow, ScoutingReportRow,
+    SeasonRow, ShortlistItemRow, SimulationReceiptRow, SimulationStateRow, SnapshotTables,
+    TransferRow,
 };
 use crate::snapshot::{CampaignSnapshot, SnapshotError};
 use serde_json::Value;
@@ -64,8 +64,7 @@ pub fn validate_snapshot(snapshot: &CampaignSnapshot) -> Result<(), SnapshotErro
         snapshot.source_storage,
         snapshot.source_schema_version.get(),
     ) {
-        (crate::enums::SourceStorage::Indexeddb, 1 | 2)
-        | (crate::enums::SourceStorage::Sqlite, 1) => {}
+        (crate::enums::SourceStorage::Sqlite, 2) => {}
         _ => return Err(SnapshotError::UnsupportedVersion("source schema".into())),
     }
     if snapshot.campaign_revision.get() < 0 {
@@ -74,7 +73,7 @@ pub fn validate_snapshot(snapshot: &CampaignSnapshot) -> Result<(), SnapshotErro
     require_timestamp(&snapshot.exported_at, "exportedAt")?;
     let tables = &snapshot.tables;
     require_len(tables.campaigns.len(), 1, 1, "campaigns")?;
-    require_len(tables.seasons.len(), 0, 64, "seasons")?;
+    require_len(tables.seasons.len(), 1, 64, "seasons")?;
     require_len(tables.leagues.len(), 0, 32, "leagues")?;
     require_len(tables.clubs.len(), 0, 256, "clubs")?;
     require_len(tables.players.len(), 0, 8_000, "players")?;
@@ -85,14 +84,12 @@ pub fn validate_snapshot(snapshot: &CampaignSnapshot) -> Result<(), SnapshotErro
     require_len(tables.offers.len(), 0, 8_000, "offers")?;
     require_len(tables.lineups.len(), 0, 256, "lineups")?;
     require_len(tables.registrations.len(), 0, 16_000, "registrations")?;
-    require_len(tables.match_records.len(), 0, 8_000, "matchRecords")?;
-    require_len(tables.appearances.len(), 0, 64_000, "appearances")?;
     require_len(tables.shortlist_items.len(), 0, 2_000, "shortlistItems")?;
     require_len(tables.scouting_reports.len(), 0, 8_000, "scoutingReports")?;
     require_len(tables.development_plans.len(), 0, 8_000, "developmentPlans")?;
     require_len(tables.audit_events.len(), 0, 16_000, "auditEvents")?;
     require_len(tables.import_receipts.len(), 0, 256, "importReceipts")?;
-    require_len(tables.simulation_states.len(), 0, 1, "simulationStates")?;
+    require_len(tables.simulation_states.len(), 1, 1, "simulationStates")?;
     require_len(
         tables.club_simulation_states.len(),
         0,
@@ -151,12 +148,6 @@ fn validate_tables(tables: &SnapshotTables) -> Result<(), SnapshotError> {
     for row in &tables.registrations {
         validate_registration(row)?;
     }
-    for row in &tables.match_records {
-        validate_match(row)?;
-    }
-    for row in &tables.appearances {
-        validate_appearance(row)?;
-    }
     for row in &tables.shortlist_items {
         validate_shortlist(row)?;
     }
@@ -191,8 +182,17 @@ fn validate_tables(tables: &SnapshotTables) -> Result<(), SnapshotError> {
 
 fn validate_campaign(row: &CampaignRow) -> Result<(), SnapshotError> {
     require_name(&row.name, 120, "campaign name")?;
-    require_optional_bounded(row.seed.as_deref(), 1, 120, "seed")?;
-    require_optional_bounded(row.generator_version.as_deref(), 1, 40, "generator version")?;
+    require_bounded(
+        row.seed
+            .as_deref()
+            .ok_or_else(|| SnapshotError::Invalid("seed is required".into()))?,
+        1,
+        120,
+        "seed",
+    )?;
+    if row.generator_version.as_deref() != Some(crate::generation::PLAYABLE_GENERATOR_VERSION) {
+        return Err(SnapshotError::UnsupportedVersion("generator".into()));
+    }
     require_nonnegative(row.revision.get(), "revision")?;
     require_timestamp(&row.created_at, "createdAt")?;
     require_timestamp(&row.updated_at, "updatedAt")
@@ -396,36 +396,6 @@ fn validate_lineup(row: &LineupRow) -> Result<(), SnapshotError> {
 
 fn validate_registration(row: &RegistrationRow) -> Result<(), SnapshotError> {
     require_bounded(&row.competition_key, 1, 40, "registration competition")
-}
-
-fn validate_match(row: &MatchRecordRow) -> Result<(), SnapshotError> {
-    require_date(&row.date, "match date")?;
-    require_name(&row.opponent, 120, "opponent")?;
-    require_range(row.goals_for.get(), 0, 99, "goals for")?;
-    require_range(row.goals_against.get(), 0, 99, "goals against")?;
-    require_optional_bounded(row.competition.as_deref(), 1, 40, "match competition")?;
-    require_optional_bounded(row.notes.as_deref(), 1, 4_000, "match notes")?;
-    if let Some(value) = row.xg_for {
-        require_range(value.get(), 0, 20_000, "xg for")?;
-    }
-    if let Some(value) = row.xg_against {
-        require_range(value.get(), 0, 20_000, "xg against")?;
-    }
-    Ok(())
-}
-
-fn validate_appearance(row: &AppearanceRow) -> Result<(), SnapshotError> {
-    require_range(row.minutes.get(), 0, 200, "minutes")?;
-    if let Some(goals) = row.goals {
-        require_range(goals.get(), 0, 99, "appearance goals")?;
-    }
-    if let Some(assists) = row.assists {
-        require_range(assists.get(), 0, 99, "assists")?;
-    }
-    if let Some(rating) = row.rating {
-        require_range(rating.get(), 0, 100, "rating")?;
-    }
-    Ok(())
 }
 
 fn validate_shortlist(row: &ShortlistItemRow) -> Result<(), SnapshotError> {

@@ -1,3 +1,5 @@
+#[path = "../../../test-support.rs"]
+mod support;
 use game_app::*;
 use game_core::{parse_snapshot, policy::PolicyAction, MoneyCents};
 use serde_json::{json, Value};
@@ -28,19 +30,9 @@ impl Drop for Dir {
     }
 }
 fn fixture(name: &str) -> Vec<u8> {
-    match name {
-        "legacy-v1" => {
-            include_bytes!("../../../../compatibility/snapshots/legacy-v1.json").to_vec()
-        }
-        "legacy-v2" => {
-            include_bytes!("../../../../compatibility/snapshots/legacy-v2.json").to_vec()
-        }
-        "standalone-v2" => {
-            include_bytes!("../../../../compatibility/snapshots/standalone-v2.json").to_vec()
-        }
-        _ => panic!("fixture"),
-    }
+    support::fixture(name)
 }
+
 fn query(campaign: &str, screen: Screen) -> ScreenQuery {
     ScreenQuery {
         campaign_id: EntityId::new(campaign).unwrap(),
@@ -65,7 +57,7 @@ fn every_screen_reads_scoped_saved_rows_and_revision_without_mutation() {
     let dir = Dir::new();
     let path = dir.file("saves.sqlite3");
     let store = NativeStore::open(&path).unwrap();
-    for name in ["legacy-v1", "legacy-v2", "standalone-v2"] {
+    for name in ["save-a", "save-b", "standalone-v2"] {
         store.import_snapshot(&fixture(name)).unwrap();
     }
     assert_eq!(store.campaigns(0).unwrap().total.get(), 3);
@@ -81,9 +73,8 @@ fn every_screen_reads_scoped_saved_rows_and_revision_without_mutation() {
         Screen::Matches,
         Screen::Seasons,
         Screen::Constitution,
-        Screen::ChooseClub,
     ];
-    for name in ["legacy-v1", "legacy-v2", "standalone-v2"] {
+    for name in ["save-a", "save-b", "standalone-v2"] {
         let before = tables(&store, name);
         for screen in screens {
             let result = read_screen(&store, query(name, screen)).unwrap();
@@ -130,7 +121,7 @@ fn every_screen_reads_scoped_saved_rows_and_revision_without_mutation() {
 fn player_paging_search_and_invalid_queries_are_bounded() {
     let dir = Dir::new();
     let store = NativeStore::open(dir.file("pages.sqlite3")).unwrap();
-    let mut source: Value = serde_json::from_slice(&fixture("legacy-v2")).unwrap();
+    let mut source: Value = serde_json::from_slice(&fixture("save-b")).unwrap();
     let base = source["tables"]["players"][0].clone();
     for i in 0..121 {
         let mut player = base.clone();
@@ -144,7 +135,7 @@ fn player_paging_search_and_invalid_queries_are_bounded() {
     store
         .import_snapshot(&serde_json::to_vec(&source).unwrap())
         .unwrap();
-    let mut q = query("legacy-v2", Screen::Transfers);
+    let mut q = query("save-b", Screen::Transfers);
     q.all_players = true;
     q.search = "Query Player".into();
     let first = read_screen(&store, q.clone()).unwrap();
@@ -213,12 +204,12 @@ fn dialog_session_cancel_validation_retained_bytes_retry_and_collision_preserve_
     let store = NativeStore::open(dir.file("migration.sqlite3")).unwrap();
     let session = MigrationSession::default();
     let source = dir.file("source.json");
-    let bytes = fixture("legacy-v2");
+    let bytes = fixture("save-b");
     std::fs::write(&source, &bytes).unwrap();
     assert!(session.select(None).unwrap().is_none());
     assert!(session.confirm(&store, "unknown").is_err());
     let summary = session.select(Some(&source)).unwrap().unwrap();
-    assert_eq!(summary.campaign.id.as_str(), "legacy-v2");
+    assert_eq!(summary.campaign.id.as_str(), "save-b");
     assert_eq!(store.campaigns(0).unwrap().total.get(), 0);
     session.clear().unwrap();
     assert!(session.confirm(&store, &summary.token).is_err());
@@ -226,11 +217,11 @@ fn dialog_session_cancel_validation_retained_bytes_retry_and_collision_preserve_
     std::fs::write(&source, b"replaced after preview").unwrap();
     assert_eq!(
         session.confirm(&store, &summary.token).unwrap().campaign_id,
-        "legacy-v2"
+        "save-b"
     );
-    let before = tables(&store, "legacy-v2");
+    let before = tables(&store, "save-b");
     assert!(session.confirm(&store, &summary.token).is_ok());
-    assert_eq!(tables(&store, "legacy-v2"), before);
+    assert_eq!(tables(&store, "save-b"), before);
     std::fs::write(&source, &bytes).unwrap();
     let mut collision: Value = serde_json::from_slice(&bytes).unwrap();
     collision["tables"]["campaigns"][0]["name"] = json!("Different content");
@@ -239,7 +230,7 @@ fn dialog_session_cancel_validation_retained_bytes_retry_and_collision_preserve_
     let summary = session.select(Some(&other)).unwrap().unwrap();
     let error = session.confirm(&store, &summary.token).unwrap_err();
     assert!(error.to_string().contains("cannot overwrite"));
-    assert_eq!(tables(&store, "legacy-v2"), before);
+    assert_eq!(tables(&store, "save-b"), before);
     assert_eq!(std::fs::read(&source).unwrap(), bytes);
     assert!(session.select(Some(&dir.file("missing.json"))).is_err());
     assert!(session.confirm(&store, &summary.token).is_err());

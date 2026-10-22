@@ -15,7 +15,12 @@ import type { ScreenModel } from '../../platform/generated/ScreenModel'
 import type { Screen } from '../../platform/generated/Screen'
 import type { NativePreview } from '../../platform/generated/NativePreview'
 import { mapInvokeError } from '../../platform/errors'
-import { workspaceSections } from '../routes'
+import { workspaceSections as sharedSections } from '../routes'
+const workspaceSections = sharedSections.map((section) =>
+  section.id === 'matches'
+    ? { ...section, label: 'Fixtures & Results' }
+    : section,
+)
 import { CrestSvg } from '../../components/graphics/CrestSvg'
 import { NativeTactics } from './NativeTactics'
 import { Button } from '../../components/ui/Button'
@@ -25,7 +30,7 @@ import { NativeManagementPanel } from './NativeManagementPanel'
 import { NativeProgression } from './NativeProgression'
 
 const readOnly =
-  'Standalone career management is available. Continue on the Command Center advances the foundation calendar. Match simulation and negotiations arrive in later phases. Manual campaign gameplay is retired.'
+  'Standalone career management is available. Continue on the Command Center advances the foundation calendar. Match simulation and negotiations arrive in later phases.'
 
 export function NativeWorkspace({ client }: { client: GameClient }) {
   return (
@@ -73,9 +78,9 @@ export function NativeRoutes({ client }: { client: GameClient }) {
               <>
                 <h1>Help</h1>
                 <p>
-                  Export a save from the original browser address using Export
-                  for desktop. Import that JSON file here, review its summary,
-                  then confirm. Your original browser data remains untouched.
+                  Import a supported standalone snapshot, review its summary,
+                  then confirm. Existing files are never converted or
+                  overwritten.
                 </p>
                 <p>
                   Challenge rules describe this fictional simulation. They do
@@ -185,9 +190,8 @@ function MigrationTools({
           </dl>
           <p>
             IDs and saved history are preserved. A different save with the same
-            campaign ID is refused. Import leaves your source browser data
-            untouched. Importing the same file again does not overwrite later
-            play.
+            campaign ID is refused. Import leaves your source file untouched.
+            Importing the same file again does not overwrite later play.
           </p>
           <Button
             disabled={busy}
@@ -255,16 +259,17 @@ function Campaigns({ client }: { client: GameClient }) {
         state.data && (
           <>
             {state.data.campaigns.length === 0 && (
-              <p>No native saves. Export a browser save and import it above.</p>
+              <p>
+                No saved careers. Create a career or import a standalone
+                snapshot.
+              </p>
             )}
             <ul>
               {state.data.campaigns.map((c) => (
                 <li key={c.id}>
                   <Link to={`/app/${c.id}/command-center`}>{c.name}</Link> ·{' '}
-                  {c.mode === 'legacy'
-                    ? 'Historical · read-only'
-                    : 'standalone'}{' '}
-                  · {c.rulesMode} · {c.status} · revision {c.revision}
+                  standalone · {c.rulesMode} · {c.status} · revision{' '}
+                  {c.revision}
                 </li>
               ))}
             </ul>
@@ -306,10 +311,7 @@ function Paging({
 
 function ScreenPage({ client }: { client: GameClient }) {
   const { campaignId = '', section = '' } = useParams()
-  const screen =
-    section === 'choose-club'
-      ? 'choose-club'
-      : workspaceSections.find((s) => s.id === section)?.id
+  const screen = workspaceSections.find((s) => s.id === section)?.id
   if (!screen || !/^[A-Za-z0-9-]{1,64}$/.test(campaignId))
     return (
       <>
@@ -374,7 +376,7 @@ function ScreenContent({
     (s) => s.id === campaign?.activeSeasonId,
   )
   const title =
-    workspaceSections.find((s) => s.id === screen)?.label ?? 'Choose club'
+    workspaceSections.find((s) => s.id === screen)?.label ?? 'Campaign'
   const playerScreen = [
     'squad',
     'transfers',
@@ -416,11 +418,6 @@ function ScreenContent({
         data &&
         campaign && (
           <>
-            {campaign.mode === 'standalone' &&
-              data.chooseClubRequired &&
-              screen !== 'choose-club' && (
-                <Navigate to={`/app/${campaignId}/choose-club`} replace />
-              )}
             <header className="flex flex-wrap items-center gap-4">
               {club && (
                 <CrestSvg
@@ -438,10 +435,7 @@ function ScreenContent({
                   {season?.label ?? 'Unknown season'}
                 </p>
                 <p>
-                  {campaign.mode === 'legacy'
-                    ? 'Historical · read-only'
-                    : 'standalone'}{' '}
-                  · {campaign.rulesMode} · revision {data.revision} ·{' '}
+                  standalone · {campaign.rulesMode} · revision {data.revision} ·{' '}
                   {campaign.status}
                 </p>
               </div>
@@ -475,7 +469,7 @@ function ScreenContent({
                     ))}
                 </dl>
               )}
-            {campaign.mode === 'standalone' && screen === 'command-center' && (
+            {screen === 'command-center' && (
               <NativeProgression
                 client={client}
                 campaignId={campaignId}
@@ -543,14 +537,13 @@ function ScreenContent({
                 ))}
               </section>
             ))}
-            {campaign.mode === 'standalone' &&
-              ['finance', 'transfers'].includes(screen) && (
-                <PolicyPreview
-                  client={client}
-                  model={data}
-                  campaignId={campaignId}
-                />
-              )}
+            {['finance', 'transfers'].includes(screen) && (
+              <PolicyPreview
+                client={client}
+                model={data}
+                campaignId={campaignId}
+              />
+            )}
             <Paging
               page={page}
               total={Math.max(0, ...Object.values(data.totals))}

@@ -1,3 +1,5 @@
+#[path = "../../../test-support.rs"]
+mod support;
 use game_core::parse_snapshot;
 use game_store::{database_path, Store, StoreError, INITIAL_MIGRATION};
 use rusqlite::{params, Connection};
@@ -45,8 +47,8 @@ fn career_partial_insert_and_demo_reset_failures_preserve_previous_saves() {
     let dir = Directory::new();
     let path = dir.file("creation-rollback.sqlite3");
     let store = Store::open(&path).unwrap();
-    store.import_snapshot(&fixture("legacy-v2")).unwrap();
-    let protected = tables(&store, "legacy-v2");
+    store.import_snapshot(&fixture("save-b")).unwrap();
+    let protected = tables(&store, "save-b");
     let id = |s: &str| EntityId::new(s).unwrap();
     let input = CareerInput {
         campaign_id: id(STANDALONE_DEMO_ID),
@@ -70,7 +72,6 @@ fn career_partial_insert_and_demo_reset_failures_preserve_previous_saves() {
         career: input.clone(),
         kind: CreationKind::StandaloneDemo,
         reset_revision: None,
-        club: None,
     };
     Connection::open(&path).unwrap().execute_batch("CREATE TRIGGER reject_generated_player BEFORE INSERT ON players WHEN NEW.id LIKE '%player-0100' BEGIN SELECT RAISE(ABORT,'injected mid-world failure'); END;").unwrap();
     assert!(store
@@ -81,7 +82,7 @@ fn career_partial_insert_and_demo_reset_failures_preserve_previous_saves() {
         )
         .is_err());
     assert_eq!(store.campaigns(0).unwrap().total.get(), 1);
-    assert_eq!(tables(&store, "legacy-v2"), protected);
+    assert_eq!(tables(&store, "save-b"), protected);
     Connection::open(&path)
         .unwrap()
         .execute_batch("DROP TRIGGER reject_generated_player")
@@ -109,7 +110,7 @@ fn career_partial_insert_and_demo_reset_failures_preserve_previous_saves() {
         )
         .is_err());
     assert_eq!(tables(&store, STANDALONE_DEMO_ID), before);
-    assert_eq!(tables(&store, "legacy-v2"), protected);
+    assert_eq!(tables(&store, "save-b"), protected);
     Connection::open(&path)
         .unwrap()
         .execute_batch("DROP TRIGGER reject_reset_receipt")
@@ -117,8 +118,8 @@ fn career_partial_insert_and_demo_reset_failures_preserve_previous_saves() {
     store
         .create(reset, reset_prepared, "reset-signature".into())
         .unwrap();
-    assert_eq!(tables(&store, "legacy-v2"), protected);
-    assert!(store.import_snapshot(&fixture("legacy-v2")).is_ok());
+    assert_eq!(tables(&store, "save-b"), protected);
+    assert!(store.import_snapshot(&fixture("save-b")).is_ok());
 }
 struct Directory(PathBuf);
 impl Directory {
@@ -141,20 +142,9 @@ impl Drop for Directory {
     }
 }
 fn fixture(name: &str) -> Vec<u8> {
-    let bytes = match name {
-        "legacy-v1" => {
-            include_bytes!("../../../../compatibility/snapshots/legacy-v1.json").as_slice()
-        }
-        "legacy-v2" => {
-            include_bytes!("../../../../compatibility/snapshots/legacy-v2.json").as_slice()
-        }
-        "standalone-v2" => {
-            include_bytes!("../../../../compatibility/snapshots/standalone-v2.json").as_slice()
-        }
-        _ => panic!("unknown fixture"),
-    };
-    bytes.to_vec()
+    support::fixture(name)
 }
+
 fn value(name: &str) -> Value {
     serde_json::from_slice(&fixture(name)).unwrap()
 }
@@ -191,7 +181,7 @@ fn all_source_arrays_survive_close_reopen_native_export_and_reimport() {
     let dir = Directory::new();
     let path = dir.file("campaigns.sqlite3");
     let store = Store::open(&path).unwrap();
-    for name in ["legacy-v1", "legacy-v2", "standalone-v2"] {
+    for name in ["save-a", "save-b", "standalone-v2"] {
         let original = fixture(name);
         let outcome = store.import_snapshot(&original).unwrap();
         assert_eq!(outcome.campaign_id, name);
@@ -201,7 +191,7 @@ fn all_source_arrays_survive_close_reopen_native_export_and_reimport() {
     drop(store);
     let store = Store::open(&path).unwrap();
     let second = Store::open(dir.file("reimport.sqlite3")).unwrap();
-    for name in ["legacy-v1", "legacy-v2", "standalone-v2"] {
+    for name in ["save-a", "save-b", "standalone-v2"] {
         let exported = store
             .export_snapshot(name, "native-export", "2026-10-20T12:00:00.000Z")
             .unwrap();
@@ -215,11 +205,43 @@ fn all_source_arrays_survive_close_reopen_native_export_and_reimport() {
     }
     assert_eq!(count(&path, "campaigns"), 3);
     assert_eq!(count(&path, "transportImports"), 3);
-    // Frozen source fixtures are input only, never opened for writing.
-    assert_eq!(
-        fixture("legacy-v1"),
-        include_bytes!("../../../../compatibility/snapshots/legacy-v1.json")
-    );
+}
+
+#[test]
+fn unsupported_snapshots_leave_existing_standalone_rows_and_receipts_intact() {
+    let dir = Directory::new();
+    let path = dir.file("unsupported.sqlite3");
+    let store = Store::open(&path).unwrap();
+    store.import_snapshot(&fixture("save-a")).unwrap();
+    let before = tables(&store, "save-a");
+    for (pointer, input) in [
+        ("/tables/campaigns/0/mode", json!("manual")),
+        ("/sourceStorage", json!("indexeddb")),
+        ("/sourceSchemaVersion", json!(1)),
+        ("/tables/simulationStates", json!([])),
+    ] {
+        let mut invalid = value("save-b");
+        *invalid.pointer_mut(pointer).unwrap() = input;
+        assert!(store.import_snapshot(&bytes(&invalid)).is_err());
+        assert_eq!(tables(&store, "save-a"), before);
+        assert_eq!(count(&path, "campaigns"), 1);
+        assert_eq!(count(&path, "transportImports"), 1);
+    }
+}
+
+#[test]
+fn earlier_native_schema_is_refused_without_modifying_the_file() {
+    let dir = Directory::new();
+    let path = dir.file("unsupported-version.sqlite3");
+    let db = Connection::open(&path).unwrap();
+    db.execute_batch("CREATE TABLE existing (value TEXT); INSERT INTO existing VALUES ('keep'); PRAGMA user_version = 1;").unwrap();
+    drop(db);
+    let before = std::fs::read(&path).unwrap();
+    assert!(matches!(
+        Store::open(&path),
+        Err(StoreError::UnsupportedSchema(1))
+    ));
+    assert_eq!(std::fs::read(&path).unwrap(), before);
 }
 
 #[test]
@@ -227,17 +249,17 @@ fn exact_byte_retry_never_reverts_later_play_and_collision_refuses() {
     let dir = Directory::new();
     let path = dir.file("retry.sqlite3");
     let store = Store::open(&path).unwrap();
-    let source = fixture("legacy-v2");
+    let source = fixture("save-b");
     let first = store.import_snapshot(&source).unwrap();
     let db = Connection::open(&path).unwrap();
     db.execute(
-        "UPDATE campaigns SET revision = revision + 1, name = 'Later play' WHERE id = 'legacy-v2'",
+        "UPDATE campaigns SET revision = revision + 1, name = 'Later play' WHERE id = 'save-b'",
         [],
     )
     .unwrap();
     assert_eq!(store.import_snapshot(&source).unwrap(), first);
     let after = store
-        .export_snapshot("legacy-v2", "after", "2026-10-20T12:00:00.000Z")
+        .export_snapshot("save-b", "after", "2026-10-20T12:00:00.000Z")
         .unwrap();
     assert_eq!(after.tables.campaigns[0].name, "Later play");
     assert_eq!(after.campaign_revision.get(), first.imported_revision + 1);
@@ -256,14 +278,14 @@ fn injected_late_import_and_receipt_failures_roll_back_and_keep_other_save() {
         let dir = Directory::new();
         let path = dir.file("rollback.sqlite3");
         let store = Store::open(&path).unwrap();
-        store.import_snapshot(&fixture("legacy-v1")).unwrap();
-        let before = tables(&store, "legacy-v1");
+        store.import_snapshot(&fixture("save-a")).unwrap();
+        let before = tables(&store, "save-a");
         let db = Connection::open(&path).unwrap();
         db.execute_batch(&format!("CREATE TRIGGER fail_import BEFORE INSERT ON {failed_table} BEGIN SELECT RAISE(ABORT, 'injected failure'); END;")).unwrap();
-        assert!(store.import_snapshot(&fixture("legacy-v2")).is_err());
+        assert!(store.import_snapshot(&fixture("save-b")).is_err());
         assert_eq!(count(&path, "campaigns"), 1);
         assert_eq!(count(&path, "transportImports"), 1);
-        assert_eq!(tables(&store, "legacy-v1"), before);
+        assert_eq!(tables(&store, "save-a"), before);
         for table in [
             "seasons",
             "clubs",
@@ -273,7 +295,7 @@ fn injected_late_import_and_receipt_failures_roll_back_and_keep_other_save() {
         ] {
             let remaining: i64 = db
                 .query_row(
-                    &format!("SELECT count(*) FROM {table} WHERE campaignId = 'legacy-v2'"),
+                    &format!("SELECT count(*) FROM {table} WHERE campaignId = 'save-b'"),
                     [],
                     |r| r.get(0),
                 )
@@ -281,7 +303,7 @@ fn injected_late_import_and_receipt_failures_roll_back_and_keep_other_save() {
             assert_eq!(remaining, 0);
         }
         db.execute_batch("DROP TRIGGER fail_import;").unwrap();
-        store.import_snapshot(&fixture("legacy-v2")).unwrap();
+        store.import_snapshot(&fixture("save-b")).unwrap();
     }
 }
 
@@ -290,11 +312,11 @@ fn invalid_scope_references_keys_numbers_and_versions_never_promote() {
     let dir = Directory::new();
     let path = dir.file("invalid.sqlite3");
     let store = Store::open(&path).unwrap();
-    store.import_snapshot(&fixture("legacy-v1")).unwrap();
+    store.import_snapshot(&fixture("save-a")).unwrap();
     let mut variants = Vec::new();
     for (pointer, bad) in [
-        ("/tables/players/0/campaignId", json!("legacy-v1")),
-        ("/tables/players/0/clubId", json!("legacy-v1-club")),
+        ("/tables/players/0/campaignId", json!("save-a")),
+        ("/tables/players/0/clubId", json!("save-a-club")),
         (
             "/tables/campaigns/0/activeSeasonId",
             json!("missing-season"),
@@ -312,11 +334,11 @@ fn invalid_scope_references_keys_numbers_and_versions_never_promote() {
         ("/sourceSchemaVersion", json!(3)),
         ("/formatVersion", json!(2)),
     ] {
-        let mut source = value("legacy-v2");
+        let mut source = value("save-b");
         *source.pointer_mut(pointer).unwrap() = bad;
         variants.push(source);
     }
-    let mut duplicate = value("legacy-v2");
+    let mut duplicate = value("save-b");
     let mut row = duplicate["tables"]["registrations"][0].clone();
     row["id"] = json!("duplicate-id");
     duplicate["tables"]["registrations"]
@@ -338,31 +360,6 @@ fn invalid_scope_references_keys_numbers_and_versions_never_promote() {
 }
 
 #[test]
-fn only_v1_missing_metadata_is_normalized() {
-    let dir = Directory::new();
-    let store = Store::open(dir.file("v1.sqlite3")).unwrap();
-    let mut source = value("legacy-v1");
-    let campaign = source["tables"]["campaigns"][0].as_object_mut().unwrap();
-    campaign.remove("mode");
-    campaign.remove("rulesMode");
-    for key in [
-        "simulationStates",
-        "clubSimulationStates",
-        "playerSimulationStates",
-        "simulationReceipts",
-    ] {
-        source["tables"].as_object_mut().unwrap().remove(key);
-    }
-    store.import_snapshot(&bytes(&source)).unwrap();
-    assert_eq!(
-        tables(&store, "legacy-v1"),
-        sorted_tables(&fixture("legacy-v1"))
-    );
-    source["sourceSchemaVersion"] = json!(2);
-    assert!(store.import_snapshot(&bytes(&source)).is_err());
-}
-
-#[test]
 fn fresh_and_version_zero_upgrade_are_transactional_and_future_versions_refuse() {
     let dir = Directory::new();
     let path = dir.file("upgrade.sqlite3");
@@ -373,25 +370,25 @@ fn fresh_and_version_zero_upgrade_are_transactional_and_future_versions_refuse()
     assert_eq!(
         db.query_row("PRAGMA user_version", [], |r| r.get::<_, i64>(0))
             .unwrap(),
-        1
+        2
     );
     assert_eq!(count(&path, "schemaMigrations"), 1);
     drop(store);
     drop(db);
     drop(Store::open(&path).unwrap());
     let db = Connection::open(&path).unwrap();
-    db.pragma_update(None, "user_version", 2).unwrap();
+    db.pragma_update(None, "user_version", 99).unwrap();
     drop(db);
     assert!(matches!(
         Store::open(&path),
-        Err(StoreError::UnsupportedSchema(2))
+        Err(StoreError::UnsupportedSchema(99))
     ));
     assert_eq!(
         Connection::open(&path)
             .unwrap()
             .query_row("PRAGMA user_version", [], |r| r.get::<_, i64>(0))
             .unwrap(),
-        2
+        99
     );
     let unknown = dir.file("unknown.sqlite3");
     Connection::open(&unknown)
@@ -425,20 +422,20 @@ fn sqlite_enforces_deferred_cycles_scoped_foreign_keys_uniques_and_indexes() {
     let dir = Directory::new();
     let path = dir.file("constraints.sqlite3");
     let store = Store::open(&path).unwrap();
-    store.import_snapshot(&fixture("legacy-v1")).unwrap();
-    store.import_snapshot(&fixture("legacy-v2")).unwrap();
+    store.import_snapshot(&fixture("save-a")).unwrap();
+    store.import_snapshot(&fixture("save-b")).unwrap();
     let mut db = Connection::open(&path).unwrap();
     db.pragma_update(None, "foreign_keys", true).unwrap();
     for sql in [
-        "UPDATE campaigns SET activeSeasonId = 'legacy-v1-season' WHERE id = 'legacy-v2'",
-        "UPDATE players SET clubId = 'legacy-v1-club' WHERE campaignId = 'legacy-v2'",
-        "UPDATE campaigns SET managedClubId = 'missing' WHERE id = 'legacy-v2'",
-        "UPDATE contracts SET playerId = 'missing' WHERE campaignId = 'legacy-v2'",
-        "UPDATE registrations SET seasonId = 'missing' WHERE campaignId = 'legacy-v2'",
-        "UPDATE campaigns SET revision = 9007199254740992 WHERE id = 'legacy-v2'",
-        "UPDATE ledgerEntries SET amountCents = -1 WHERE campaignId = 'legacy-v2'",
-        "UPDATE offers SET status = 'future-status' WHERE campaignId = 'legacy-v2'",
-        "UPDATE players SET id = 'bad id' WHERE campaignId = 'legacy-v2'",
+        "UPDATE campaigns SET activeSeasonId = 'save-a-season' WHERE id = 'save-b'",
+        "UPDATE players SET clubId = 'save-a-club' WHERE campaignId = 'save-b'",
+        "UPDATE campaigns SET managedClubId = 'missing' WHERE id = 'save-b'",
+        "UPDATE contracts SET playerId = 'missing' WHERE campaignId = 'save-b'",
+        "UPDATE registrations SET seasonId = 'missing' WHERE campaignId = 'save-b'",
+        "UPDATE campaigns SET revision = 9007199254740992 WHERE id = 'save-b'",
+        "UPDATE ledgerEntries SET amountCents = -1 WHERE campaignId = 'save-b'",
+        "UPDATE offers SET status = 'future-status' WHERE campaignId = 'save-b'",
+        "UPDATE players SET id = 'bad id' WHERE campaignId = 'save-b'",
     ] {
         assert!(db.execute(sql, []).is_err(), "accepted {sql}");
     }
@@ -446,7 +443,6 @@ fn sqlite_enforces_deferred_cycles_scoped_foreign_keys_uniques_and_indexes() {
         ("seasons", "ordinal"),
         ("constitutions", "version"),
         ("registrations", "competitionKey"),
-        ("appearances", "playerId"),
         ("shortlistItems", "playerId"),
         ("developmentPlans", "playerId"),
         ("auditEvents", "actionId"),
@@ -468,7 +464,7 @@ fn sqlite_enforces_deferred_cycles_scoped_foreign_keys_uniques_and_indexes() {
             .map(|c| if c == "id" { "'duplicate'" } else { c.as_str() })
             .collect::<Vec<_>>()
             .join(",");
-        assert!(db.execute(&format!("INSERT INTO {table} SELECT {selection} FROM {table} WHERE campaignId = 'legacy-v2' LIMIT 1"), []).is_err(), "missing unique on {table}");
+        assert!(db.execute(&format!("INSERT INTO {table} SELECT {selection} FROM {table} WHERE campaignId = 'save-b' LIMIT 1"), []).is_err(), "missing unique on {table}");
     }
     let indexes: i64 = db
         .query_row(
@@ -482,28 +478,22 @@ fn sqlite_enforces_deferred_cycles_scoped_foreign_keys_uniques_and_indexes() {
     {
         let tx = db.transaction().unwrap();
         tx.execute(
-            "UPDATE campaigns SET activeSeasonId = 'missing' WHERE id = 'legacy-v2'",
+            "UPDATE campaigns SET activeSeasonId = 'missing' WHERE id = 'save-b'",
             [],
         )
         .unwrap();
         assert!(tx.commit().is_err());
     }
-    assert_eq!(
-        tables(&store, "legacy-v2"),
-        sorted_tables(&fixture("legacy-v2"))
-    );
+    assert_eq!(tables(&store, "save-b"), sorted_tables(&fixture("save-b")));
     // Deletion cascades within one scope, including the transport receipt.
     {
         let tx = db.transaction().unwrap();
-        tx.execute("DELETE FROM campaigns WHERE id = ?1", params!["legacy-v2"])
+        tx.execute("DELETE FROM campaigns WHERE id = ?1", params!["save-b"])
             .unwrap();
         tx.commit().unwrap();
     }
     assert_eq!(count(&path, "transportImports"), 1);
-    assert_eq!(
-        tables(&store, "legacy-v1"),
-        sorted_tables(&fixture("legacy-v1"))
-    );
+    assert_eq!(tables(&store, "save-a"), sorted_tables(&fixture("save-a")));
 }
 
 #[test]
@@ -512,7 +502,7 @@ fn online_backup_reopens_wal_data_and_preserves_previous_target_on_failure() {
     let path = dir.file("live.sqlite3");
     let target = dir.file("backup.sqlite3");
     let store = Store::open(&path).unwrap();
-    let imported = store.import_snapshot(&fixture("legacy-v2")).unwrap();
+    let imported = store.import_snapshot(&fixture("save-b")).unwrap();
     let db = Connection::open(&path).unwrap();
     db.pragma_update(None, "wal_autocheckpoint", 0).unwrap();
     db.execute(
@@ -524,9 +514,9 @@ fn online_backup_reopens_wal_data_and_preserves_previous_target_on_failure() {
     store.backup(&target).unwrap();
     let saved = std::fs::read(&target).unwrap();
     let restored = Store::open(&target).unwrap();
-    assert_eq!(tables(&restored, "legacy-v2"), tables(&store, "legacy-v2"));
+    assert_eq!(tables(&restored, "save-b"), tables(&store, "save-b"));
     assert_eq!(
-        restored.import_snapshot(&fixture("legacy-v2")).unwrap(),
+        restored.import_snapshot(&fixture("save-b")).unwrap(),
         imported
     );
     drop(restored);
@@ -623,7 +613,7 @@ fn concurrent_retries_share_one_commit_and_reads_use_committed_wal_state() {
     let threads = (0..6)
         .map(|_| {
             let store = store.clone();
-            std::thread::spawn(move || store.import_snapshot(&fixture("legacy-v2")).unwrap())
+            std::thread::spawn(move || store.import_snapshot(&fixture("save-b")).unwrap())
         })
         .collect::<Vec<_>>();
     let outcomes = threads
@@ -632,7 +622,7 @@ fn concurrent_retries_share_one_commit_and_reads_use_committed_wal_state() {
         .collect::<Vec<_>>();
     assert!(outcomes.iter().all(|outcome| outcome == &outcomes[0]));
     assert_eq!(count(&path, "transportImports"), 1);
-    let before = tables(&store, "legacy-v2");
+    let before = tables(&store, "save-b");
     let mut writer = Connection::open(&path).unwrap();
     let transaction = writer.transaction().unwrap();
     transaction
@@ -645,9 +635,9 @@ fn concurrent_retries_share_one_commit_and_reads_use_committed_wal_state() {
         .execute("UPDATE players SET name = 'Next player'", [])
         .unwrap();
     // A concurrent uncommitted write cannot leak half a revision into an export.
-    assert_eq!(tables(&store, "legacy-v2"), before);
+    assert_eq!(tables(&store, "save-b"), before);
     transaction.commit().unwrap();
-    let after = tables(&store, "legacy-v2");
+    let after = tables(&store, "save-b");
     assert_eq!(after["campaigns"][0]["name"], "Next revision");
     assert_eq!(after["players"][0]["name"], "Next player");
     assert_eq!(

@@ -1,4 +1,4 @@
-// Explicit column mappings for all 23 source stores; nested values alone use JSON.
+// Explicit column mappings for the 21 standalone collections; nested values alone use JSON.
 use super::{Column, Kind, Table};
 pub(super) const TABLES: &[Table] = &[
     Table {
@@ -514,104 +514,6 @@ pub(super) const TABLES: &[Table] = &[
             Column {
                 name: "provenance",
                 kind: Kind::Text,
-            },
-        ],
-    },
-    Table {
-        name: "matchRecords",
-        columns: &[
-            Column {
-                name: "id",
-                kind: Kind::Text,
-            },
-            Column {
-                name: "campaignId",
-                kind: Kind::Text,
-            },
-            Column {
-                name: "seasonId",
-                kind: Kind::Text,
-            },
-            Column {
-                name: "date",
-                kind: Kind::Text,
-            },
-            Column {
-                name: "opponent",
-                kind: Kind::Text,
-            },
-            Column {
-                name: "homeAway",
-                kind: Kind::Text,
-            },
-            Column {
-                name: "goalsFor",
-                kind: Kind::Integer,
-            },
-            Column {
-                name: "goalsAgainst",
-                kind: Kind::Integer,
-            },
-            Column {
-                name: "competition",
-                kind: Kind::Text,
-            },
-            Column {
-                name: "notes",
-                kind: Kind::Text,
-            },
-            Column {
-                name: "xgFor",
-                kind: Kind::Integer,
-            },
-            Column {
-                name: "xgAgainst",
-                kind: Kind::Integer,
-            },
-        ],
-    },
-    Table {
-        name: "appearances",
-        columns: &[
-            Column {
-                name: "id",
-                kind: Kind::Text,
-            },
-            Column {
-                name: "campaignId",
-                kind: Kind::Text,
-            },
-            Column {
-                name: "seasonId",
-                kind: Kind::Text,
-            },
-            Column {
-                name: "matchId",
-                kind: Kind::Text,
-            },
-            Column {
-                name: "playerId",
-                kind: Kind::Text,
-            },
-            Column {
-                name: "minutes",
-                kind: Kind::Integer,
-            },
-            Column {
-                name: "started",
-                kind: Kind::Bool,
-            },
-            Column {
-                name: "goals",
-                kind: Kind::Integer,
-            },
-            Column {
-                name: "assists",
-                kind: Kind::Integer,
-            },
-            Column {
-                name: "rating",
-                kind: Kind::Integer,
             },
         ],
     },

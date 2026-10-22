@@ -10,7 +10,6 @@ pub enum SnapshotFormat {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "lowercase")]
 pub enum SourceStorage {
-    Indexeddb,
     Sqlite,
 }
 
@@ -24,7 +23,6 @@ pub enum CampaignKind {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "lowercase")]
 pub enum CampaignMode {
-    Legacy,
     Standalone,
 }
 
@@ -191,13 +189,6 @@ pub enum RegistrationStatus {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "lowercase")]
-pub enum HomeAway {
-    Home,
-    Away,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
-#[serde(rename_all = "lowercase")]
 pub enum OpenClosed {
     Open,
     Closed,
@@ -240,50 +231,24 @@ pub enum AuditAction {
     CampaignCreate,
     #[serde(rename = "campaign.rename")]
     CampaignRename,
-    #[serde(rename = "player.add")]
-    PlayerAdd,
-    #[serde(rename = "player.update")]
-    PlayerUpdate,
     #[serde(rename = "player.note")]
     PlayerNote,
     #[serde(rename = "lineup.save")]
     LineupSave,
     #[serde(rename = "lineup.delete")]
     LineupDelete,
-    #[serde(rename = "ledger.post")]
-    LedgerPost,
-    #[serde(rename = "ledger.reverse")]
-    LedgerReverse,
     #[serde(rename = "constitution.save")]
     ConstitutionSave,
-    #[serde(rename = "campaign.seed")]
-    CampaignSeed,
     #[serde(rename = "campaign.archive")]
     CampaignArchive,
     #[serde(rename = "campaign.restore")]
     CampaignRestore,
-    #[serde(rename = "campaign.delete")]
-    CampaignDelete,
-    #[serde(rename = "campaign.select-club")]
-    CampaignSelectClub,
     #[serde(rename = "shortlist.save")]
     ShortlistSave,
     #[serde(rename = "shortlist.close")]
     ShortlistClose,
-    #[serde(rename = "transfer.record")]
-    TransferRecord,
-    #[serde(rename = "offer.record")]
-    OfferRecord,
-    #[serde(rename = "offer.accept")]
-    OfferAccept,
-    #[serde(rename = "offer.reject")]
-    OfferReject,
-    #[serde(rename = "contract.save")]
-    ContractSave,
     #[serde(rename = "registration.save")]
     RegistrationSave,
-    #[serde(rename = "match.record")]
-    MatchRecord,
     #[serde(rename = "simulation.initialize")]
     SimulationInitialize,
     #[serde(rename = "simulation.advance")]

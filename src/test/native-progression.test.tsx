@@ -14,7 +14,7 @@ import type { GameClient } from '../platform/game-client'
 import type { CampaignSnapshot } from '../platform/generated/CampaignSnapshot'
 import type { ScreenModel } from '../platform/generated/ScreenModel'
 import type { TimePreview } from '../platform/generated/TimePreview'
-import source from '../../compatibility/snapshots/standalone-v2.json'
+import source from '../../src-tauri/fixtures/standalone.json'
 
 const snapshot = source as CampaignSnapshot
 const campaign = snapshot.tables.campaigns[0]!
@@ -55,7 +55,6 @@ function model(): ScreenModel {
     finance: null,
     activeConstitution: null,
     reports: [],
-    chooseClubRequired: false,
     labels: {},
   }
 }
@@ -173,19 +172,5 @@ describe('native continue', () => {
       expect(vi.mocked(api.screen).mock.calls.length).toBeGreaterThan(reads),
     )
     expect(api.advanceTime).toHaveBeenCalledOnce()
-  })
-
-  it('does not offer Continue for a historical manual save', async () => {
-    const api = client()
-    const historical = model()
-    historical.rows.campaigns[0]!.mode = 'legacy'
-    api.screen = vi.fn().mockResolvedValue(historical)
-    show(api)
-    expect(
-      await screen.findByText(/This historical manual save is read-only/),
-    ).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Continue' })).toBeNull()
-    expect(api.previewTime).not.toHaveBeenCalled()
-    expect(api.advanceTime).not.toHaveBeenCalled()
   })
 })

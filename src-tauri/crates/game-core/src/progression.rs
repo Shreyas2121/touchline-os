@@ -3,8 +3,8 @@ use crate::{
     calendar::{preview_time_advance, BoundaryKind, MATCH_SIMULATION_UNAVAILABLE},
     dates::{validate_timestamp, DateOnly},
     guards::next_revision,
-    AuditAction, AuditEventRow, AuditPayload, CalendarPhase, CampaignMode, CampaignRow,
-    CampaignStatus, CommandError, EntityId, OutcomeRef, SafeInt, SeasonRow, SimulationReceiptRow,
+    AuditAction, AuditEventRow, AuditPayload, CalendarPhase, CampaignRow, CampaignStatus,
+    CommandError, EntityId, OutcomeRef, SafeInt, SeasonRow, SimulationReceiptRow,
     SimulationStateRow, SnapshotTables, VersionOne,
 };
 use serde::{Deserialize, Serialize};
@@ -92,12 +92,7 @@ fn conflict(message: &str) -> CommandError {
         message: message.into(),
     }
 }
-fn historical() -> CommandError {
-    CommandError::Scope {
-        message: "This historical manual save is read-only. You can inspect, export or delete it."
-            .into(),
-    }
-}
+
 fn stopped() -> CommandError {
     CommandError::Scope {
         message: MATCH_SIMULATION_UNAVAILABLE.into(),
@@ -143,9 +138,6 @@ fn load<'a>(
         .iter()
         .find(|row| &row.id == campaign_id)
         .ok_or_else(|| invalid("Campaign not found."))?;
-    if campaign.mode != CampaignMode::Standalone {
-        return Err(historical());
-    }
     let season = tables
         .seasons
         .iter()

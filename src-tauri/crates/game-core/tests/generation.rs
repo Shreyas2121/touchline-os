@@ -263,43 +263,6 @@ fn campaign_ids_and_start_years_do_not_select_football_content() {
 }
 
 #[test]
-fn legacy_generation_is_complete_reproducible_and_separate_from_playable() {
-    let input = LegacyWorldInput {
-        seed: "legacy native".into(),
-        generator_version: LEGACY_GENERATOR_VERSION.into(),
-        campaign_id: id("legacy"),
-    };
-    let first = generate_legacy_world(&input).unwrap();
-    assert_eq!(first, generate_legacy_world(&input).unwrap());
-    assert_eq!(
-        (first.leagues.len(), first.clubs.len(), first.players.len()),
-        (4, 72, 3000)
-    );
-    assert_eq!(
-        first
-            .players
-            .iter()
-            .filter(|p| p.player.club_id.is_none())
-            .count(),
-        120
-    );
-    assert!(first.players.iter().all(|p| p.player.birth_date.is_none()
-        && p.player.reported_age.is_some()
-        && p.weekly_wage_cents.get() >= 0));
-    let serialized = serde_json::to_vec(&first).unwrap();
-    let decoded: LegacyWorld = serde_json::from_slice(&serialized).unwrap();
-    assert_eq!(first, decoded);
-    let playable = generate_playable_world(&PlayableWorldInput {
-        seed: input.seed.clone(),
-        generator_version: PLAYABLE_GENERATOR_VERSION.into(),
-        campaign_id: input.campaign_id.clone(),
-        start_year: s(2026),
-    })
-    .unwrap();
-    assert_ne!(first.players[0].player, playable.players[0]);
-}
-
-#[test]
 fn generator_input_limits_and_generated_id_boundaries_are_enforced() {
     let mut request = input("valid");
     for version in ["1", "3", "", "future"] {
@@ -337,12 +300,6 @@ fn generator_input_limits_and_generated_id_boundaries_are_enforced() {
         assert!(generate_playable_world(&request).is_err());
     }
     assert!(EntityId::new("bad id").is_err());
-    assert!(generate_legacy_world(&LegacyWorldInput {
-        seed: "valid".into(),
-        generator_version: "2".into(),
-        campaign_id: id("valid")
-    })
-    .is_err());
 }
 
 #[test]
@@ -447,8 +404,7 @@ fn prepared_careers_have_one_consistent_initialization_for_each_mode_and_preset(
                 (1, 1, 1, 1, 1, 1, 1)
             );
             assert!(
-                tables.match_records.is_empty()
-                    && tables.transfers.is_empty()
+                tables.transfers.is_empty()
                     && tables.offers.is_empty()
                     && tables.registrations.is_empty()
             );

@@ -6,6 +6,6 @@ See the [bridge progress and cutover gate](native-migration.md#10-exit-and-hando
 
 Current authority: [master](../../../MASTER_PLAN.md), [Phase 7](../../phase7.md) and [decisions](../../../DECISIONS.md).
 
-Next task: [P07-G07a — standalone-only cleanup](../../phase7/guide7a.md), then P07-G07 certification. P07-G06 is complete. Match simulation starts in Phase 8.
+P07-G07a standalone-only cleanup is complete. Next task: [P07-G07 certification](../../phase7/guide7.md). P07-G06 is complete. Match simulation starts in Phase 8.
 
-Current scope is [master 3.0.4 / DEC-006](../../../DECISIONS.md#dec-006--standalone-is-the-only-campaign-model-remove-old-save-compatibility). Old/manual save preservation and compatibility requirements in this archive are superseded. Next is [P07-G07a cleanup](../../phase7/guide7a.md), then P07-G07 certification. Do not re-execute archived guides.
+Current scope is [master 3.0.4 / DEC-006](../../../DECISIONS.md#dec-006--standalone-is-the-only-campaign-model-remove-old-save-compatibility). Old/manual save preservation and compatibility requirements in this archive are superseded. P07-G07a cleanup is complete; next is [P07-G07 certification](../../phase7/guide7.md). Do not re-execute archived guides.

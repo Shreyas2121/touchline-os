@@ -28,10 +28,7 @@ mod snapshot;
 mod validate;
 mod world_validation;
 
-pub use boundary::{
-    reject_client_operation, CommandError, HealthReport, StorageAvailability, APP_IDENTIFIER,
-    CLIENT_OPERATIONS, PRODUCT_NAME,
-};
+pub use boundary::{CommandError, HealthReport, StorageAvailability, APP_IDENTIFIER, PRODUCT_NAME};
 pub use enums::*;
 pub use ids::{EntityId, Euro, FormatVersion, VersionOne};
 pub use numbers::{MoneyCents, SafeInt, JS_MAX_SAFE_INTEGER};

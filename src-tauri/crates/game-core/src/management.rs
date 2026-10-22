@@ -11,7 +11,6 @@ use serde_json::json;
 use std::collections::BTreeSet;
 use ts_rs::TS;
 
-pub const LEGACY_DEMO_ID: &str = "native-legacy-demo";
 pub const STANDALONE_DEMO_ID: &str = "native-standalone-demo";
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -35,15 +34,6 @@ pub enum ManagementAction {
         archived: bool,
     },
     Delete,
-    SelectClub {
-        club_id: EntityId,
-    },
-    AddPlayer {
-        player: PlayerRow,
-    },
-    UpdatePlayer {
-        player: PlayerRow,
-    },
     SaveLineup {
         lineup: LineupRow,
     },
@@ -90,9 +80,7 @@ pub struct ManagementOutcome {
 #[serde(rename_all = "kebab-case")]
 pub enum CreationKind {
     Career,
-    Legacy,
     StandaloneDemo,
-    LegacyDemo,
 }
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -100,40 +88,11 @@ pub struct CreationRequest {
     pub career: career::CareerInput,
     pub kind: CreationKind,
     pub reset_revision: Option<SafeInt>,
-    pub club: Option<ClubCreation>,
 }
-#[derive(Debug, Clone, Serialize, Deserialize, TS)]
-#[serde(rename_all = "camelCase", deny_unknown_fields)]
-pub struct ClubCreation {
-    pub name: String,
-    pub short_name: String,
-    pub colors: ClubColors,
-    pub prestige: SafeInt,
-    pub academy_tier: SafeInt,
-    pub scouting_region: Option<String>,
-}
-// Retain retired wire variants to give old clients a clear refusal, not a write.
 pub fn require_supported_creation(request: &CreationRequest) -> Result<(), CommandError> {
-    if matches!(
-        request.kind,
-        CreationKind::Legacy | CreationKind::LegacyDemo
-    ) {
-        return Err(CommandError::Scope {
-            message: "Manual campaigns and demos are retired. Create a standalone career.".into(),
-        });
-    }
-    if request.club.is_some() {
-        return Err(CommandError::Scope {
-            message: "Manual club customization is retired. Choose a generated club.".into(),
-        });
-    }
     let id = request.career.campaign_id.as_str();
     match request.kind {
-        CreationKind::Career
-            if id == LEGACY_DEMO_ID
-                || id == STANDALONE_DEMO_ID
-                || request.reset_revision.is_some() =>
-        {
+        CreationKind::Career if id == STANDALONE_DEMO_ID || request.reset_revision.is_some() => {
             return Err(invalid(
                 "Demo identities and reset are reserved for the standalone demo.",
             ))
@@ -160,16 +119,6 @@ fn guard(error: GuardError) -> CommandError {
     }
 }
 pub fn fingerprint(command: &ManagementCommand) -> Result<String, CommandError> {
-    if matches!(
-        command.action,
-        ManagementAction::SelectClub { .. }
-            | ManagementAction::AddPlayer { .. }
-            | ManagementAction::UpdatePlayer { .. }
-    ) {
-        return Err(CommandError::Scope {
-            message: "Direct player editing and club switching are retired.".into(),
-        });
-    }
     if command.expected_revision.get() < 0 {
         return Err(invalid("Expected revision must be non-negative."));
     }
@@ -211,17 +160,6 @@ pub fn apply(
         .clone();
     if campaign.id != command.campaign_id {
         return Err(invalid("Campaign scope does not match."));
-    }
-    // Retirement must precede receipt replay: an old successful write cannot
-    // make a historical save editable again, even when the action ID matches.
-    if campaign.mode != CampaignMode::Standalone
-        && !matches!(command.action, ManagementAction::Delete)
-    {
-        return Err(CommandError::Scope {
-            message:
-                "This historical manual save is read-only. You can inspect, export or delete it."
-                    .into(),
-        });
     }
     if let Some(audit) = tables
         .audit_events
@@ -297,13 +235,6 @@ pub fn apply(
                 replayed: false,
                 deleted: true,
             })
-        }
-        ManagementAction::SelectClub { .. }
-        | ManagementAction::AddPlayer { .. }
-        | ManagementAction::UpdatePlayer { .. } => {
-            return Err(CommandError::Scope {
-                message: "Direct player editing and club switching are retired.".into(),
-            });
         }
         ManagementAction::SaveLineup { lineup } => {
             require_scope(&campaign.id, &lineup.campaign_id).map_err(guard)?;
@@ -514,7 +445,7 @@ pub fn apply(
                 };
                 let mut row = draft.clone();
                 row.provenance = RecordSource::UserEntered;
-                if campaign.mode == CampaignMode::Standalone {
+                {
                     let profile = profile
                         .ok_or_else(|| invalid("Standalone eligibility profile is missing."))?;
                     row.homegrown_club = Some(profile.homegrown_club);
@@ -597,11 +528,6 @@ pub fn apply(
                 "Restored campaign."
             }
             .into(),
-            ManagementAction::SelectClub { .. } => {
-                "Selected the managed club and cleared former squad selections.".into()
-            }
-            ManagementAction::AddPlayer { player } => format!("Added {}.", player.name),
-            ManagementAction::UpdatePlayer { player } => format!("Corrected {}.", player.name),
             ManagementAction::SaveLineup { lineup } => format!("Saved lineup {}.", lineup.name),
             ManagementAction::DeleteLineup { .. } => "Deleted a saved lineup.".into(),
             ManagementAction::SaveNote { .. } => "Saved a development planning note.".into(),

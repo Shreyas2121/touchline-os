@@ -12,7 +12,7 @@ import { createBrowserClient } from '../platform/browser-client'
 import type { GameClient } from '../platform/game-client'
 import type { CampaignSnapshot } from '../platform/generated/CampaignSnapshot'
 import type { ScreenModel } from '../platform/generated/ScreenModel'
-import source from '../../compatibility/snapshots/standalone-v2.json'
+import source from '../../src-tauri/fixtures/standalone.json'
 
 const snapshot = source as CampaignSnapshot
 const campaign = snapshot.tables.campaigns[0]!
@@ -26,7 +26,6 @@ function model(): ScreenModel {
     finance: { capacity: '€500.00', wages: 'Unknown', tiers: {} },
     activeConstitution: snapshot.tables.constitutions[0] ?? null,
     reports: [],
-    chooseClubRequired: false,
     labels: {},
   }
 }
@@ -105,54 +104,6 @@ describe('native management forms', () => {
             campaignId: 'native-standalone-demo',
             seed: 'native-standalone-demo-v2',
           }),
-        }),
-      ),
-    )
-  })
-  it('keeps every historical route read-only while allowing confirmed deletion', async () => {
-    const api = client()
-    const historical = model()
-    historical.rows.campaigns[0]!.mode = 'legacy'
-    historical.rows.campaigns[0]!.rulesMode = 'sandbox'
-    historical.rows.campaigns[0]!.id = 'native-legacy-demo'
-    api.screen = vi
-      .fn()
-      .mockResolvedValue({ ...historical, chooseClubRequired: true })
-    show(api, 'squad')
-    await screen.findByText(/This historical manual save is read-only/)
-    for (const label of [
-      'Tactics',
-      'Registration',
-      'Scouting',
-      'Constitution',
-      'Transfers',
-      'Finance',
-      'Match Journal',
-    ]) {
-      fireEvent.click(screen.getByRole('link', { name: label }))
-      await screen.findByRole('heading', { name: label, level: 1 })
-      expect(
-        screen.queryByRole('button', {
-          name: /^(Save|Add player|Rename campaign|Archive campaign|Reset this demo|Record|Post prize)/,
-        }),
-      ).toBeNull()
-      expect(screen.queryByLabelText('Campaign name')).toBeNull()
-    }
-    fireEvent.click(screen.getByRole('link', { name: 'Command Center' }))
-    await screen.findByRole('heading', { name: 'Command Center', level: 1 })
-    expect(screen.queryByRole('button', { name: 'Continue' })).toBeNull()
-    expect(api.previewTime).not.toHaveBeenCalled()
-    expect(api.advanceTime).not.toHaveBeenCalled()
-    expect(api.planning).not.toHaveBeenCalled()
-    expect(api.manage).not.toHaveBeenCalled()
-    fireEvent.click(screen.getByRole('button', { name: 'Delete campaign' }))
-    expect(api.manage).not.toHaveBeenCalled()
-    fireEvent.click(screen.getByRole('button', { name: 'Confirm deletion' }))
-    await waitFor(() =>
-      expect(api.manage).toHaveBeenCalledWith(
-        expect.objectContaining({
-          campaignId: 'native-legacy-demo',
-          action: { type: 'delete' },
         }),
       ),
     )

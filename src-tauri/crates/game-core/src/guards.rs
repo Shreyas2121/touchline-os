@@ -1,4 +1,4 @@
-use crate::{CampaignMode, CampaignRow, CoreResult, PlayerRow, RulesMode, SafeInt, SeasonRow};
+use crate::{CampaignRow, CoreResult, PlayerRow, RulesMode, SafeInt, SeasonRow};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -30,12 +30,9 @@ pub enum StandaloneWrite {
     Club,
 }
 pub fn reject_standalone_write(
-    campaign: &CampaignRow,
+    _campaign: &CampaignRow,
     action: StandaloneWrite,
 ) -> Result<(), GuardError> {
-    if campaign.mode != CampaignMode::Standalone {
-        return Ok(());
-    }
     let message = match action {
         StandaloneWrite::Match => crate::calendar::MATCH_SIMULATION_UNAVAILABLE,
         StandaloneWrite::Negotiation => "Negotiation arrives in a later phase.",

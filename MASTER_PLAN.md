@@ -4,7 +4,7 @@
 > **Product:** Touchline OS (working name)
 > **Product choice:** **Standalone Sporting Director Sim**
 > **Target:** Offline desktop application: Tauri 2 + React/Vite UI + Rust game backend + SQLite
-> **Status:** P07-G06 complete; standalone-only cleanup P07-G07a required before P07-G07 certification
+> **Status:** P07-G06 progression and P07-G07a standalone-only cleanup complete; P07-G07 certification next
 > **Plan version:** `3.0.4` (product release target remains v1)
 > **Last revised:** 2026-10-22
 > **Execution chain:** master → active phase → guide → one reviewed Git commit per guide
@@ -26,9 +26,9 @@ Read master and the active bridge/phase plan before a guide. Resolve conflicts b
 
 - Phases 1–6 and `P07-G01` are completed companion foundations under plan 1.0.0.
 - `P07-G02` through `P07-G05` are completed web standalone foundations under plan 2.0.0. Preserve every completed guide file, SHA and recorded check.
-- Web checkpoint: `df23431abf8807cf61d2d1b63c66d6f7ef6a4cd3` (G05), followed by evidence commit `7b3c6a0`. New browser careers exist in IndexedDB v2. The native shell, SQLite persistence, pure core foundations, world generation, career preparation, bounded screen reads, migration UI, atomic career creation and management writes are implemented and certified through NM-G09. Continue was completed in P07-G06 at `3b190ba255ae8a56670c571b10bf235119fe4211`. Old-save compatibility retained by those earlier commits is no longer required and must be removed in P07-G07a. Match simulation remains pending. See the archived bridge progress log for actual native SHAs and unit/integration verification evidence.
-- **Next execution: `plans/phase7/guide7a.md` (P07-G07a: remove non-standalone compatibility)**, then P07-G07 certification. This is new forward work under DEC-006, not a rerun of the completed native bridge.
-- Keep completed P07-G01–G05 unchanged. The completed NM-G01–NM-G09 bridge is archived at `plans/archive/native-migration/`; preserve its guide files, SHAs and check evidence. P07-G06 is complete. Execute P07-G07a cleanup, then P07-G07 (native foundation certification).
+- Web checkpoint: `df23431abf8807cf61d2d1b63c66d6f7ef6a4cd3` (G05), followed by evidence commit `7b3c6a0`. New browser careers exist in IndexedDB v2. The native shell, SQLite persistence, pure core foundations, world generation, career preparation, bounded screen reads, migration UI, atomic career creation and management writes are implemented and certified through NM-G09. Continue was completed in P07-G06 at `3b190ba255ae8a56670c571b10bf235119fe4211`. P07-G07a removed the old-save compatibility retained by those earlier commits, introduced standalone schema 2 and removed the browser gameplay path from the normal bundle. Match simulation remains pending. See the archived bridge progress log for actual native SHAs and unit/integration verification evidence.
+- **Next execution: `plans/phase7/guide7.md` (P07-G07: standalone foundation certification)**. P07-G07a removed non-standalone compatibility; do not rerun completed work.
+- Keep completed P07-G01–G05 unchanged. The completed NM-G01–NM-G09 bridge is archived at `plans/archive/native-migration/`; preserve its guide files, SHAs and check evidence. P07-G06 is complete. P07-G07a is complete. Execute P07-G07 (native foundation certification).
 - Superseded companion instructions remain under `plans/archive/companion-v1/`. Superseded plan-2 Phase 7 and pending guides are under `plans/archive/web-standalone-v2/`. Archives are reference only.
 - Future Phases 8–12 retain their gameplay/analytics/import outcomes but execute on Rust/SQLite. Phase 13 becomes desktop release hardening.
 - Standalone careers are the only campaign model (DEC-006). There is no product requirement to import, inspect, export, back up, convert or preserve manual-mode saves. Archived code and evidence do not create compatibility obligations.
@@ -263,13 +263,13 @@ These are domain contracts, not literal Dexie store declarations. Only supported
 - Keep v1 `Appearance.rating` and simulation ratings on 0–100; a UI may render 68 as 6.8/10 with an explicit scale.
 - xG stays integer milli-units, reusing the existing parse/format convention. Keep explicit standalone units.
 - Both teams' simulated appearances are canonical. Use read adapters for common player reports, not duplicate manual match rows.
-- Future entities receive SQLite migrations in their owning phase; the native bridge ports only the 23 existing game stores and transport metadata.
+- Future entities receive SQLite migrations in their owning phase; the completed native bridge originally ported 23 stores; P07-G07a retains 21 standalone collections and transport metadata.
 - Large world snapshots/results belong in their own stores, not the bounded audit payload.
 
 ### 4.4 Native ownership and storage boundary
 
 - `game-core`: domain models, schemas/invariants and pure computations. Implement intended standalone rules with native invariant tests; previous TypeScript behavior is not an authority.
-- `game-store`: SQLite mappings for the 23 current game stores, scoped queries, constraints, migrations and consistent backups. Preserve rows and null/optional semantics.
+- `game-store`: SQLite schema-2 mappings for the 21 standalone collections, scoped queries, constraints, migrations and consistent backups. Preserve rows and null/optional semantics.
 - `game-app`: use cases, fresh-state validation, policy preview/commit, optimistic revisions, receipts and atomic business effects.
 - `src-tauri/src`: thin Tauri bootstrap/commands, app paths, file dialogs, ID/time providers and progress transport.
 - `src/platform`: generated DTO types and GameClient native adapter. React never receives a connection or arbitrary SQL capability.
@@ -627,14 +627,14 @@ Completed G01–G05 retain their original subjects and implementation evidence:
 - `P07-G04` — playable generator v2; `feat(p07-g04): generate playable club worlds`.
 - `P07-G05` — web career creation/guards; `feat(p07-g05): start standalone careers safely`.
 
-**Current execution:** P07-G07a standalone-only cleanup → P07-G07 certification → Phase 8 planning. P07-G06 is complete.
+**Current execution:** P07-G07 certification → Phase 8 planning. P07-G06 and P07-G07a are complete.
 
 The native migration prerequisite is complete through NM-G09. Its plan, nine guides, actual SHAs, service audit and passed unit/integration cutover gate are preserved under `plans/archive/native-migration/`. It is no longer an active work stage. Continue and later gameplay were not added by the bridge.
 
 #### Remaining Phase 7 work
 
 - `P07-G06` — Completed Rust Continue/command-center progression to kickoff. Commit: `feat(p07-g06): advance native careers deterministically`.
-- `P07-G07a` — Remove non-standalone model, compatibility paths and obsolete tests. Commit: `refactor(p07-g07a): remove non-standalone compatibility`.
+- `P07-G07a` — Completed removal of the non-standalone model, compatibility paths and obsolete tests. Commit: `refactor(p07-g07a): remove non-standalone compatibility`.
 - `P07-G07` — Native foundation/clock certification after P07-G07a. Commit: `test(p07-g07): verify native standalone foundations`.
 
 **Phase exit:** a native career reaches kickoff exactly once; no match engine yet. Generate Phase 8 plans only after the resumed foundation passes.
@@ -1020,7 +1020,7 @@ Material changes require a master version update, a DECISIONS entry, affected pe
 - Keep standalone game design and Phases 8–12 outcomes. Insert a separate migration bridge before pending Phase 7 G06/G07; update release Phase 13 and preserve completed work.
 - Historical browser code is optional reference only. Desktop standalone is the product; no old-save compatibility or second playable edition is required (DEC-006).
 
-**Next execution:** `plans/phase7/guide7a.md`, after master 3.0.4, DEC-006 and `plans/phase7.md`. Remove non-standalone compatibility before P07-G07 certifies the foundation. Plan Phase 8 only after certification passes.
+**Next execution:** `plans/phase7/guide7.md`, after master 3.0.4, DEC-006 and `plans/phase7.md`. Standalone-only cleanup is complete; certify the foundation before planning Phase 8.
 
 ---
 
