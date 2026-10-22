@@ -4,6 +4,7 @@
 > **Completed:** P07-G01–G05; files and evidence preserved unchanged
 > **Checkpoint:** `df23431abf8807cf61d2d1b63c66d6f7ef6a4cd3` (G05), followed by `7b3c6a0`
 > **Current stage:** Phase 7; next [P07-G06 — Rust Continue](phase7/guide6.md)
+> **Native prerequisite:** NM-G09 certified at `93e4ad192010bd660d5d0388e7b60bc7404c1d83`; archived check evidence records gate PASS
 > **P07-G06/G07:** Pending; native migration prerequisite passed
 > **Status:** NM-G01–NM-G09 complete and [archived](archive/native-migration/native-migration.md); progression remains pending
 
