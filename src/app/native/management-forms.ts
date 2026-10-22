@@ -1,29 +1,23 @@
 import type { FormEvent } from 'react'
 import type { CreationRequest } from '../../platform/generated/CreationRequest'
-import type { CreationKind } from '../../platform/generated/CreationKind'
 import type { ManagementAction } from '../../platform/generated/ManagementAction'
 
 export function makeCareerRequest(
-  kind: CreationKind,
+  kind: 'career' | 'standalone-demo',
   campaignId: string = crypto.randomUUID(),
 ): CreationRequest {
-  const legacy = kind === 'legacy' || kind === 'legacy-demo'
-  const demo = kind === 'legacy-demo' || kind === 'standalone-demo'
+  const demo = kind === 'standalone-demo'
   return {
     kind,
     resetRevision: null,
     club: null,
     career: {
-      campaignId: demo
-        ? `native-${legacy ? 'legacy' : 'standalone'}-demo`
-        : campaignId,
-      name: demo ? `${legacy ? 'Legacy' : 'Standalone'} demo` : 'New career',
-      seed: demo
-        ? `native-${legacy ? 'legacy-demo-v1' : 'standalone-demo-v2'}`
-        : 'touchline-world',
+      campaignId: demo ? 'native-standalone-demo' : campaignId,
+      name: demo ? 'Standalone demo' : 'New career',
+      seed: demo ? 'native-standalone-demo-v2' : 'touchline-world',
       startYear: 2026,
       clubKey: 'club:01',
-      rulesMode: legacy ? 'sandbox' : 'challenge',
+      rulesMode: 'challenge',
       preset: 'balanced',
       now: new Date().toISOString(),
       seasonId: crypto.randomUUID(),

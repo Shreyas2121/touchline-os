@@ -162,15 +162,23 @@ pub(super) fn probe(
     request: &CreationRequest,
     signature: &str,
 ) -> Result<Option<ManagementOutcome>> {
+    require_supported_creation(request).map_err(StoreError::Command)?;
     let id = request.career.campaign_id.as_str();
-    let revision: Option<i64> = db
-        .query_row("SELECT revision FROM campaigns WHERE id=?1", [id], |r| {
-            r.get(0)
-        })
+    let saved: Option<(i64, String)> = db
+        .query_row(
+            "SELECT revision,mode FROM campaigns WHERE id=?1",
+            [id],
+            |r| Ok((r.get(0)?, r.get(1)?)),
+        )
         .optional()?;
-    let Some(revision) = revision else {
+    let Some((revision, mode)) = saved else {
         return Ok(None);
     };
+    if mode != "standalone" {
+        return Err(StoreError::Command(CommandError::Scope {
+            message: "Historical manual saves cannot be recreated or reset.".into(),
+        }));
+    }
     let prior: Option<(String, String)> = db
         .query_row(
             "SELECT actionId,payload FROM auditEvents WHERE campaignId=?1 AND actionId=?2",
@@ -219,6 +227,12 @@ pub(super) fn create(
     mut tables: Value,
     signature: &str,
 ) -> Result<ManagementOutcome> {
+    require_supported_creation(&request).map_err(StoreError::Command)?;
+    if tables["campaigns"][0]["mode"].as_str() != Some("standalone") {
+        return Err(StoreError::Command(CommandError::Scope {
+            message: "Only standalone careers can be created.".into(),
+        }));
+    }
     let tx = db.transaction_with_behavior(TransactionBehavior::Immediate)?;
     if let Some(result) = probe(&tx, &request, signature)? {
         return Ok(result);
@@ -234,12 +248,9 @@ pub(super) fn create(
             )
             .optional()?;
         let (current, mode) = mode.ok_or(StoreError::NotFound)?;
-        if !((request.kind == CreationKind::StandaloneDemo
+        if !(request.kind == CreationKind::StandaloneDemo
             && id == STANDALONE_DEMO_ID
             && mode == "standalone")
-            || (request.kind == CreationKind::LegacyDemo
-                && id == LEGACY_DEMO_ID
-                && mode == "legacy"))
         {
             return Err(reject("Only the matching native demo can be reset."));
         }

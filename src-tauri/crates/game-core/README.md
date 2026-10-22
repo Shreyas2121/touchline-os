@@ -1,10 +1,10 @@
 # Native foundations
 
-Product scope follows master 3.0.2 / DEC-004: standalone simulation only. The
-manual generator/management APIs documented below describe the completed NM-G07
-checkpoint, not a requirement to continue companion gameplay. Revised NM-G08
-retires manual creation/editing paths while preserving stored rows and fixtures;
-no additional manual match/finance/market command port is planned.
+Product scope follows master 3.0.2 / DEC-004: standalone simulation only. NM-G08
+retires manual creation/editing paths while preserving stored rows and fixtures.
+Historical generator v1 remains reference support. Retired command wire variants
+receive an explicit refusal; they do not authorize manual gameplay. No manual
+match/finance/market command port is planned.
 
 The core exposes pure models and functions for the native application services.
 It has no storage, platform, network, ambient clock or ambient RNG dependency.
@@ -104,3 +104,11 @@ Challenge constitutions are locked in every campaign mode. Standalone player
 and club edits are forbidden. Registration derives standalone homegrown facts
 and age in Rust. Constitution versions are immutable, and changing an opening
 allocation cannot issue a second allocation, including after reversal.
+
+NM-G08 checks retirement before any management receipt replay. Historical manual
+campaigns allow only explicit deletion through management; all other actions
+refuse without a revision or audit. Direct player add/update and club switching
+refuse in every mode. `require_supported_creation` rejects retired campaign/demo
+kinds and club customization before generation or initialization receipt lookup.
+The standalone fingerprint format is unchanged. Constitution edits never create
+an allocation; a missing required initialization allocation is an error.

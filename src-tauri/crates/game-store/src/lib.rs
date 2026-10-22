@@ -181,6 +181,7 @@ impl Store {
         tables: game_core::SnapshotTables,
         fingerprint: String,
     ) -> Result<game_core::management::ManagementOutcome> {
+        game_core::management::require_supported_creation(&request).map_err(StoreError::Command)?;
         if tables.campaigns.len() != 1
             || tables.audit_events.len() != 1
             || tables.simulation_receipts.len() != 1

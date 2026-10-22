@@ -72,6 +72,71 @@ function show(api: GameClient, section?: string) {
 }
 
 describe('native management forms', () => {
+  it('offers standalone demo creation with its reserved identity and seed', async () => {
+    const api = client()
+    show(api)
+    fireEvent.click(screen.getByRole('button', { name: 'Create career' }))
+    fireEvent.change(screen.getByLabelText('Campaign type'), {
+      target: { value: 'standalone-demo' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Preview clubs' }))
+    await screen.findByLabelText('Managed club')
+    fireEvent.click(screen.getByRole('button', { name: 'Start campaign' }))
+    await waitFor(() =>
+      expect(api.createCareer).toHaveBeenCalledWith(
+        expect.objectContaining({
+          kind: 'standalone-demo',
+          career: expect.objectContaining({
+            campaignId: 'native-standalone-demo',
+            seed: 'native-standalone-demo-v2',
+          }),
+        }),
+      ),
+    )
+  })
+  it('keeps every historical route read-only while allowing confirmed deletion', async () => {
+    const api = client()
+    const historical = model()
+    historical.rows.campaigns[0]!.mode = 'legacy'
+    historical.rows.campaigns[0]!.rulesMode = 'sandbox'
+    historical.rows.campaigns[0]!.id = 'native-legacy-demo'
+    api.screen = vi
+      .fn()
+      .mockResolvedValue({ ...historical, chooseClubRequired: true })
+    show(api, 'squad')
+    await screen.findByText(/This historical manual save is read-only/)
+    for (const label of [
+      'Tactics',
+      'Registration',
+      'Scouting',
+      'Constitution',
+      'Transfers',
+      'Finance',
+      'Match Journal',
+    ]) {
+      fireEvent.click(screen.getByRole('link', { name: label }))
+      await screen.findByRole('heading', { name: label, level: 1 })
+      expect(
+        screen.queryByRole('button', {
+          name: /^(Save|Add player|Rename campaign|Archive campaign|Reset this demo|Record|Post prize)/,
+        }),
+      ).toBeNull()
+      expect(screen.queryByLabelText('Campaign name')).toBeNull()
+    }
+    expect(api.planning).not.toHaveBeenCalled()
+    expect(api.manage).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'Delete campaign' }))
+    expect(api.manage).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm deletion' }))
+    await waitFor(() =>
+      expect(api.manage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          campaignId: 'native-legacy-demo',
+          action: { type: 'delete' },
+        }),
+      ),
+    )
+  })
   it('loads bounded roster pages before editing and preserves a saved player beyond the first page', async () => {
     const api = client()
     const base = model()
@@ -134,6 +199,12 @@ describe('native management forms', () => {
     const api = client()
     show(api)
     fireEvent.click(screen.getByRole('button', { name: 'Create career' }))
+    expect(
+      within(screen.getByLabelText('Campaign type'))
+        .getAllByRole('option')
+        .map((o) => o.textContent),
+    ).toEqual(['Standalone career', 'Standalone demo'])
+    expect(screen.queryByText(/Customize the selected club/)).toBeNull()
     fireEvent.change(screen.getByLabelText('Career name'), {
       target: { value: 'My Sandbox' },
     })

@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { Link, useNavigate } from 'react-router'
+import { useNavigate } from 'react-router'
 import type { GameClient } from '../../platform/game-client'
 import type { ScreenModel } from '../../platform/generated/ScreenModel'
 import type { Screen } from '../../platform/generated/Screen'
@@ -14,7 +14,6 @@ import {
   ConstitutionEditor,
   LineupEditor,
   PlanningEditor,
-  PlayerEditor,
 } from './NativeEditors'
 
 export function NativeManagementPanel({
@@ -32,6 +31,7 @@ export function NativeManagementPanel({
 }) {
   const campaign = model.rows.campaigns[0]!
   const navigate = useNavigate()
+  const historical = campaign.mode !== 'standalone'
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [confirm, setConfirm] = useState<'delete' | 'reset' | null>(null)
@@ -68,8 +68,6 @@ export function NativeManagementPanel({
       pending.current = null
       onSaved(result)
       if (result.deleted) navigate('/')
-      else if (action.type === 'select-club')
-        navigate(`/app/${campaign.id}/command-center`)
     } catch (error) {
       setError(mapInvokeError(error).message)
     } finally {
@@ -79,9 +77,8 @@ export function NativeManagementPanel({
   async function reset() {
     setBusy(true)
     setError('')
-    const kind =
-      campaign.id === 'native-legacy-demo' ? 'legacy-demo' : 'standalone-demo'
-    const request = pendingReset.current ?? makeCareerRequest(kind, campaign.id)
+    const request =
+      pendingReset.current ?? makeCareerRequest('standalone-demo', campaign.id)
     request.resetRevision = model.revision
     pendingReset.current = request
     try {
@@ -103,51 +100,55 @@ export function NativeManagementPanel({
     >
       <fieldset disabled={busy} className="space-y-4">
         <h2>Campaign management</h2>
-        {campaign.mode === 'legacy' && screen !== 'choose-club' && (
-          <Link to={`/app/${campaign.id}/choose-club`}>
-            Change managed club
-          </Link>
+        {!historical && (
+          <>
+            <form
+              className="flex flex-wrap gap-3"
+              onSubmit={(e) =>
+                submit(
+                  e,
+                  (data) => ({
+                    type: 'rename',
+                    name: String(data.get('name') ?? ''),
+                  }),
+                  send,
+                )
+              }
+            >
+              <label>
+                Campaign name{' '}
+                <input
+                  name="name"
+                  defaultValue={campaign.name}
+                  required
+                  maxLength={120}
+                />
+              </label>
+              <Button type="submit">Rename campaign</Button>
+            </form>
+            <Button
+              onClick={() => {
+                void send({
+                  type: 'archive',
+                  archived: campaign.status !== 'archived',
+                })
+              }}
+            >
+              {campaign.status === 'archived'
+                ? 'Restore campaign'
+                : 'Archive campaign'}
+            </Button>
+          </>
         )}
-        <form
-          className="flex flex-wrap gap-3"
-          onSubmit={(e) =>
-            submit(
-              e,
-              (data) => ({
-                type: 'rename',
-                name: String(data.get('name') ?? ''),
-              }),
-              send,
-            )
-          }
-        >
-          <label>
-            Campaign name{' '}
-            <input
-              name="name"
-              defaultValue={campaign.name}
-              required
-              maxLength={120}
-            />
-          </label>
-          <Button type="submit">Rename campaign</Button>
-        </form>
-        <Button
-          onClick={() => {
-            void send({
-              type: 'archive',
-              archived: campaign.status !== 'archived',
-            })
-          }}
-        >
-          {campaign.status === 'archived'
-            ? 'Restore campaign'
-            : 'Archive campaign'}
-        </Button>
+        {historical && (
+          <p>
+            This historical manual save is read-only. You can inspect, export or
+            delete it. It cannot be played or converted into a standalone
+            career.
+          </p>
+        )}
         <Button onClick={() => setConfirm('delete')}>Delete campaign</Button>
-        {['native-legacy-demo', 'native-standalone-demo'].includes(
-          campaign.id,
-        ) && (
+        {!historical && campaign.id === 'native-standalone-demo' && (
           <Button onClick={() => setConfirm('reset')}>Reset this demo</Button>
         )}
         {confirm && (
@@ -171,39 +172,8 @@ export function NativeManagementPanel({
             </Button>
           </section>
         )}
-        {campaign.status === 'active' && (
+        {!historical && campaign.status === 'active' && (
           <>
-            {screen === 'choose-club' && campaign.mode === 'legacy' && (
-              <form
-                onSubmit={(e) =>
-                  submit(
-                    e,
-                    (data) => ({
-                      type: 'select-club',
-                      clubId: String(data.get('club')),
-                    }),
-                    send,
-                  )
-                }
-              >
-                <label>
-                  Managed club{' '}
-                  <select name="club" defaultValue={campaign.managedClubId}>
-                    {model.rows.clubs.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <p>
-                  Switching clubs clears active-season lineups and
-                  registrations. Earlier season history is preserved.
-                </p>
-                <Button type="submit">Select managed club</Button>
-              </form>
-            )}
-            {screen === 'squad' && <PlayerEditor {...props} />}
             {screen === 'tactics' && <LineupEditor {...props} />}
             {screen === 'constitution' && <ConstitutionEditor {...props} />}
             {['scouting', 'transfers'].includes(screen) && (
@@ -254,16 +224,6 @@ function RegistrationEditor({
         .map((r) => r.playerId),
     ),
   )
-  const [flags, setFlags] = useState<
-    Record<
-      string,
-      Partial<{
-        club: boolean | null
-        nation: boolean | null
-        exempt: boolean | null
-      }>
-    >
-  >({})
   const players = [
     ...new Map(
       loaded.flatMap((m) => m.rows.players).map((p) => [p.id, p]),
@@ -312,35 +272,6 @@ function RegistrationEditor({
       setLoading(false)
     }
   }
-  function flag(
-    player: string,
-    field: 'club' | 'nation' | 'exempt',
-    value: string,
-  ) {
-    setFlags((old) => ({
-      ...old,
-      [player]: {
-        ...old[player],
-        [field]: value === '' ? null : value === 'yes',
-      },
-    }))
-  }
-  function flagValue(player: string, field: 'club' | 'nation' | 'exempt') {
-    const old = saved.find(
-      (r) => r.playerId === player && r.competitionKey === key,
-    )
-    const value =
-      flags[player]?.[field] === undefined
-        ? old?.[
-            field === 'club'
-              ? 'homegrownClub'
-              : field === 'nation'
-                ? 'homegrownNation'
-                : 'ageExempt'
-          ]
-        : flags[player]?.[field]
-    return value === true ? 'yes' : value === false ? 'no' : ''
-  }
   return (
     <section className="space-y-3">
       <h2>Registration editor</h2>
@@ -376,18 +307,9 @@ function RegistrationEditor({
                 playerId: p.id,
                 competitionKey: key,
                 status: 'registered',
-                homegrownClub:
-                  flags[p.id]?.club === undefined
-                    ? (old?.homegrownClub ?? null)
-                    : flags[p.id]!.club!,
-                homegrownNation:
-                  flags[p.id]?.nation === undefined
-                    ? (old?.homegrownNation ?? null)
-                    : flags[p.id]!.nation!,
-                ageExempt:
-                  flags[p.id]?.exempt === undefined
-                    ? (old?.ageExempt ?? null)
-                    : flags[p.id]!.exempt!,
+                homegrownClub: old?.homegrownClub ?? null,
+                homegrownNation: old?.homegrownNation ?? null,
+                ageExempt: old?.ageExempt ?? null,
                 provenance: 'user-entered',
               }
             })
@@ -424,21 +346,6 @@ function RegistrationEditor({
                 />
                 {p.name}
               </label>
-              {campaign.mode === 'legacy' &&
-                selected.has(p.id) &&
-                (['club', 'nation', 'exempt'] as const).map((field) => (
-                  <label key={field}>
-                    {field} eligibility{' '}
-                    <select
-                      value={flagValue(p.id, field)}
-                      onChange={(e) => flag(p.id, field, e.target.value)}
-                    >
-                      <option value="">Unknown</option>
-                      <option value="yes">Yes</option>
-                      <option value="no">No</option>
-                    </select>
-                  </label>
-                ))}
             </div>
           ))}
           {players.length > 50 && (

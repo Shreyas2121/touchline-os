@@ -24,7 +24,7 @@ import { NativeCareerForm } from './NativeCareerForm'
 import { NativeManagementPanel } from './NativeManagementPanel'
 
 const readOnly =
-  'Career management is available natively. Contract, finance, match and transfer recording will arrive in later updates. Continue is not available.'
+  'Standalone career management is available. Match simulation and negotiations arrive in later phases. Manual campaign gameplay is retired. Continue is not available.'
 
 export function NativeWorkspace({ client }: { client: GameClient }) {
   return (
@@ -259,7 +259,10 @@ function Campaigns({ client }: { client: GameClient }) {
               {state.data.campaigns.map((c) => (
                 <li key={c.id}>
                   <Link to={`/app/${c.id}/command-center`}>{c.name}</Link> ·{' '}
-                  {c.mode} · {c.rulesMode} · {c.status} · revision {c.revision}
+                  {c.mode === 'legacy'
+                    ? 'Historical · read-only'
+                    : 'standalone'}{' '}
+                  · {c.rulesMode} · {c.status} · revision {c.revision}
                 </li>
               ))}
             </ul>
@@ -411,9 +414,11 @@ function ScreenContent({
         data &&
         campaign && (
           <>
-            {data.chooseClubRequired && screen !== 'choose-club' && (
-              <Navigate to={`/app/${campaignId}/choose-club`} replace />
-            )}
+            {campaign.mode === 'standalone' &&
+              data.chooseClubRequired &&
+              screen !== 'choose-club' && (
+                <Navigate to={`/app/${campaignId}/choose-club`} replace />
+              )}
             <header className="flex flex-wrap items-center gap-4">
               {club && (
                 <CrestSvg
@@ -431,8 +436,11 @@ function ScreenContent({
                   {season?.label ?? 'Unknown season'}
                 </p>
                 <p>
-                  {campaign.mode} · {campaign.rulesMode} · revision{' '}
-                  {data.revision} · {campaign.status}
+                  {campaign.mode === 'legacy'
+                    ? 'Historical · read-only'
+                    : 'standalone'}{' '}
+                  · {campaign.rulesMode} · revision {data.revision} ·{' '}
+                  {campaign.status}
                 </p>
               </div>
               <Button
@@ -445,13 +453,6 @@ function ScreenContent({
             </header>
             {notice && <p role="status">{notice}</p>}
             <p>{readOnly}</p>
-            <div className="flex flex-wrap gap-3">
-              {unavailableActions(screen).map((label) => (
-                <Button disabled key={label}>
-                  {label}
-                </Button>
-              ))}
-            </div>
             {data.finance &&
               ['command-center', 'finance', 'transfers'].includes(screen) && (
                 <dl className="flex flex-wrap gap-6">
@@ -472,7 +473,7 @@ function ScreenContent({
                     ))}
                 </dl>
               )}
-            {screen === 'command-center' && (
+            {campaign.mode === 'standalone' && screen === 'command-center' && (
               <>
                 <p>
                   Current date:{' '}
@@ -541,13 +542,14 @@ function ScreenContent({
                 ))}
               </section>
             ))}
-            {['finance', 'transfers'].includes(screen) && (
-              <PolicyPreview
-                client={client}
-                model={data}
-                campaignId={campaignId}
-              />
-            )}
+            {campaign.mode === 'standalone' &&
+              ['finance', 'transfers'].includes(screen) && (
+                <PolicyPreview
+                  client={client}
+                  model={data}
+                  campaignId={campaignId}
+                />
+              )}
             <Paging
               page={page}
               total={Math.max(0, ...Object.values(data.totals))}
@@ -558,20 +560,6 @@ function ScreenContent({
       )}
     </div>
   )
-}
-function unavailableActions(screen: Screen): string[] {
-  switch (screen) {
-    case 'squad':
-      return ['Save contract']
-    case 'transfers':
-      return ['Record transfer', 'Record offer', 'Accept offer', 'Reject offer']
-    case 'finance':
-      return ['Post prize income', 'Reverse ledger entry']
-    case 'matches':
-      return ['Record match']
-    default:
-      return []
-  }
 }
 function PolicyPreview({
   client,

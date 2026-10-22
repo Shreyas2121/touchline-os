@@ -231,7 +231,6 @@ pub(super) fn screen(db: &mut Connection, query: &ScreenQuery) -> Result<ScreenR
             0,
         )?);
     }
-    let chosen: i64 = tx.query_row("SELECT count(*) FROM auditEvents WHERE campaignId = ?1 AND (actionType = 'campaign.select-club' OR (actionType = 'campaign.create' AND json_extract(payload,'$.creationFingerprint') IS NOT NULL))", [&scope[0]], |r| r.get(0))?;
     // Resolve referenced names in the same snapshot; there is no per-row IPC.
     fn refs(value: &Value, ids: &mut std::collections::BTreeSet<String>) {
         match value {
@@ -290,8 +289,8 @@ pub(super) fn screen(db: &mut Connection, query: &ScreenQuery) -> Result<ScreenR
             }
         }
     }
-    let choose_club_required =
-        campaign.mode == game_core::CampaignMode::Legacy && campaign.seed.is_some() && chosen == 0;
+    // Historical saves can be inspected without selecting or changing their club.
+    let choose_club_required = false;
     let active_constitution = financial["constitutions"]
         .as_array()
         .and_then(|rows| rows.first())

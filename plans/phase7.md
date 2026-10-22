@@ -3,9 +3,9 @@
 > **Authority:** `MASTER_PLAN.md` 3.0.2 / DEC-002 / DEC-003 / DEC-004
 > **Completed:** P07-G01–G05; files and evidence preserved unchanged
 > **Checkpoint:** `df23431abf8807cf61d2d1b63c66d6f7ef6a4cd3` (G05), followed by `7b3c6a0`
-> **Current stage:** [Native migration bridge](native-migration.md), next [revised NM-G08](native-migration/guide8.md)
+> **Current stage:** [Native migration bridge](native-migration.md), next [NM-G09](native-migration/guide9.md)
 > **P07-G06/G07:** Pending and blocked until NM-G09 passes
-> **Status:** Native bridge implemented through NM-G07; manual-workflow retirement/cutover certification and progression remain pending
+> **Status:** Native bridge implemented through NM-G08; cutover certification and progression remain pending
 
 ## 1. Parent plan contract
 

@@ -76,11 +76,11 @@ Run relevant browser E2E when shared entry/export flows change. Real Rust/SQLite
 
 ## 10. Definition of done
 
-- [ ] Native product surface is standalone-only and direct Rust calls enforce it.
-- [ ] Existing stored history, source data and completed evidence are preserved.
-- [ ] Standalone regressions, retirement refusals and required checks pass.
-- [ ] No Continue, later-phase simulation or false release claim is introduced.
-- [ ] Actual evidence and limitations are recorded in bridge §10.
+- [x] Native product surface is standalone-only and direct Rust calls enforce it.
+- [x] Existing stored history, source data and completed evidence are preserved.
+- [x] Standalone regressions, retirement refusals and required checks pass.
+- [x] No Continue, later-phase simulation or false release claim is introduced.
+- [x] Actual evidence and limitations are recorded in bridge §10.
 
 ## 11. Commit instructions
 

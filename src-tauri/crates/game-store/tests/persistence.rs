@@ -7,35 +7,34 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 static SEQUENCE: AtomicU64 = AtomicU64::new(0);
 #[test]
-fn management_late_audit_failure_rolls_back_player_and_revision() {
+fn management_late_audit_failure_rolls_back_name_and_revision() {
     use game_core::{management::*, EntityId, SafeInt};
     let dir = Directory::new();
     let path = dir.file("management-rollback.sqlite3");
     let store = Store::open(&path).unwrap();
-    store.import_snapshot(&fixture("legacy-v2")).unwrap();
-    let before = tables(&store, "legacy-v2");
-    let source = game_core::parse_snapshot(&fixture("legacy-v2")).unwrap();
-    let mut player = source.tables.players[0].clone();
-    player.name = "Rejected correction".into();
+    store.import_snapshot(&fixture("standalone-v2")).unwrap();
+    let before = tables(&store, "standalone-v2");
     Connection::open(&path).unwrap().execute_batch("CREATE TRIGGER reject_management_audit BEFORE INSERT ON auditEvents BEGIN SELECT RAISE(ABORT,'injected audit failure'); END;").unwrap();
     let command = ManagementCommand {
-        campaign_id: EntityId::new("legacy-v2").unwrap(),
+        campaign_id: EntityId::new("standalone-v2").unwrap(),
         expected_revision: SafeInt::new(before["campaigns"][0]["revision"].as_i64().unwrap())
             .unwrap(),
         action_id: EntityId::new("management-fault-action").unwrap(),
         audit_id: EntityId::new("management-fault-audit").unwrap(),
         now: "2026-10-21T12:00:00.000Z".into(),
-        action: ManagementAction::UpdatePlayer { player },
+        action: ManagementAction::Rename {
+            name: "Rejected rename".into(),
+        },
     };
     assert!(store.manage(command.clone()).is_err());
-    assert_eq!(tables(&store, "legacy-v2"), before);
+    assert_eq!(tables(&store, "standalone-v2"), before);
     Connection::open(&path)
         .unwrap()
         .execute_batch("DROP TRIGGER reject_management_audit")
         .unwrap();
     assert!(!store.manage(command).unwrap().replayed);
     assert_eq!(
-        tables(&store, "legacy-v2")["campaigns"][0]["revision"],
+        tables(&store, "standalone-v2")["campaigns"][0]["revision"],
         before["campaigns"][0]["revision"].as_i64().unwrap() + 1
     );
 }

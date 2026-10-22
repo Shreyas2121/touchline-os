@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router'
 import type { GameClient } from '../../platform/game-client'
 import type { CreationRequest } from '../../platform/generated/CreationRequest'
-import type { CreationKind } from '../../platform/generated/CreationKind'
 import type { ClubChoices } from '../../platform/generated/ClubChoices'
 import { mapInvokeError } from '../../platform/errors'
 import { Button } from '../../components/ui/Button'
@@ -52,116 +51,22 @@ export function NativeCareerForm({ client }: { client: GameClient }) {
           }}
         >
           <h2>New campaign</h2>
-          {request.kind === 'legacy' && (
-            <fieldset disabled={busy} className="space-y-3">
-              <legend>Legacy club customization</legend>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={request.club !== null}
-                  onChange={(e) => {
-                    setChoices(null)
-                    setRequest((r) => ({
-                      ...r,
-                      club: e.target.checked
-                        ? {
-                            name: 'My club',
-                            shortName: 'MYC',
-                            colors: {
-                              primary: '#245342',
-                              secondary: '#e9e3cb',
-                            },
-                            prestige: 50,
-                            academyTier: 3,
-                            scoutingRegion: null,
-                          }
-                        : null,
-                    }))
-                  }}
-                />
-                Customize the selected club
-              </label>
-              {request.club && (
-                <div className="flex flex-wrap gap-3">
-                  {(['name', 'shortName'] as const).map((field) => (
-                    <label key={field}>
-                      {field === 'name' ? 'Club name' : 'Club short name'}{' '}
-                      <input
-                        required
-                        maxLength={field === 'name' ? 120 : 8}
-                        value={request.club![field]}
-                        onChange={(e) => {
-                          setChoices(null)
-                          setRequest((r) => ({
-                            ...r,
-                            club: { ...r.club!, [field]: e.target.value },
-                          }))
-                        }}
-                      />
-                    </label>
-                  ))}
-                  {(['primary', 'secondary'] as const).map((field) => (
-                    <label key={field}>
-                      {field} color{' '}
-                      <input
-                        type="color"
-                        value={request.club!.colors[field]}
-                        onChange={(e) => {
-                          setChoices(null)
-                          setRequest((r) => ({
-                            ...r,
-                            club: {
-                              ...r.club!,
-                              colors: {
-                                ...r.club!.colors,
-                                [field]: e.target.value,
-                              },
-                            },
-                          }))
-                        }}
-                      />
-                    </label>
-                  ))}
-                  {(['prestige', 'academyTier'] as const).map((field) => (
-                    <label key={field}>
-                      {field}{' '}
-                      <input
-                        type="number"
-                        min={0}
-                        max={field === 'prestige' ? 100 : 5}
-                        required
-                        value={request.club![field]}
-                        onChange={(e) => {
-                          setChoices(null)
-                          setRequest((r) => ({
-                            ...r,
-                            club: {
-                              ...r.club!,
-                              [field]: Number(e.target.value),
-                            },
-                          }))
-                        }}
-                      />
-                    </label>
-                  ))}
-                </div>
-              )}
-            </fieldset>
-          )}
           <fieldset disabled={busy} className="flex flex-wrap gap-4">
             <label>
               Campaign type{' '}
               <select
                 value={request.kind}
                 onChange={(e) => {
-                  setRequest(makeCareerRequest(e.target.value as CreationKind))
+                  setRequest(
+                    makeCareerRequest(
+                      e.target.value as 'career' | 'standalone-demo',
+                    ),
+                  )
                   setChoices(null)
                 }}
               >
                 <option value="career">Standalone career</option>
-                <option value="legacy">Legacy campaign</option>
                 <option value="standalone-demo">Standalone demo</option>
-                <option value="legacy-demo">Legacy demo</option>
               </select>
             </label>
             <label>
@@ -197,7 +102,6 @@ export function NativeCareerForm({ client }: { client: GameClient }) {
             <label>
               Rules mode{' '}
               <select
-                disabled={request.kind.startsWith('legacy')}
                 value={request.career.rulesMode}
                 onChange={(e) =>
                   change({
@@ -215,15 +119,12 @@ export function NativeCareerForm({ client }: { client: GameClient }) {
                 value={request.career.preset}
                 onChange={(e) =>
                   change({
-                    preset: e.target.value as 'balanced' | 'strict' | 'custom',
+                    preset: e.target.value as 'balanced' | 'strict',
                   })
                 }
               >
                 <option value="balanced">Balanced</option>
                 <option value="strict">Strict</option>
-                {request.kind === 'legacy' && (
-                  <option value="custom">Custom (rules disabled)</option>
-                )}
               </select>
             </label>
             {choices && (

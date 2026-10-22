@@ -112,15 +112,40 @@ pub struct ClubCreation {
     pub academy_tier: SafeInt,
     pub scouting_region: Option<String>,
 }
-pub fn customize_club(club: &mut ClubRow, input: &ClubCreation) -> CoreResult<()> {
-    club.name = input.name.clone();
-    club.short_name = input.short_name.clone();
-    club.colors = input.colors.clone();
-    club.prestige = input.prestige;
-    club.academy_tier = input.academy_tier;
-    club.scouting_region = input.scouting_region.clone();
-    crate::validate::validate_club(club)
-        .map_err(|_| CoreError::Invalid("Custom club settings are invalid."))
+// Retain retired wire variants to give old clients a clear refusal, not a write.
+pub fn require_supported_creation(request: &CreationRequest) -> Result<(), CommandError> {
+    if matches!(
+        request.kind,
+        CreationKind::Legacy | CreationKind::LegacyDemo
+    ) {
+        return Err(CommandError::Scope {
+            message: "Manual campaigns and demos are retired. Create a standalone career.".into(),
+        });
+    }
+    if request.club.is_some() {
+        return Err(CommandError::Scope {
+            message: "Manual club customization is retired. Choose a generated club.".into(),
+        });
+    }
+    let id = request.career.campaign_id.as_str();
+    match request.kind {
+        CreationKind::Career
+            if id == LEGACY_DEMO_ID
+                || id == STANDALONE_DEMO_ID
+                || request.reset_revision.is_some() =>
+        {
+            return Err(invalid(
+                "Demo identities and reset are reserved for the standalone demo.",
+            ))
+        }
+        CreationKind::StandaloneDemo
+            if id != STANDALONE_DEMO_ID || request.career.seed != "native-standalone-demo-v2" =>
+        {
+            return Err(invalid("Standalone demo settings do not match."))
+        }
+        _ => {}
+    }
+    Ok(())
 }
 fn invalid(message: impl Into<String>) -> CommandError {
     CommandError::Validation {
@@ -135,6 +160,16 @@ fn guard(error: GuardError) -> CommandError {
     }
 }
 pub fn fingerprint(command: &ManagementCommand) -> Result<String, CommandError> {
+    if matches!(
+        command.action,
+        ManagementAction::SelectClub { .. }
+            | ManagementAction::AddPlayer { .. }
+            | ManagementAction::UpdatePlayer { .. }
+    ) {
+        return Err(CommandError::Scope {
+            message: "Direct player editing and club switching are retired.".into(),
+        });
+    }
     if command.expected_revision.get() < 0 {
         return Err(invalid("Expected revision must be non-negative."));
     }
@@ -176,6 +211,17 @@ pub fn apply(
         .clone();
     if campaign.id != command.campaign_id {
         return Err(invalid("Campaign scope does not match."));
+    }
+    // Retirement must precede receipt replay: an old successful write cannot
+    // make a historical save editable again, even when the action ID matches.
+    if campaign.mode != CampaignMode::Standalone
+        && !matches!(command.action, ManagementAction::Delete)
+    {
+        return Err(CommandError::Scope {
+            message:
+                "This historical manual save is read-only. You can inspect, export or delete it."
+                    .into(),
+        });
     }
     if let Some(audit) = tables
         .audit_events
@@ -252,58 +298,12 @@ pub fn apply(
                 deleted: true,
             })
         }
-        ManagementAction::SelectClub { club_id } => {
-            reject_standalone_write(&campaign, StandaloneWrite::Club).map_err(guard)?;
-            if !tables.clubs.iter().any(|c| c.id == *club_id) {
-                return Err(invalid("Club is not in this campaign."));
-            }
-            if campaign.managed_club_id != *club_id {
-                tables.lineups.retain(|row| row.season_id != season.id);
-                tables
-                    .registrations
-                    .retain(|row| row.season_id != season.id);
-            }
-            tables.campaigns[0].managed_club_id = club_id.clone();
-            AuditAction::CampaignSelectClub
-        }
-        ManagementAction::AddPlayer { player } | ManagementAction::UpdatePlayer { player } => {
-            reject_standalone_write(&campaign, StandaloneWrite::Player).map_err(guard)?;
-            require_scope(&campaign.id, &player.campaign_id).map_err(guard)?;
-            if player.club_id.as_ref() != Some(&campaign.managed_club_id) {
-                return Err(invalid("Players must remain at the managed club."));
-            }
-            let mut player = player.clone();
-            player.position_group = crate::enums::position_group_for(
-                player
-                    .positions
-                    .first()
-                    .copied()
-                    .ok_or_else(|| invalid("Choose at least one position."))?,
-            );
-            player.age_reference_season_ordinal = player.reported_age.map(|_| season.ordinal);
-            let existing = tables.players.iter().position(|p| p.id == player.id);
-            match (&command.action, existing) {
-                (ManagementAction::AddPlayer { .. }, None) => {
-                    tables.players.push(player);
-                    AuditAction::PlayerAdd
-                }
-                (ManagementAction::UpdatePlayer { .. }, Some(i)) => {
-                    managed(tables, &player.id)?;
-                    let old = &tables.players[i];
-                    if player.club_id != old.club_id
-                        || player.external_source_id != old.external_source_id
-                        || player.is_newgen != old.is_newgen
-                        || player.source != old.source
-                    {
-                        return Err(invalid(
-                            "Player provenance and ownership cannot be changed here.",
-                        ));
-                    }
-                    tables.players[i] = player;
-                    AuditAction::PlayerUpdate
-                }
-                _ => return Err(invalid("Player identity does not match this operation.")),
-            }
+        ManagementAction::SelectClub { .. }
+        | ManagementAction::AddPlayer { .. }
+        | ManagementAction::UpdatePlayer { .. } => {
+            return Err(CommandError::Scope {
+                message: "Direct player editing and club switching are retired.".into(),
+            });
         }
         ManagementAction::SaveLineup { lineup } => {
             require_scope(&campaign.id, &lineup.campaign_id).map_err(guard)?;
@@ -413,7 +413,7 @@ pub fn apply(
         }
         ManagementAction::SaveConstitution {
             constitution,
-            allocation_id,
+            allocation_id: _,
         } => {
             reject_challenge_constitution(&campaign).map_err(guard)?;
             require_scope(&campaign.id, &constitution.campaign_id).map_err(guard)?;
@@ -437,35 +437,14 @@ pub fn apply(
                 e.season_id == season.id
                     && e.club_id == campaign.managed_club_id
                     && e.kind == LedgerKind::InitialAllocation
-            }) {
-                if let Some(amount) = row.rules.iter().find_map(|r| match r {
-                    ConstitutionRule::SellToBuy {
-                        enabled: true,
-                        initial_allocation_cents,
-                        ..
-                    } => Some(*initial_allocation_cents),
-                    _ => None,
-                }) {
-                    if campaign.mode == CampaignMode::Standalone {
-                        return Err(invalid(
-                            "Standalone initialization must already have an opening allocation.",
-                        ));
-                    }
-                    tables.ledger_entries.push(LedgerEntryRow {
-                        id: allocation_id.clone(),
-                        campaign_id: campaign.id.clone(),
-                        season_id: season.id.clone(),
-                        club_id: campaign.managed_club_id.clone(),
-                        kind: LedgerKind::InitialAllocation,
-                        amount_cents: amount,
-                        effective_on: season.start_date.clone().ok_or_else(|| {
-                            invalid("An opening allocation requires a known season start.")
-                        })?,
-                        source_action_id: command.action_id.clone(),
-                        reverses_entry_id: None,
-                        note: None,
-                    });
-                }
+            }) && row
+                .rules
+                .iter()
+                .any(|r| matches!(r, ConstitutionRule::SellToBuy { enabled: true, .. }))
+            {
+                return Err(invalid(
+                    "Standalone initialization must already have an opening allocation.",
+                ));
             }
             tables.constitutions.push(row);
             AuditAction::ConstitutionSave

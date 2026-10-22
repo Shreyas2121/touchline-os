@@ -372,145 +372,254 @@ fn direct_challenge_standalone_and_cross_campaign_writes_reject_without_side_eff
 }
 
 #[test]
-fn legacy_player_management_archive_delete_and_demo_reset_are_scoped_and_persistent() {
+fn standalone_demo_lifecycle_and_reset_preserve_historical_saves() {
     let dir = Dir::new();
     let store = dir.store();
-    let mut legacy = request(LEGACY_DEMO_ID, RulesMode::Sandbox);
-    legacy.kind = CreationKind::LegacyDemo;
-    legacy.career.seed = "native-legacy-demo-v1".into();
-    create_career(&store, legacy.clone()).unwrap();
-    let mut standalone = request(STANDALONE_DEMO_ID, RulesMode::Sandbox);
-    standalone.kind = CreationKind::StandaloneDemo;
-    standalone.career.seed = "native-standalone-demo-v2".into();
-    create_career(&store, standalone).unwrap();
-    let protected = tables(&store, STANDALONE_DEMO_ID);
-    let t = tables(&store, LEGACY_DEMO_ID);
-    assert!(t.contracts.is_empty());
-    assert!(t.simulation_states.is_empty());
-    let mut player = t.players[0].clone();
-    player.id = id("manual-player");
-    player.club_id = Some(t.campaigns[0].managed_club_id.clone());
-    player.source = RecordSource::UserEntered;
-    manage(
-        &store,
-        command(
-            &t,
-            ManagementAction::AddPlayer {
-                player: player.clone(),
-            },
-        ),
-    )
-    .unwrap();
-    let t = tables(&store, LEGACY_DEMO_ID);
-    player.name = "Corrected player".into();
-    manage(
-        &store,
-        command(&t, ManagementAction::UpdatePlayer { player }),
-    )
-    .unwrap();
-    let t = tables(&store, LEGACY_DEMO_ID);
-    manage(
-        &store,
-        command(&t, ManagementAction::Archive { archived: true }),
-    )
-    .unwrap();
-    let archived = tables(&store, LEGACY_DEMO_ID);
-    assert!(manage(
-        &store,
-        command(
-            &archived,
-            ManagementAction::SelectClub {
-                club_id: archived.clubs[1].id.clone()
-            }
-        )
-    )
-    .is_err());
-    manage(
-        &store,
-        command(&archived, ManagementAction::Archive { archived: false }),
-    )
-    .unwrap();
-    let t = tables(&store, LEGACY_DEMO_ID);
-    legacy.reset_revision = Some(t.campaigns[0].revision);
-    legacy.career.action_id = id("reset-action");
-    legacy.career.audit_event_id = id("reset-audit");
-    let result = create_career(&store, legacy.clone()).unwrap();
-    assert_eq!(result.revision, Some(n(t.campaigns[0].revision.get() + 1)));
-    assert!(create_career(&store, legacy).unwrap().replayed);
-    assert_eq!(tables(&store, LEGACY_DEMO_ID).players.len(), 3000);
-    assert_eq!(tables(&store, STANDALONE_DEMO_ID), protected);
-    let cmd = command(&tables(&store, LEGACY_DEMO_ID), ManagementAction::Delete);
+    store
+        .import_snapshot(include_bytes!(
+            "../../../../compatibility/snapshots/legacy-v2.json"
+        ))
+        .unwrap();
+    let protected = tables(&store, "legacy-v2");
+    let mut req = request(STANDALONE_DEMO_ID, RulesMode::Sandbox);
+    req.kind = CreationKind::StandaloneDemo;
+    req.career.seed = "native-standalone-demo-v2".into();
+    create_career(&store, req.clone()).unwrap();
+    for action in [
+        ManagementAction::Rename {
+            name: "Changed demo".into(),
+        },
+        ManagementAction::Archive { archived: true },
+        ManagementAction::Archive { archived: false },
+    ] {
+        let t = tables(&store, STANDALONE_DEMO_ID);
+        manage(&store, command(&t, action)).unwrap();
+    }
+    req.reset_revision = Some(n(3));
+    req.career.action_id = id("reset-action");
+    req.career.audit_event_id = id("reset-audit");
+    assert_eq!(
+        create_career(&store, req.clone()).unwrap().revision,
+        Some(n(4))
+    );
+    assert!(create_career(&store, req).unwrap().replayed);
+    assert_eq!(tables(&store, STANDALONE_DEMO_ID).players.len(), 3000);
+    assert_eq!(tables(&store, "legacy-v2"), protected);
+    drop(store);
+    let store = dir.store();
+    assert_eq!(
+        tables(&store, STANDALONE_DEMO_ID).campaigns[0].revision,
+        n(4)
+    );
+    let cmd = command(
+        &tables(&store, STANDALONE_DEMO_ID),
+        ManagementAction::Delete,
+    );
     assert!(manage(&store, cmd.clone()).unwrap().deleted);
     assert!(manage(&store, cmd).unwrap().replayed);
-    assert_eq!(store.campaigns(0).unwrap().total, n(1));
-    assert_eq!(tables(&store, STANDALONE_DEMO_ID), protected);
+    assert_eq!(tables(&store, "legacy-v2"), protected);
 }
 
 #[test]
-fn legacy_creation_preserves_custom_club_settings_and_standalone_refuses_them() {
+fn retired_creation_customization_and_old_initialization_receipts_are_rejected() {
     let dir = Dir::new();
     let store = dir.store();
-    let mut req = request("custom-legacy", RulesMode::Sandbox);
-    req.kind = CreationKind::Legacy;
-    req.career.preset = Preset::Custom;
-    req.club = Some(ClubCreation {
-        name: "User club".into(),
-        short_name: "USR".into(),
-        colors: ClubColors {
-            primary: "#123456".into(),
-            secondary: "#abcdef".into(),
-        },
-        prestige: n(40),
-        academy_tier: n(3),
-        scouting_region: Some("Home region".into()),
-    });
-    let preview = preview_creation(req.clone()).unwrap();
-    assert_eq!(preview.clubs[0].name, "User club");
-    create_career(&store, req.clone()).unwrap();
-    let t = tables(&store, "custom-legacy");
-    assert_eq!(t.clubs[0].name, "User club");
-    assert_eq!(t.clubs[0].colors.primary, "#123456");
-    assert_eq!(t.campaigns[0].mode, CampaignMode::Legacy);
-    assert!(
-        !read_screen(
-            &store,
-            ScreenQuery {
-                campaign_id: id("custom-legacy"),
-                screen: Screen::Squad,
-                page: n(0),
-                search: String::new(),
-                all_players: false
-            }
-        )
-        .unwrap()
-        .choose_club_required
-    );
-    assert!(t.ledger_entries.is_empty());
-    for (i, preset) in [Preset::Balanced, Preset::Strict].into_iter().enumerate() {
-        let t = tables(&store, "custom-legacy");
-        manage(
-            &store,
-            command(
-                &t,
-                ManagementAction::SaveConstitution {
-                    constitution: ConstitutionRow {
-                        id: id(&format!("custom-board-{i}")),
-                        campaign_id: id("custom-legacy"),
-                        version: n(0),
-                        rules: game_core::policy::constitution_preset(preset),
-                        updated_at: "2026-10-21T12:00:00.000Z".into(),
-                    },
-                    allocation_id: id(&format!("custom-money-{i}")),
-                },
-            ),
-        )
+    let mut source: serde_json::Value = serde_json::from_slice(include_bytes!(
+        "../../../../compatibility/snapshots/legacy-v2.json"
+    ))
+    .unwrap();
+    source["tables"]["simulationReceipts"] = serde_json::json!([{
+        "id":"historical-init","campaignId":"legacy-v2","operationKey":"career:initialize","inputRevision":0,
+        "inputFingerprint":"old-native-signature","eventSeed":1,"simulationVersion":"1",
+        "outcomeRefs":[{"kind":"campaign","id":"legacy-v2"}],"createdAt":"2026-10-21T12:00:00.000Z"
+    }]);
+    store
+        .import_snapshot(&serde_json::to_vec(&source).unwrap())
         .unwrap();
-        assert_eq!(tables(&store, "custom-legacy").ledger_entries.len(), 1);
+    let before = tables(&store, "legacy-v2");
+    for kind in [CreationKind::Legacy, CreationKind::LegacyDemo] {
+        let mut req = request("legacy-v2", RulesMode::Sandbox);
+        req.kind = kind;
+        assert!(matches!(
+            preview_creation(req.clone()),
+            Err(CommandError::Scope { .. })
+        ));
+        assert!(matches!(
+            create_career(&store, req.clone()),
+            Err(CommandError::Scope { .. })
+        ));
+        assert!(matches!(
+            store.creation_probe(req.clone(), "old-native-signature".into()),
+            Err(game_store::StoreError::Command(CommandError::Scope { .. }))
+        ));
+        req.reset_revision = Some(before.campaigns[0].revision);
+        assert!(matches!(
+            create_career(&store, req),
+            Err(CommandError::Scope { .. })
+        ));
     }
-    req.kind = CreationKind::Career;
-    req.career.campaign_id = id("forbidden-custom");
-    assert!(create_career(&store, req).is_err());
+    // Even a forged standalone request cannot replay a historical initialization.
+    let req = request("legacy-v2", RulesMode::Sandbox);
+    assert!(matches!(
+        store.creation_probe(req.clone(), "old-native-signature".into()),
+        Err(game_store::StoreError::Command(CommandError::Scope { .. }))
+    ));
+    assert!(matches!(
+        create_career(&store, req.clone()),
+        Err(CommandError::Scope { .. })
+    ));
+    let mut custom = req;
+    custom.career.campaign_id = id("custom-career");
+    custom.club = Some(ClubCreation {
+        name: "Custom".into(),
+        short_name: "CUS".into(),
+        colors: before.clubs[0].colors.clone(),
+        prestige: n(50),
+        academy_tier: n(3),
+        scouting_region: None,
+    });
+    assert!(matches!(
+        create_career(&store, custom),
+        Err(CommandError::Scope { .. })
+    ));
+    assert_eq!(tables(&store, "legacy-v2"), before);
     assert_eq!(store.campaigns(0).unwrap().total, n(1));
+}
+
+#[test]
+fn historical_saves_refuse_every_edit_and_receipt_replay_but_allow_export_backup_and_deletion() {
+    let dir = Dir::new();
+    let store = dir.store();
+    let source = include_bytes!("../../../../compatibility/snapshots/legacy-v2.json");
+    let mut snapshot = game_core::parse_snapshot(source).unwrap();
+    let t = &snapshot.tables;
+    let rename = command(
+        t,
+        ManagementAction::Rename {
+            name: "Formerly accepted rename".into(),
+        },
+    );
+    let canonical = game_core::management::fingerprint(&rename).unwrap();
+    let hash = game_store::creation_fingerprint(&canonical)
+        .trim_start_matches("native-create:1:")
+        .to_owned();
+    snapshot.tables.audit_events[0].action_id = rename.action_id.clone();
+    snapshot.tables.audit_events[0]
+        .payload
+        .0
+        .insert("managementFingerprint".into(), serde_json::json!(hash));
+    store
+        .import_snapshot(&serde_json::to_vec(&snapshot).unwrap())
+        .unwrap();
+    let before = tables(&store, "legacy-v2");
+    let p = before.players[0].clone();
+    let c = &before.campaigns[0];
+    let actions = vec![
+        rename.action.clone(),
+        ManagementAction::Archive { archived: true },
+        ManagementAction::Archive { archived: false },
+        ManagementAction::SelectClub {
+            club_id: c.managed_club_id.clone(),
+        },
+        ManagementAction::AddPlayer { player: p.clone() },
+        ManagementAction::UpdatePlayer { player: p.clone() },
+        ManagementAction::SaveLineup {
+            lineup: LineupRow {
+                id: id("retired-lineup"),
+                campaign_id: c.id.clone(),
+                season_id: c.active_season_id.clone(),
+                name: "Retired".into(),
+                formation: Formation::F433,
+                starters: vec![],
+                bench_player_ids: vec![],
+                updated_at: rename.now.clone(),
+            },
+        },
+        ManagementAction::DeleteLineup {
+            lineup_id: id("retired-lineup"),
+        },
+        ManagementAction::SaveRegistration {
+            competition_key: "league".into(),
+            players: vec![],
+        },
+        ManagementAction::SaveConstitution {
+            constitution: before.constitutions[0].clone(),
+            allocation_id: id("retired-money"),
+        },
+        ManagementAction::SaveShortlist {
+            item: ShortlistItemRow {
+                id: id("retired-shortlist"),
+                campaign_id: c.id.clone(),
+                player_id: p.id.clone(),
+                priority: n(3),
+                status: OpenClosed::Open,
+                notes: None,
+                added_at: rename.now.clone(),
+            },
+        },
+        ManagementAction::CloseShortlist {
+            item_id: id("retired-shortlist"),
+        },
+        ManagementAction::SaveNote {
+            plan: DevelopmentPlanRow {
+                id: id("retired-note"),
+                campaign_id: c.id.clone(),
+                season_id: c.active_season_id.clone(),
+                player_id: p.id,
+                target_role: None,
+                notes: "No edits".into(),
+                status: OpenClosed::Open,
+            },
+        },
+    ];
+    for action in actions {
+        let cmd = command(&before, action);
+        assert!(matches!(
+            manage(&store, cmd.clone()),
+            Err(CommandError::Scope { .. })
+        ));
+        assert!(matches!(
+            store.manage(cmd),
+            Err(game_store::StoreError::Command(CommandError::Scope { .. }))
+        ));
+        assert_eq!(tables(&store, "legacy-v2"), before);
+    }
+    assert!(matches!(
+        manage(&store, rename),
+        Err(CommandError::Scope { .. })
+    ));
+    let model = read_screen(
+        &store,
+        ScreenQuery {
+            campaign_id: c.id.clone(),
+            screen: Screen::Squad,
+            page: n(0),
+            search: String::new(),
+            all_players: false,
+        },
+    )
+    .unwrap();
+    assert!(!model.choose_club_required);
+    let exported = dir.0.join("history.json");
+    assert!(export_file(
+        &store,
+        c.id.as_str(),
+        Some(&exported),
+        "history-export",
+        "2026-10-21T12:00:00.000Z"
+    )
+    .unwrap());
+    let bytes = std::fs::read(exported).unwrap();
+    assert_eq!(game_core::parse_snapshot(&bytes).unwrap().tables, before);
+    let backup = dir.0.join("history.sqlite3");
+    store.backup(&backup).unwrap();
+    let reopened = NativeStore::open(&backup).unwrap();
+    assert_eq!(tables(&reopened, "legacy-v2"), before);
+    drop(reopened);
+    let cmd = command(&before, ManagementAction::Delete);
+    assert!(manage(&store, cmd.clone()).unwrap().deleted);
+    assert!(manage(&store, cmd).unwrap().replayed);
+    assert_eq!(store.campaigns(0).unwrap().total, n(0));
 }
 
 #[test]

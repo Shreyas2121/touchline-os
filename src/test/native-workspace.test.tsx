@@ -156,7 +156,7 @@ describe('native read and migration UI', () => {
     expect(
       await screen.findByRole('heading', { name: campaign.name }),
     ).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Save contract' })).toBeDisabled()
+    expect(screen.queryByRole('button', { name: 'Save contract' })).toBeNull()
     fireEvent.change(
       screen.getByRole('searchbox', { name: 'Search players' }),
       { target: { value: 'Ada' } },
@@ -231,15 +231,15 @@ describe('native read and migration UI', () => {
       }),
     )
     expect(
-      screen.getByRole('button', { name: 'Post prize income' }),
-    ).toBeDisabled()
+      screen.queryByRole('button', { name: 'Post prize income' }),
+    ).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: 'Export campaign' }))
     await waitFor(() =>
       expect(api.exportCampaign).toHaveBeenCalledWith(campaign.id),
     )
     expect(screen.queryByText('Exported the saved campaign.')).toBeNull()
   })
-  it('routes unchosen careers to native club reads and shows scoped query failures', async () => {
+  it('opens historical saves without a club-choice edit and shows scoped query failures', async () => {
     const api = client()
     const legacy = model()
     legacy.rows.campaigns[0]!.mode = 'legacy'
@@ -248,11 +248,14 @@ describe('native read and migration UI', () => {
       .mockResolvedValue({ ...legacy, chooseClubRequired: true })
     const view = show(api, `/app/${campaign.id}/squad`)
     expect(
-      await screen.findByRole('heading', { name: 'Choose club', level: 1 }),
+      await screen.findByRole('heading', { name: 'Squad', level: 1 }),
     ).toBeInTheDocument()
     expect(
-      await screen.findByRole('button', { name: 'Select managed club' }),
-    ).toBeEnabled()
+      screen.queryByRole('button', { name: 'Select managed club' }),
+    ).toBeNull()
+    expect(
+      screen.getByText(/This historical manual save is read-only/),
+    ).toBeInTheDocument()
     view.unmount()
     api.screen = vi.fn().mockRejectedValue({
       code: 'VALIDATION',
