@@ -4,9 +4,9 @@
 > **Product:** Touchline OS (working name)
 > **Product choice:** **Standalone Sporting Director Sim**
 > **Target:** Offline desktop application: Tauri 2 + React/Vite UI + Rust game backend + SQLite
-> **Status:** Phase 7 foundation is closed. Phase 8 plans are the active stage; match simulation is not implemented
+> **Status:** Phase 8 match simulation is closed. Phase 9 plans are the active stage; the transfer market is not implemented
 > **Plan version:** `3.0.4` (product release target remains v1)
-> **Last revised:** 2026-10-22
+> **Last revised:** 2026-10-23
 > **Execution chain:** master → active phase → guide → one reviewed Git commit per guide
 
 ## 0. HOW AN AI CODING AGENT MUST USE THIS FILE
@@ -16,7 +16,7 @@ This is the source of truth for current scope, data semantics, invariants, miles
 ### Hierarchy and execution
 
 1. `MASTER_PLAN.md` — product and architecture contract.
-2. `plans/phase<number>.md` — active stage contract; Phase 8 is current. The native bridge is completed history under `plans/archive/native-migration/`.
+2. `plans/phase<number>.md` — active stage contract; Phase 9 is current. The native bridge is completed history under `plans/archive/native-migration/`.
 3. The active stage's `guide<number>.md` — executable commit-sized work.
 4. Code/tests — implement the contracts above.
 
@@ -26,8 +26,8 @@ Read master and the active bridge/phase plan before a guide. Resolve conflicts b
 
 - Phases 1–6 and `P07-G01` are completed companion foundations under plan 1.0.0.
 - `P07-G02` through `P07-G05` are completed web standalone foundations under plan 2.0.0. Preserve every completed guide file, SHA and recorded check.
-- Web checkpoint: `df23431abf8807cf61d2d1b63c66d6f7ef6a4cd3` (G05), followed by evidence commit `7b3c6a0`. New browser careers exist in IndexedDB v2. The native shell, SQLite persistence, pure core foundations, world generation, career preparation, bounded screen reads, migration UI, atomic career creation and management writes are implemented and certified through NM-G09. Continue was completed in P07-G06 at `3b190ba255ae8a56670c571b10bf235119fe4211`. P07-G07a removed the old-save compatibility retained by those earlier commits, introduced standalone schema 2 and removed the browser gameplay path from the normal bundle. Match simulation remains pending. See the archived bridge progress log for actual native SHAs and unit/integration verification evidence.
-- **Next execution: `plans/phase8/guide1.md` (P08-G01: matchday storage contracts)**. Phase 8 and all six guides are written. Do not implement a later guide before its predecessor is committed.
+- Web checkpoint: `df23431abf8807cf61d2d1b63c66d6f7ef6a4cd3` (G05), followed by evidence commit `7b3c6a0`. New browser careers exist in IndexedDB v2. The native shell, SQLite persistence, pure core foundations, world generation, career preparation, bounded screen reads, migration UI, atomic career creation and management writes are implemented and certified through NM-G09. Continue was completed in P07-G06 at `3b190ba255ae8a56670c571b10bf235119fe4211`. P07-G07a removed the old-save compatibility retained by those earlier commits, introduced standalone schema 2 and removed the browser gameplay path from the normal bundle. Match simulation was pending at that checkpoint and is closed in Phase 8 at `e673d15ffc486d51790c1beaa26de3dec8d745c7`. See the archived bridge progress log for actual native SHAs and unit/integration verification evidence.
+- **Next execution: `plans/phase9/guide1.md` (P09-G01: negotiation and offer storage)**. Phase 9 and all six guides are written. Do not implement a later guide before its predecessor is committed. Phase 8 G01–G06 stay closed.
 - Keep completed P07-G01–G07 unchanged. The completed NM-G01–NM-G09 bridge is archived at `plans/archive/native-migration/`; preserve its guide files, SHAs and check evidence. P07-G06, P07-G07a, and P07-G07 stay closed. Do not reopen them to add fixtures.
 - Superseded companion instructions remain under `plans/archive/companion-v1/`. Superseded plan-2 Phase 7 and pending guides are under `plans/archive/web-standalone-v2/`. Archives are reference only.
 - Future Phases 8–12 retain their gameplay/analytics/import outcomes but execute on Rust/SQLite. Phase 13 becomes desktop release hardening.
@@ -54,7 +54,9 @@ plans/archive/native-migration/native-migration.md
 plans/archive/native-migration/native-migration/guide1.md ... guide9.md  # completed migration history
 plans/phase7/guide6.md; guide7a.md; guide7.md  # closed
 plans/phase8.md
-plans/phase8/guide1.md ... guide6.md             # active phase
+plans/phase8/guide1.md ... guide6.md             # closed
+plans/phase9.md
+plans/phase9/guide1.md ... guide6.md             # active phase
 plans/archive/companion-v1/
 plans/archive/web-standalone-v2/
 ```
@@ -631,7 +633,7 @@ Completed G01–G05 retain their original subjects and implementation evidence:
 - `P07-G04` — playable generator v2; `feat(p07-g04): generate playable club worlds`.
 - `P07-G05` — web career creation/guards; `feat(p07-g05): start standalone careers safely`.
 
-**Current execution:** Phase 7 is closed. Active work is [Phase 8](plans/phase8.md), starting at `plans/phase8/guide1.md`. Recorded P07-G07 evidence stays in `plans/phase7.md`. Writing these plans does not claim a new native-check run and does not implement matches.
+**Current execution:** Phase 7 and Phase 8 are closed. Active work is [Phase 9](plans/phase9.md), starting at `plans/phase9/guide1.md`. Recorded P07-G07 evidence stays in `plans/phase7.md`. Recorded P08-G06 evidence stays in `plans/phase8.md`. Writing the Phase 9 plans does not claim a new native-check run and does not implement the market.
 
 The native migration prerequisite is complete through NM-G09. Its plan, nine guides, actual SHAs, service audit and passed unit/integration cutover gate are preserved under `plans/archive/native-migration/`. It is no longer an active work stage. Continue and later gameplay were not added by the bridge.
 
@@ -654,18 +656,18 @@ The native migration prerequisite is complete through NM-G09. Its plan, nine gui
 - `P08-G05` — Atomic round simulation, reports, tables and squad performance adapters. Commit: `feat(p08-g05): commit matchday results`.
 - `P08-G06` — Full-round/full-season Rust/SQLite integration tests and native matchday journey. Commit: `test(p08-g06): verify a full simulated season`.
 
-Future phase plans must assign one imperative commit subject per guide before execution. Phase 8 subjects are assigned above and in `plans/phase8.md`.
+Future phase plans must assign one imperative commit subject per guide before execution. Phase 8 subjects are assigned above and in `plans/phase8.md`. Phase 9 subjects are assigned above and in `plans/phase9.md`.
 
 ### PHASE 9 — Autonomous market and club/player negotiation
 
 **Outcome:** Windows produce affordable AI bids and AI-to-AI moves; player decisions and board rules govern completed transfers.
 
-- `P09-G01` — Negotiation/offer snapshots, deadlines, reservations and migrations.
-- `P09-G02` — AI squad needs, bounded market ticks and valuation formulas.
-- `P09-G03` — Selling-club fee and player wage/role/term agreement.
-- `P09-G04` — Atomic settlement for both clubs with contracts, finance and selection cleanup.
-- `P09-G05` — Incoming inbox, deadline progression and actionable compulsory sales.
-- `P09-G06` — Budget conservation, reservation release, duplicate/stale response and deadlock tests.
+- `P09-G01` — Negotiation/offer snapshots, deadlines, reservations and migrations. Commit: `feat(p09-g01): add negotiation storage contracts`.
+- `P09-G02` — AI squad needs, bounded market ticks and valuation formulas. Commit: `feat(p09-g02): plan bounded transfer bids`.
+- `P09-G03` — Selling-club fee and player wage/role/term agreement. Commit: `feat(p09-g03): resolve club and player terms`.
+- `P09-G04` — Atomic settlement for both clubs with contracts, finance and selection cleanup. Commit: `feat(p09-g04): settle agreed transfers atomically`.
+- `P09-G05` — Incoming inbox, deadline progression and actionable compulsory sales. Commit: `feat(p09-g05): run windows and incoming offers`.
+- `P09-G06` — Budget conservation, reservation release, duplicate/stale response and deadlock tests. Commit: `test(p09-g06): verify transfer budgets and deadlines`.
 
 ### PHASE 10 — Player lifecycle and sustainable seasons
 
@@ -1024,7 +1026,7 @@ Material changes require a master version update, a DECISIONS entry, affected pe
 - Keep standalone game design and Phases 8–12 outcomes. Insert a separate migration bridge before pending Phase 7 G06/G07; update release Phase 13 and preserve completed work.
 - Historical browser code is optional reference only. Desktop standalone is the product; no old-save compatibility or second playable edition is required (DEC-006).
 
-**Next execution:** `plans/phase8/guide1.md`, after master 3.0.4 and `plans/phase8.md`. Implement the six guides in order. Do not start Phase 9 until P08-G06 records its checks.
+**Next execution:** `plans/phase9/guide1.md`, after master 3.0.4 and `plans/phase9.md`. Implement the six guides in order. Do not start Phase 10 until P09-G06 records its checks.
 
 ---
 
