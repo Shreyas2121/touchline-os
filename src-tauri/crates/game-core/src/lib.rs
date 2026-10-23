@@ -15,6 +15,7 @@ mod generation_settings;
 pub mod guards;
 mod ids;
 pub mod management;
+pub mod match_engine;
 pub mod match_selection;
 pub mod money;
 mod nulls;
