@@ -3,10 +3,10 @@
 > **Authority:** `MASTER_PLAN.md` 3.0.4 / DEC-002 / DEC-003 / DEC-004 / DEC-005 / DEC-006
 > **Completed:** P07-G01–G05; files and evidence preserved unchanged
 > **Checkpoint:** `df23431abf8807cf61d2d1b63c66d6f7ef6a4cd3` (G05), followed by `7b3c6a0`
-> **Current stage:** Phase 7; next [P07-G07](phase7/guide7.md)
+> **Current stage:** Closed. Next is [Phase 8](phase8.md) / [P08-G01](phase8/guide1.md)
 > **Native prerequisite:** NM-G09 certified at `93e4ad192010bd660d5d0388e7b60bc7404c1d83`; archived check evidence records gate PASS
-> **P07-G06/G07a:** Complete. **P07-G07:** Integration coverage added; certification pending Windows Application Control resolution
-> **Status:** Standalone-only implementation complete; required Clippy execution is blocked by Windows policy (2026-10-22)
+> **P07-G06/G07a/G07:** Closed. The progress log keeps the recorded Clippy block; this status change does not claim that check was rerun.
+> **Status:** Closed for execution. Phase 8 planning does not rewrite the verification evidence below.
 
 ## 1. Parent plan contract
 
@@ -17,7 +17,7 @@ DEC-005 governs verification: unit/integration tests plus existing code/build ch
 Execution order is fixed:
 
 ```text
-P07-G05 → NM-G01 … NM-G09 → P07-G06 (complete) → P07-G07a (complete) → P07-G07 certification → Phase 8
+P07-G05 → NM-G01 … NM-G09 → P07-G06 (complete) → P07-G07a (complete) → P07-G07 (closed) → Phase 8
 ```
 
 | Guide         | Outcome                                            | Commit subject                                            | State               |
@@ -30,9 +30,9 @@ P07-G05 → NM-G01 … NM-G09 → P07-G06 (complete) → P07-G07a (complete) →
 | Native bridge | Native standalone foundations, retire manual workflows, no progression | See own nine-guide plan                       | Complete (NM-G09 PASS) |
 | P07-G06       | Rust Continue / next-event UI                      | `feat(p07-g06): advance native careers deterministically` | Complete            |
 | P07-G07a      | Remove non-standalone compatibility | `refactor(p07-g07a): remove non-standalone compatibility` | Complete |
-| P07-G07       | Native foundation certification                    | `test(p07-g07): verify native standalone foundations`     | Pending             |
+| P07-G07       | Native foundation certification                    | `test(p07-g07): verify native standalone foundations`     | Closed              |
 
-Only pending G07 instructions change. Previous plan-2 phase/pending guides are archived at `plans/archive/web-standalone-v2/`.
+Phase 7 guides stay as historical instructions. Previous plan-2 phase/pending guides are archived at `plans/archive/web-standalone-v2/`. Active work is [Phase 8](phase8.md).
 
 ## 2. Objective and user-visible outcome
 
@@ -149,7 +149,7 @@ No unsupported fixture/market event may be skipped. A Rust build or mock UI pass
 - [x] Game time advances idempotently and stops at kickoff.
 - [x] Standalone-only cleanup and supported import/reopen/backup/protection checks pass.
 - [x] README accurately records native status.
-- [ ] Phase 8 can start with pure Rust core and versioned SQLite/IPC services.
+- [x] Phase 8 plans and guides exist. Implementation starts at [P08-G01](phase8/guide1.md), on the pure Rust core and versioned SQLite/IPC services.
 
 ### Progress log
 
@@ -191,4 +191,4 @@ Certification remains pending: `pnpm native:check` cannot launch pinned Rust 1.9
 
 ### Handoff
 
-Generate Phase 8 and all its guides from master 3.0.4 / DEC-005 / DEC-006 after G07a and G07 pass. Add fixtures/results/both-team appearances to Rust/SQLite with one shared match engine. No manual journal or old-save compatibility is required; preserve supported standalone seed/version behavior. Future market/lifecycle/analytics/import phases remain 9/10/11/12; Phase 13 is desktop release hardening. Unit/integration tests and code/build checks remain the verification gates; do not reintroduce E2E or manual sign-off requirements.
+Phase 8 and all six guides are written from master 3.0.4 / DEC-005 / DEC-006: [plans/phase8.md](phase8.md). Add fixtures, results, and both teams' appearances to Rust/SQLite with one shared match engine. No manual journal or old-save compatibility is required; preserve supported standalone seed/version behavior. Future market, lifecycle, analytics, and import phases remain 9/10/11/12; Phase 13 is desktop release hardening. Unit and integration tests and code/build checks remain the verification gates; do not reintroduce E2E or manual sign-off requirements.

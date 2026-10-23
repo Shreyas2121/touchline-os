@@ -90,4 +90,4 @@ Stage only related tests/fixes/docs and phase evidence. Record actual SHA/checks
 
 ## 12. Handoff
 
-Generate `plans/phase8.md` and all its guides from master 3.0.4 before implementation. Add fixture/result/performance contracts through a later SQLite migration and one pure Rust engine for managed/AI matches. Market/lifecycle/analytics/import/release remain Phases 9–13.
+Phase 8 and its six guides are written in [plans/phase8.md](../phase8.md). Do not regenerate them. Implement [P08-G01](../phase8/guide1.md) next. Fixture, result, and appearance contracts land through a later SQLite migration and one pure Rust engine for managed and AI matches. Market, lifecycle, analytics, import, and release remain Phases 9–13.
