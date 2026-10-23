@@ -34,6 +34,7 @@ fn core_sources_do_not_touch_the_platform() {
         include_str!("../src/policy.rs"),
         include_str!("../src/random.rs"),
         include_str!("../src/selection.rs"),
+        include_str!("../src/match_selection.rs"),
         include_str!("../src/ability.rs"),
         include_str!("../src/career.rs"),
         include_str!("../src/generation.rs"),
