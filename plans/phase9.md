@@ -365,7 +365,7 @@ Rollback is a forward schema fix or a restored backup. Do not downgrade user ver
 | Guide | Commit | Checks |
 | --- | --- | --- |
 | G01 | `e9ab101` | Schema 4 negotiation and offer-snapshot storage. Frozen `0002_standalone.sql` and `0003_matchday.sql`. A schema 3 file opens as user version 4 with an empty `negotiations` table; schema 1 and other unsupported user versions are refused without a write. Source schemas 2–4 import, exports write schema 4, and import does not invent bids. July 1 still continues to August 31. `pnpm native:bindings:check`, `pnpm native:check` (fmt, Clippy `-D warnings`, 107 workspace tests), `pnpm lint`, `pnpm typecheck`, `pnpm test` (704), `pnpm build`, and `pnpm tauri build` (MSI and NSIS) pass. |
-| G02 | | Pure opening bids: at most 12 per tick, one per club, stable for a fixed seed. Shortage order, pinned market noise, the spendable 80 percent rule, wage room, and the qualifying-fee ceiling are covered. No SQLite, IPC, clock, or UI change. `pnpm native:check` (fmt, Clippy `-D warnings`, 116 workspace tests), `pnpm lint`, `pnpm typecheck`, `pnpm test` (704), and `pnpm build` pass. |
+| G02 | `0410ff1` | Pure opening bids: at most 12 per tick, one per club, stable for a fixed seed. Shortage order, pinned market noise, the spendable 80 percent rule, wage room, and the qualifying-fee ceiling are covered. No SQLite, IPC, clock, or UI change. `pnpm native:check` (fmt, Clippy `-D warnings`, 116 workspace tests), `pnpm lint`, `pnpm typecheck`, `pnpm test` (704), and `pnpm build` pass. |
 | G03 | | Not started. |
 | G04 | | Not started. |
 | G05 | | Not started. |
