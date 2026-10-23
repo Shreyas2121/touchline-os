@@ -1,5 +1,6 @@
 use game_core::market::{
-    plan_tick, MarketClub, MarketPlayer, MarketSeedInputs, OpeningBid, MARKET_ENGINE_VERSION,
+    plan_tick, resolve_terms, Agreement, MarketClub, MarketPlayer, MarketSeedInputs, OpeningBid,
+    TermProposal, MARKET_ENGINE_VERSION,
 };
 use game_core::policy::QualificationRule;
 use game_core::random::{derive_event_seed, EventKind, Mulberry32};
@@ -513,5 +514,206 @@ fn invalid_market_inputs_are_refused() {
     assert_eq!(
         plan_tick(&clubs, &[bad_seller], "managed", &seed(), None).unwrap_err(),
         CoreError::Invalid("Prestige is outside 0–100.")
+    );
+}
+
+fn proposal() -> TermProposal {
+    TermProposal {
+        fee_cents: 900_000,
+        wage_cents: 100_000,
+        tier: SquadTier::Rotation,
+        valuation_cents: 1_000_000,
+        current_wage_cents: 100_000,
+        current_tier: Some(SquadTier::Rotation),
+        seller_is_managed: false,
+        buyer_is_ai: false,
+        spendable_cents: 2_000_000,
+        wage_room_cents: 200_000,
+    }
+}
+
+#[test]
+fn seller_bands_accept_counter_or_reject() {
+    let minimum = 1_000_000 * 90 / 100;
+    let counter_floor = minimum * 80 / 100;
+    let mut accepted = proposal();
+    accepted.fee_cents = minimum;
+    assert_eq!(
+        resolve_terms(accepted).unwrap(),
+        Agreement::Agreed {
+            fee_cents: minimum,
+            wage_cents: 100_000,
+            tier: SquadTier::Rotation,
+            counter_count: 0,
+        }
+    );
+
+    let mut countered = proposal();
+    countered.fee_cents = 800_000;
+    assert_eq!(
+        resolve_terms(countered.clone()).unwrap(),
+        Agreement::Countered {
+            fee_cents: minimum,
+            wage_cents: 100_000,
+            tier: SquadTier::Rotation,
+            counter_count: 1,
+        }
+    );
+    countered.fee_cents = counter_floor;
+    assert_eq!(
+        resolve_terms(countered).unwrap(),
+        Agreement::Countered {
+            fee_cents: minimum,
+            wage_cents: 100_000,
+            tier: SquadTier::Rotation,
+            counter_count: 1,
+        }
+    );
+
+    let mut rejected = proposal();
+    rejected.fee_cents = counter_floor - 1;
+    assert_eq!(resolve_terms(rejected).unwrap(), Agreement::Rejected);
+}
+
+#[test]
+fn player_bands_accept_counter_or_reject_a_demotion() {
+    let mut accepted = proposal();
+    accepted.fee_cents = 900_000;
+    accepted.wage_cents = 100_000;
+    assert!(matches!(
+        resolve_terms(accepted).unwrap(),
+        Agreement::Agreed {
+            counter_count: 0,
+            ..
+        }
+    ));
+
+    let mut countered = proposal();
+    countered.wage_cents = 90_000;
+    assert_eq!(
+        resolve_terms(countered).unwrap(),
+        Agreement::Countered {
+            fee_cents: 900_000,
+            wage_cents: 100_000,
+            tier: SquadTier::Rotation,
+            counter_count: 1,
+        }
+    );
+
+    let mut demoted = proposal();
+    demoted.tier = SquadTier::Youth;
+    demoted.current_tier = Some(SquadTier::Key);
+    demoted.wage_cents = 119_999;
+    assert_eq!(resolve_terms(demoted.clone()).unwrap(), Agreement::Rejected);
+    demoted.wage_cents = 120_000;
+    assert_eq!(
+        resolve_terms(demoted).unwrap(),
+        Agreement::Agreed {
+            fee_cents: 900_000,
+            wage_cents: 120_000,
+            tier: SquadTier::Youth,
+            counter_count: 0,
+        }
+    );
+
+    let mut missing_tier = proposal();
+    missing_tier.current_tier = None;
+    missing_tier.wage_cents = 90_000;
+    assert!(matches!(
+        resolve_terms(missing_tier).unwrap(),
+        Agreement::Countered {
+            counter_count: 1,
+            ..
+        }
+    ));
+}
+
+#[test]
+fn seller_and_player_counters_stop_at_two() {
+    let mut user = proposal();
+    user.fee_cents = 800_000;
+    user.wage_cents = 90_000;
+    let first = resolve_terms(user.clone()).unwrap();
+    assert_eq!(resolve_terms(user).unwrap(), first);
+    assert_eq!(
+        first,
+        Agreement::Countered {
+            fee_cents: 900_000,
+            wage_cents: 100_000,
+            tier: SquadTier::Rotation,
+            counter_count: 2,
+        }
+    );
+
+    let mut ai = proposal();
+    ai.buyer_is_ai = true;
+    ai.fee_cents = 800_000;
+    ai.wage_cents = 90_000;
+    ai.spendable_cents = 900_000;
+    ai.wage_room_cents = 100_000;
+    assert_eq!(
+        resolve_terms(ai.clone()).unwrap(),
+        Agreement::Agreed {
+            fee_cents: 900_000,
+            wage_cents: 100_000,
+            tier: SquadTier::Rotation,
+            counter_count: 2,
+        }
+    );
+    ai.spendable_cents = 899_999;
+    assert_eq!(resolve_terms(ai.clone()).unwrap(), Agreement::Rejected);
+    ai.spendable_cents = 900_000;
+    ai.wage_cents = 100_000;
+    ai.wage_room_cents = 99_999;
+    assert_eq!(resolve_terms(ai).unwrap(), Agreement::Rejected);
+}
+
+#[test]
+fn a_managed_seller_does_not_decide_the_fee() {
+    let mut countered = proposal();
+    countered.seller_is_managed = true;
+    countered.buyer_is_ai = true;
+    countered.fee_cents = 50_000;
+    countered.wage_cents = 90_000;
+    countered.wage_room_cents = 100_000;
+    assert_eq!(
+        resolve_terms(countered.clone()).unwrap(),
+        Agreement::Agreed {
+            fee_cents: 50_000,
+            wage_cents: 100_000,
+            tier: SquadTier::Rotation,
+            counter_count: 1,
+        }
+    );
+    countered.wage_room_cents = 99_999;
+    assert_eq!(resolve_terms(countered).unwrap(), Agreement::Rejected);
+
+    let mut rejected = proposal();
+    rejected.seller_is_managed = true;
+    rejected.tier = SquadTier::Youth;
+    rejected.current_tier = Some(SquadTier::Key);
+    rejected.wage_cents = 100_000;
+    assert_eq!(resolve_terms(rejected).unwrap(), Agreement::Rejected);
+}
+
+#[test]
+fn term_inputs_reject_bad_money_and_repeat() {
+    let sample = proposal();
+    assert_eq!(
+        resolve_terms(sample.clone()).unwrap(),
+        resolve_terms(sample).unwrap()
+    );
+
+    let mut negative = proposal();
+    negative.fee_cents = -1;
+    assert_eq!(
+        resolve_terms(negative).unwrap_err(),
+        CoreError::Invalid("Invalid money.")
+    );
+    let mut zero = proposal();
+    zero.valuation_cents = 0;
+    assert_eq!(
+        resolve_terms(zero).unwrap_err(),
+        CoreError::Invalid("Invalid valuation.")
     );
 }

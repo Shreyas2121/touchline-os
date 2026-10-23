@@ -36,6 +36,7 @@ mod world_validation;
 pub use boundary::{CommandError, HealthReport, StorageAvailability, APP_IDENTIFIER, PRODUCT_NAME};
 pub use enums::*;
 pub use ids::{EntityId, Euro, FormatVersion, VersionOne};
+pub use market::{resolve_terms, Agreement, TermProposal};
 pub use numbers::{MoneyCents, SafeInt, JS_MAX_SAFE_INTEGER};
 pub use rows::*;
 pub use snapshot::{parse_snapshot, CampaignSnapshot, SnapshotError};

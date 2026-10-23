@@ -1,4 +1,4 @@
-//! Bounded AI transfer bids. No persistence, acceptance, or clock.
+//! Bounded AI transfer bids and term agreement. No persistence or clock.
 
 use crate::generation_settings::{tier_for, wage};
 use crate::policy::QualificationRule;
@@ -416,6 +416,186 @@ fn raise_to_qualify(
         Ok((qualifying, true))
     } else {
         Ok((fee, false))
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TermProposal {
+    pub fee_cents: i64,
+    pub wage_cents: i64,
+    pub tier: SquadTier,
+    pub valuation_cents: i64,
+    /// Active weekly wage, or the opening wage when the player is a free agent.
+    pub current_wage_cents: i64,
+    pub current_tier: Option<SquadTier>,
+    pub seller_is_managed: bool,
+    pub buyer_is_ai: bool,
+    pub spendable_cents: i64,
+    pub wage_room_cents: i64,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Agreement {
+    Agreed {
+        fee_cents: i64,
+        wage_cents: i64,
+        tier: SquadTier,
+        counter_count: i64,
+    },
+    Countered {
+        fee_cents: i64,
+        wage_cents: i64,
+        tier: SquadTier,
+        counter_count: i64,
+    },
+    Rejected,
+}
+
+enum Response {
+    Accept,
+    Counter(i64),
+    Reject,
+}
+
+/// Seller bands run before player bands. An AI buyer answers one counter here.
+/// A user buyer receives `Countered` when a counter is still open. This function
+/// does not draw and does not call `plan_tick`.
+pub fn resolve_terms(proposal: TermProposal) -> CoreResult<Agreement> {
+    validate_proposal(&proposal)?;
+    let mut fee = proposal.fee_cents;
+    let mut wage = proposal.wage_cents;
+    let mut counter_count = 0;
+
+    if !proposal.seller_is_managed {
+        match seller_response(fee, proposal.valuation_cents)? {
+            Response::Accept => {}
+            Response::Counter(minimum) => {
+                fee = minimum;
+                counter_count += 1;
+            }
+            Response::Reject => return Ok(Agreement::Rejected),
+        }
+    }
+
+    match player_response(
+        wage,
+        proposal.tier,
+        proposal.current_wage_cents,
+        proposal.current_tier,
+    )? {
+        Response::Accept => {}
+        Response::Counter(current) => {
+            wage = current;
+            counter_count += 1;
+        }
+        Response::Reject => return Ok(Agreement::Rejected),
+    }
+
+    if proposal.seller_is_managed {
+        if counter_count > 0 && wage > proposal.wage_room_cents {
+            return Ok(Agreement::Rejected);
+        }
+        return agreed(fee, wage, proposal.tier, counter_count);
+    }
+
+    if proposal.buyer_is_ai {
+        if counter_count > 0 && (fee > proposal.spendable_cents || wage > proposal.wage_room_cents)
+        {
+            return Ok(Agreement::Rejected);
+        }
+        return agreed(fee, wage, proposal.tier, counter_count);
+    }
+
+    if counter_count > 0 {
+        return Ok(Agreement::Countered {
+            fee_cents: fee,
+            wage_cents: wage,
+            tier: proposal.tier,
+            counter_count,
+        });
+    }
+    agreed(fee, wage, proposal.tier, counter_count)
+}
+
+fn agreed(fee: i64, wage: i64, tier: SquadTier, counter_count: i64) -> CoreResult<Agreement> {
+    Ok(Agreement::Agreed {
+        fee_cents: fee,
+        wage_cents: wage,
+        tier,
+        counter_count,
+    })
+}
+
+fn validate_proposal(proposal: &TermProposal) -> CoreResult<()> {
+    for cents in [
+        proposal.fee_cents,
+        proposal.wage_cents,
+        proposal.current_wage_cents,
+        proposal.spendable_cents,
+        proposal.wage_room_cents,
+    ] {
+        require_money(cents)?;
+    }
+    if proposal.valuation_cents == 0 {
+        return Err(CoreError::Invalid("Invalid valuation."));
+    }
+    require_money(proposal.valuation_cents)?;
+    known_tier(proposal.tier);
+    if let Some(tier) = proposal.current_tier {
+        known_tier(tier);
+    }
+    Ok(())
+}
+
+fn require_money(cents: i64) -> CoreResult<()> {
+    if cents < 0 {
+        return Err(CoreError::Invalid("Invalid money."));
+    }
+    MoneyCents::new(cents).map(|_| ())
+}
+
+fn known_tier(tier: SquadTier) {
+    match tier {
+        SquadTier::Key | SquadTier::Rotation | SquadTier::Youth => {}
+    }
+}
+
+fn seller_response(fee: i64, valuation: i64) -> CoreResult<Response> {
+    let minimum = checked_percent(valuation, 90)?;
+    if fee >= minimum {
+        return Ok(Response::Accept);
+    }
+    if fee >= checked_percent(minimum, 80)? {
+        return Ok(Response::Counter(minimum));
+    }
+    Ok(Response::Reject)
+}
+
+fn player_response(
+    wage: i64,
+    tier: SquadTier,
+    current: i64,
+    current_tier: Option<SquadTier>,
+) -> CoreResult<Response> {
+    let demotion =
+        current_tier.is_some_and(|current_tier| tier_rank(tier) < tier_rank(current_tier));
+    if !demotion && wage >= current {
+        return Ok(Response::Accept);
+    }
+    if !demotion && wage >= checked_percent(current, 90)? {
+        return Ok(Response::Counter(current));
+    }
+    if demotion && wage >= checked_percent(current, 120)? {
+        return Ok(Response::Accept);
+    }
+    Ok(Response::Reject)
+}
+
+fn tier_rank(tier: SquadTier) -> i64 {
+    match tier {
+        SquadTier::Key => 3,
+        SquadTier::Rotation => 2,
+        SquadTier::Youth => 1,
     }
 }
 
