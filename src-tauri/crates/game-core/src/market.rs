@@ -1,9 +1,10 @@
 //! Bounded AI transfer bids and term agreement. No persistence or clock.
 
 use crate::generation_settings::{tier_for, wage};
-use crate::policy::QualificationRule;
+use crate::policy::{offer_qualifies, Qualification, QualificationRule};
 use crate::random::{derive_event_seed, EventKind, Mulberry32};
 use crate::{CoreError, CoreResult, MoneyCents, PositionGroup, SafeInt, SquadTier};
+use std::collections::BTreeSet;
 
 pub const MARKET_ENGINE_VERSION: &str = "1";
 
@@ -87,6 +88,29 @@ pub fn plan_tick(
     seed_inputs: &MarketSeedInputs,
     qualifying_rule: Option<QualificationRule>,
 ) -> CoreResult<Vec<OpeningBid>> {
+    plan_openings(
+        clubs,
+        players,
+        managed_club_key,
+        seed_inputs,
+        qualifying_rule,
+        &BTreeSet::new(),
+        &BTreeSet::new(),
+    )
+}
+
+/// `compulsory_players` are already the subject of an open compulsory bid.
+/// `open_pairs` are `(buyer key, player key)` negotiations that are still open.
+/// A compulsory bid created earlier in this tick removes that player from later clubs.
+pub fn plan_openings(
+    clubs: &[MarketClub],
+    players: &[MarketPlayer],
+    managed_club_key: &str,
+    seed_inputs: &MarketSeedInputs,
+    qualifying_rule: Option<QualificationRule>,
+    compulsory_players: &BTreeSet<String>,
+    open_pairs: &BTreeSet<(String, String)>,
+) -> CoreResult<Vec<OpeningBid>> {
     validate_inputs(clubs, players)?;
     if let Some(rule) = qualifying_rule {
         if rule.required_fee_numerator.get() < 1 || rule.required_fee_denominator.get() < 1 {
@@ -103,6 +127,7 @@ pub fn plan_tick(
     let mut order: Vec<usize> = (0..clubs.len()).collect();
     order.sort_by(|&left, &right| clubs[left].simulation_key.cmp(&clubs[right].simulation_key));
 
+    let mut claimed = BTreeSet::new();
     let mut bids = Vec::new();
     for index in order {
         if bids.len() == 12 {
@@ -116,6 +141,14 @@ pub fn plan_tick(
             continue;
         };
         let mut candidates = priced_candidates(club, group, players)?;
+        candidates.retain(|candidate| {
+            let player_key = &candidate.player.simulation_key;
+            !compulsory_players.contains(player_key)
+                && !claimed.contains(player_key)
+                && !open_pairs
+                    .iter()
+                    .any(|(buyer, player)| buyer == &club.simulation_key && player == player_key)
+        });
         if candidates.is_empty() {
             continue;
         }
@@ -128,10 +161,42 @@ pub fn plan_tick(
         if let Some(bid) =
             first_affordable(club, noise, &candidates, managed_club_key, qualifying_rule)?
         {
+            if bid_is_compulsory(&bid, club, players, managed_club_key, qualifying_rule)? {
+                claimed.insert(bid.player_key.clone());
+            }
             bids.push(bid);
         }
     }
     Ok(bids)
+}
+
+fn bid_is_compulsory(
+    bid: &OpeningBid,
+    club: &MarketClub,
+    players: &[MarketPlayer],
+    managed_club_key: &str,
+    qualifying_rule: Option<QualificationRule>,
+) -> CoreResult<bool> {
+    let Some(rule) = qualifying_rule else {
+        return Ok(false);
+    };
+    if bid.seller_key.as_deref() != Some(managed_club_key) {
+        return Ok(false);
+    }
+    let Some(seller) = players
+        .iter()
+        .find(|player| player.simulation_key == bid.player_key)
+        .and_then(|player| player.seller_prestige)
+    else {
+        return Ok(false);
+    };
+    Ok(offer_qualifies(
+        MoneyCents::new(bid.fee_cents)?,
+        Some(MoneyCents::new(bid.valuation_cents)?),
+        Some(SafeInt::new(club.prestige)?),
+        Some(SafeInt::new(seller)?),
+        rule,
+    )? == Qualification::Qualifies)
 }
 
 fn validate_inputs(clubs: &[MarketClub], players: &[MarketPlayer]) -> CoreResult<()> {

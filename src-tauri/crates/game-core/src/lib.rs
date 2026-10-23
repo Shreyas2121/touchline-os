@@ -16,6 +16,7 @@ pub mod guards;
 mod ids;
 pub mod management;
 pub mod market;
+pub mod market_ops;
 pub mod match_engine;
 pub mod match_selection;
 pub mod matchday;

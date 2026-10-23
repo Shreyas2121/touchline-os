@@ -33,4 +33,13 @@ fn export_bindings() {
     game_core::progression::AdvanceRequest::export_all(&config).expect("advance bindings");
     game_core::progression::AdvanceOutcome::export_all(&config).expect("advance result bindings");
     game_core::settlement::SettleTransferRequest::export_all(&config).expect("settlement bindings");
+    game_core::market_ops::MarketPreview::export_all(&config).expect("market preview bindings");
+    game_core::market_ops::RunMarketRequest::export_all(&config).expect("run market bindings");
+    game_core::market_ops::CloseWindowRequest::export_all(&config).expect("close window bindings");
+    game_core::market_ops::ProposeTransferRequest::export_all(&config).expect("proposal bindings");
+    game_core::market_ops::RespondNegotiationRequest::export_all(&config)
+        .expect("negotiation response bindings");
+    game_core::market_ops::RespondOfferRequest::export_all(&config)
+        .expect("offer response bindings");
+    game_core::market_ops::TransferBoard::export_all(&config).expect("transfer board bindings");
 }

@@ -39,6 +39,13 @@ export function createNativeClient(): GameClient {
     settleTransfer: (request) => call('settle_transfer', { request }),
     matchdayView: (campaignId, round) =>
       call('matchday_view', { campaignId, round }),
+    previewMarket: (campaignId) => call('preview_market', { campaignId }),
+    transferBoard: (campaignId) => call('transfer_board', { campaignId }),
+    runMarket: (request) => call('run_market', { request }),
+    closeWindow: (request) => call('close_window', { request }),
+    proposeTransfer: (request) => call('propose_transfer', { request }),
+    respondNegotiation: (request) => call('respond_negotiation', { request }),
+    respondOffer: (request) => call('respond_offer', { request }),
   }
 }
 

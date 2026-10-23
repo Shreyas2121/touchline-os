@@ -68,6 +68,7 @@ pub struct AdvanceCommit {
     updated_at: String,
     receipt: SimulationReceiptRow,
     audit: AuditEventRow,
+    expire_on: Option<String>,
 }
 
 #[derive(Debug)]
@@ -102,6 +103,7 @@ pub fn boundary_label(kind: BoundaryKind) -> &'static str {
     match kind {
         BoundaryKind::SummerDeadline => "Summer deadline",
         BoundaryKind::LeagueKickoff => "League kickoff",
+        BoundaryKind::SummerDate => "Next window date",
     }
 }
 pub fn advance_operation_key(season_id: &str, boundary_key: &str) -> Result<String, CommandError> {
@@ -207,6 +209,18 @@ pub fn preview_saved(
         event_seed,
         reason: preview.reason,
     };
+    if view.allowed
+        && view.target_kind == Some(BoundaryKind::LeagueKickoff)
+        && crate::market_ops::window_is_blocked(tables, &loaded.campaign.id).unwrap_or(false)
+    {
+        view.allowed = false;
+        view.target_boundary_key = None;
+        view.target_date = None;
+        view.target_kind = None;
+        view.next_event = None;
+        view.event_seed = None;
+        view.reason = Some(crate::calendar::ACCEPT_QUALIFYING_OFFER.into());
+    }
     if loaded.campaign.status == CampaignStatus::Archived {
         view.allowed = false;
         view.target_boundary_key = None;
@@ -269,6 +283,10 @@ pub fn evaluate(
     if request.target_boundary_key != target.key {
         return Err(conflict("The requested boundary is not the next event."));
     }
+    let closing_summer = target.kind == BoundaryKind::LeagueKickoff;
+    if closing_summer && crate::market_ops::window_is_blocked(tables, &loaded.campaign.id)? {
+        return Err(invalid(crate::calendar::ACCEPT_QUALIFYING_OFFER));
+    }
     if tables
         .simulation_receipts
         .iter()
@@ -281,7 +299,7 @@ pub fn evaluate(
         return Err(conflict("Action identity was already used."));
     }
     let phase = match target.kind {
-        BoundaryKind::SummerDeadline => CalendarPhase::Preseason,
+        BoundaryKind::SummerDeadline | BoundaryKind::SummerDate => CalendarPhase::Preseason,
         BoundaryKind::LeagueKickoff => CalendarPhase::League,
     };
     let revision =
@@ -296,6 +314,12 @@ pub fn evaluate(
         BoundaryKind::SummerDeadline => {
             format!(
                 "Advanced to the summer deadline on {}.",
+                target.date.as_str()
+            )
+        }
+        BoundaryKind::SummerDate => {
+            format!(
+                "Advanced to the next window date on {}.",
                 target.date.as_str()
             )
         }
@@ -357,6 +381,7 @@ pub fn evaluate(
             summary,
             payload: AuditPayload(payload),
         },
+        expire_on: closing_summer.then(|| request.source_date.clone()),
     })))
 }
 fn current_outcome(
@@ -377,6 +402,9 @@ fn current_outcome(
     }
 }
 pub fn commit(tables: &mut SnapshotTables, planned: AdvanceCommit) -> AdvanceOutcome {
+    if let Some(date) = &planned.expire_on {
+        crate::market_ops::expire_noncompulsory(tables, &planned.outcome.campaign_id, date, false);
+    }
     let campaign_id = planned.outcome.campaign_id.clone();
     if let Some(campaign) = tables
         .campaigns

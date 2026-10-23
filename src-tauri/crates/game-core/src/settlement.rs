@@ -756,20 +756,27 @@ fn zero() -> Result<MoneyCents, CommandError> {
     money(0)
 }
 
-fn apply(
+pub struct MovementIds {
+    pub transfer_id: EntityId,
+    pub contract_id: EntityId,
+    pub ledger_ids: Vec<EntityId>,
+    pub registration_id: Option<EntityId>,
+    pub action_id: EntityId,
+    pub now: String,
+}
+
+pub fn apply_movement(
     tables: &mut SnapshotTables,
-    request: &SettleTransferRequest,
     plan: &SettlementPlan,
-    fingerprint_hash: &str,
-    operation: &str,
-) -> Result<AdvanceOutcome, CommandError> {
-    let (campaign, season, clock) = loaded(tables, &request.campaign_id)?;
-    let campaign_id = campaign.id.clone();
-    let season_id = season.id.clone();
-    let revision = next_revision(campaign.revision).map_err(invalid)?;
-    let current_date = clock.current_date.clone();
-    let phase = clock.phase;
-    let last_boundary_key = clock.last_boundary_key.clone();
+    ids: &MovementIds,
+) -> Result<(), CommandError> {
+    let negotiation = tables
+        .negotiations
+        .iter()
+        .find(|row| row.id == plan.negotiation_id)
+        .ok_or_else(|| invalid("Negotiation was not found."))?;
+    let campaign_id = negotiation.campaign_id.clone();
+    let season_id = negotiation.season_id.clone();
     if plan.needs_ledger {
         let seller_id = plan
             .seller_club_id
@@ -806,26 +813,26 @@ fn apply(
             .ok_or_else(|| invalid("Seller balance is missing."))?
             .transfer_balance_cents = seller_balance;
         tables.ledger_entries.push(LedgerEntryRow {
-            id: request.ledger_ids[0].clone(),
+            id: ids.ledger_ids[0].clone(),
             campaign_id: campaign_id.clone(),
             season_id: season_id.clone(),
             club_id: plan.buyer_club_id.clone(),
             kind: LedgerKind::IncomingFee,
             amount_cents: money(plan.fee_cents)?,
             effective_on: plan.starts_on.clone(),
-            source_action_id: request.action_id.clone(),
+            source_action_id: ids.action_id.clone(),
             reverses_entry_id: None,
             note: None,
         });
         tables.ledger_entries.push(LedgerEntryRow {
-            id: request.ledger_ids[1].clone(),
+            id: ids.ledger_ids[1].clone(),
             campaign_id: campaign_id.clone(),
             season_id: season_id.clone(),
             club_id: seller_id,
             kind: LedgerKind::PlayerSale,
             amount_cents: money(plan.fee_cents)?,
             effective_on: plan.starts_on.clone(),
-            source_action_id: request.action_id.clone(),
+            source_action_id: ids.action_id.clone(),
             reverses_entry_id: None,
             note: None,
         });
@@ -839,7 +846,7 @@ fn apply(
             .status = ContractStatus::Ended;
     }
     tables.contracts.push(ContractRow {
-        id: request.contract_id.clone(),
+        id: ids.contract_id.clone(),
         campaign_id: campaign_id.clone(),
         player_id: plan.player_id.clone(),
         club_id: plan.buyer_club_id.clone(),
@@ -850,7 +857,7 @@ fn apply(
         status: ContractStatus::Active,
     });
     tables.transfers.push(TransferRow {
-        id: request.transfer_id.clone(),
+        id: ids.transfer_id.clone(),
         campaign_id: campaign_id.clone(),
         season_id: season_id.clone(),
         player_id: plan.player_id.clone(),
@@ -859,7 +866,7 @@ fn apply(
         fee_cents: money(plan.fee_cents)?,
         kind: plan.kind,
         effective_on: plan.starts_on.clone(),
-        source_action_id: request.action_id.clone(),
+        source_action_id: ids.action_id.clone(),
     });
     tables
         .players
@@ -900,7 +907,7 @@ fn apply(
                 .starters
                 .retain(|starter| starter.player_id != plan.player_id);
             lineup.bench_player_ids.retain(|id| id != &plan.player_id);
-            lineup.updated_at = request.now.clone();
+            lineup.updated_at = ids.now.clone();
         }
     }
     for registration in &mut tables.registrations {
@@ -925,7 +932,7 @@ fn apply(
             row.age_exempt = registration.age_exempt;
         } else {
             tables.registrations.push(RegistrationRow {
-                id: request
+                id: ids
                     .registration_id
                     .clone()
                     .ok_or_else(|| invalid("Registration ID is missing."))?,
@@ -941,6 +948,35 @@ fn apply(
             });
         }
     }
+    Ok(())
+}
+
+fn apply(
+    tables: &mut SnapshotTables,
+    request: &SettleTransferRequest,
+    plan: &SettlementPlan,
+    fingerprint_hash: &str,
+    operation: &str,
+) -> Result<AdvanceOutcome, CommandError> {
+    let (campaign, season, clock) = loaded(tables, &request.campaign_id)?;
+    let campaign_id = campaign.id.clone();
+    let season_id = season.id.clone();
+    let revision = next_revision(campaign.revision).map_err(invalid)?;
+    let current_date = clock.current_date.clone();
+    let phase = clock.phase;
+    let last_boundary_key = clock.last_boundary_key.clone();
+    apply_movement(
+        tables,
+        plan,
+        &MovementIds {
+            transfer_id: request.transfer_id.clone(),
+            contract_id: request.contract_id.clone(),
+            ledger_ids: request.ledger_ids.clone(),
+            registration_id: request.registration_id.clone(),
+            action_id: request.action_id.clone(),
+            now: request.now.clone(),
+        },
+    )?;
     let saved = tables
         .campaigns
         .iter_mut()

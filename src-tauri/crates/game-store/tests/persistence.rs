@@ -954,14 +954,18 @@ fn injected_advance_failure_rolls_back_clock_revision_audit_and_receipt() {
     let path = dir.file("advance-rollback.sqlite3");
     let store = Store::open(&path).unwrap();
     store.import_snapshot(&fixture("standalone-v2")).unwrap();
+    Connection::open(&path).unwrap().execute(
+        "UPDATE simulationStates SET lastBoundaryKey='season:standalone-v2-season:market:2026-07-01' WHERE campaignId='standalone-v2'",
+        [],
+    ).unwrap();
     let before = tables(&store, "standalone-v2");
     let request = AdvanceRequest {
         campaign_id: EntityId::new("standalone-v2").unwrap(),
         expected_revision: SafeInt::new(before["campaigns"][0]["revision"].as_i64().unwrap())
             .unwrap(),
         source_date: "2026-07-01".into(),
-        source_boundary_key: None,
-        target_boundary_key: "season:2026:summer-deadline".into(),
+        source_boundary_key: Some("season:standalone-v2-season:market:2026-07-01".into()),
+        target_boundary_key: "season:standalone-v2-season:summer-date:2026-07-08".into(),
         action_id: EntityId::new("advance-fault-action").unwrap(),
         audit_id: EntityId::new("advance-fault-audit").unwrap(),
         receipt_id: EntityId::new("advance-fault-receipt").unwrap(),
@@ -976,9 +980,9 @@ fn injected_advance_failure_rolls_back_clock_revision_audit_and_receipt() {
         .unwrap();
     let outcome = store.advance(request.clone()).unwrap();
     assert!(!outcome.replayed);
-    assert_eq!(outcome.current_date, "2026-08-31");
+    assert_eq!(outcome.current_date, "2026-07-08");
     let saved = tables(&store, "standalone-v2");
-    assert_eq!(saved["simulationStates"][0]["currentDate"], "2026-08-31");
+    assert_eq!(saved["simulationStates"][0]["currentDate"], "2026-07-08");
     assert_eq!(
         saved["campaigns"][0]["revision"],
         before["campaigns"][0]["revision"].as_i64().unwrap() + 1

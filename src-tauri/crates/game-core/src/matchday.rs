@@ -408,7 +408,22 @@ fn round_plan(
     {
         return Err(invalid("Continue to the next league matchday first."));
     }
-    let expected_cursor = if round.get() == 1 {
+    match crate::calendar::market_due(clock, season).map_err(invalid)? {
+        Some(crate::calendar::MarketDue::Tick) => {
+            return Err(invalid(crate::calendar::RUN_MARKET_BEFORE_MATCHDAY));
+        }
+        Some(crate::calendar::MarketDue::Close) => {
+            return Err(invalid(crate::calendar::CLOSE_WINDOW_BEFORE_MATCHDAY));
+        }
+        None => {}
+    }
+    let market_cursor = crate::calendar::market_key(season.id.as_str(), &clock.current_date);
+    let close_cursor = crate::calendar::winter_close_key(season.id.as_str());
+    let expected_cursor = if clock.last_boundary_key.as_deref() == Some(&market_cursor) {
+        market_cursor
+    } else if clock.last_boundary_key.as_deref() == Some(&close_cursor) {
+        close_cursor
+    } else if round.get() == 1 {
         format!(
             "season:{}:league-kickoff",
             DateOnly::parse(&clock.current_date)

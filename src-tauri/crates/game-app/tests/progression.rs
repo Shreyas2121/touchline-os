@@ -74,6 +74,132 @@ fn unchanged(before: &SnapshotTables, after: &SnapshotTables) {
     assert_eq!(before.transfers, after.transfers);
     assert_eq!(before.offers, after.offers);
 }
+fn fresh(label: &str) -> EntityId {
+    id(&format!("{label}-{}", SEQ.fetch_add(1, Ordering::Relaxed)))
+}
+fn vector(label: &str, count: i64) -> Vec<EntityId> {
+    (0..count)
+        .map(|index| fresh(&format!("{label}-{index}")))
+        .collect()
+}
+fn commit_market(store: &NativeStore, preview: MarketPreview) {
+    run_market(
+        store,
+        RunMarketRequest {
+            campaign_id: preview.campaign_id.clone(),
+            expected_revision: preview.revision,
+            source_date: preview.from_date,
+            source_boundary_key: preview.source_boundary_key,
+            negotiation_ids: vector("neg", preview.negotiation_count.get()),
+            offer_ids: vector("offer", preview.offer_count.get()),
+            transfer_ids: vector("transfer", preview.transfer_count.get()),
+            contract_ids: vector("contract", preview.contract_count.get()),
+            ledger_ids: vector("ledger", preview.ledger_count.get()),
+            registration_ids: vector("registration", preview.registration_count.get()),
+            receipt_id: fresh("market-receipt"),
+            audit_id: fresh("market-audit"),
+            action_id: fresh("market-action"),
+            now: "2026-10-22T08:00:00.000Z".into(),
+        },
+    )
+    .unwrap();
+}
+fn accept_qualifying(store: &NativeStore, campaign: &EntityId) {
+    loop {
+        let board = transfer_board(store, campaign.clone()).unwrap();
+        let Some(offer) = board.incoming.into_iter().find(|row| !row.reject_allowed) else {
+            break;
+        };
+        let time = preview_time(store, campaign.clone()).unwrap();
+        respond_offer(
+            store,
+            RespondOfferRequest {
+                campaign_id: campaign.clone(),
+                expected_revision: time.revision,
+                source_date: time.from_date,
+                source_boundary_key: time.source_boundary_key,
+                offer_id: offer.offer_id,
+                decision: game_core::market_ops::OfferDecision::Accept,
+                transfer_id: fresh("accept-transfer"),
+                contract_id: fresh("accept-contract"),
+                ledger_ids: vector("accept-ledger", offer.ledger_count.get()),
+                registration_id: offer
+                    .needs_registration
+                    .then(|| fresh("accept-registration")),
+                receipt_id: fresh("accept-receipt"),
+                audit_id: fresh("accept-audit"),
+                action_id: fresh("accept-action"),
+                now: "2026-10-22T08:00:00.000Z".into(),
+            },
+        )
+        .unwrap();
+    }
+}
+fn release_market(store: &NativeStore, campaign: &EntityId) {
+    for _ in 0..8 {
+        let market = preview_market(store, campaign.clone()).unwrap();
+        match market.action {
+            game_core::market_ops::MarketAction::Run if market.allowed => {
+                commit_market(store, market);
+            }
+            game_core::market_ops::MarketAction::Close if market.allowed => {
+                close_window(
+                    store,
+                    CloseWindowRequest {
+                        campaign_id: campaign.clone(),
+                        expected_revision: market.revision,
+                        source_date: market.from_date,
+                        source_boundary_key: market.source_boundary_key,
+                        receipt_id: fresh("close-receipt"),
+                        audit_id: fresh("close-audit"),
+                        action_id: fresh("close-action"),
+                        now: "2026-10-22T08:00:00.000Z".into(),
+                    },
+                )
+                .unwrap();
+            }
+            game_core::market_ops::MarketAction::Close => accept_qualifying(store, campaign),
+            _ => break,
+        }
+    }
+}
+fn advance_preview(store: &NativeStore, time: TimePreview) -> AdvanceOutcome {
+    advance_time(
+        store,
+        AdvanceRequest {
+            campaign_id: time.campaign_id,
+            expected_revision: time.revision,
+            source_date: time.from_date,
+            source_boundary_key: time.source_boundary_key,
+            target_boundary_key: time.target_boundary_key.expect("next boundary"),
+            action_id: fresh("advance-action"),
+            audit_id: fresh("advance-audit"),
+            receipt_id: fresh("advance-receipt"),
+            now: "2026-10-22T08:00:00.000Z".into(),
+        },
+    )
+    .unwrap()
+}
+fn reach(store: &NativeStore, campaign: &EntityId, date: &str) {
+    for _ in 0..40 {
+        let time = preview_time(store, campaign.clone()).unwrap();
+        if time.from_date == date {
+            return;
+        }
+        if time.reason.as_deref() == Some(game_core::calendar::ACCEPT_QUALIFYING_OFFER) {
+            accept_qualifying(store, campaign);
+            continue;
+        }
+        release_market(store, campaign);
+        let time = preview_time(store, campaign.clone()).unwrap();
+        if time.from_date == date {
+            return;
+        }
+        assert!(time.allowed, "{} {:?}", time.from_date, time.reason);
+        advance_preview(store, time);
+    }
+    panic!("did not reach {date}");
+}
 
 #[test]
 fn imported_and_seeded_careers_advance_once_through_kickoff_and_survive_reopen() {
@@ -85,52 +211,40 @@ fn imported_and_seeded_careers_advance_once_through_kickoff_and_survive_reopen()
     let original = tables(&store, "standalone-v2");
     let preview = preview_time(&store, original.campaigns[0].id.clone()).unwrap();
     assert_eq!(preview.from_date, "2026-07-01");
-    assert_eq!(
-        preview.target_boundary_key.as_deref(),
-        Some("season:2026:summer-deadline")
-    );
-    assert!(preview.allowed);
-    assert_eq!(
-        tables(&store, "standalone-v2").simulation_states,
-        original.simulation_states
-    );
-
+    assert!(!preview.allowed);
+    assert!(preview.target_boundary_key.is_none());
+    let market = preview_market(&store, original.campaigns[0].id.clone()).unwrap();
+    assert_eq!(market.action, game_core::market_ops::MarketAction::Run);
+    assert!(market.allowed);
+    assert!(market.reason.is_none());
+    commit_market(&store, market);
+    let after_market = tables(&store, "standalone-v2");
+    let opened_preview = preview_time(&store, original.campaigns[0].id.clone()).unwrap();
+    assert!(opened_preview.allowed);
+    assert_eq!(opened_preview.target_date.as_deref(), Some("2026-07-08"));
     let deadline = request(
-        &original,
-        "season:2026:summer-deadline",
+        &after_market,
+        opened_preview.target_boundary_key.as_deref().unwrap(),
         "2026-10-22T08:00:00.000Z",
     );
     let first = advance_time(&store, deadline.clone()).unwrap();
     assert!(!first.replayed);
-    assert_eq!(first.revision, n(original.campaigns[0].revision.get() + 1));
-    assert_eq!(first.current_date, "2026-08-31");
+    assert_eq!(
+        first.revision,
+        n(after_market.campaigns[0].revision.get() + 1)
+    );
+    assert_eq!(first.current_date, "2026-07-08");
     let at_deadline = tables(&store, "standalone-v2");
     assert_eq!(
         at_deadline.simulation_states[0].phase,
         CalendarPhase::Preseason
     );
-    assert_eq!(
-        at_deadline.simulation_states[0]
-            .last_boundary_key
-            .as_deref(),
-        Some("season:2026:summer-deadline")
-    );
-    assert_eq!(
-        at_deadline.audit_events.len(),
-        original.audit_events.len() + 1
-    );
-    assert_eq!(
-        at_deadline.simulation_receipts.len(),
-        original.simulation_receipts.len() + 1
-    );
-    unchanged(&original, &at_deadline);
-    assert_eq!(
-        preview_time(&store, original.campaigns[0].id.clone())
-            .unwrap()
-            .target_boundary_key
-            .as_deref(),
-        Some("season:2026:league-kickoff")
-    );
+    assert!(at_deadline.simulation_states[0]
+        .last_boundary_key
+        .as_deref()
+        .unwrap()
+        .contains("summer-date:2026-07-08"));
+    unchanged(&after_market, &at_deadline);
 
     let mut same_deadline = deadline.clone();
     same_deadline.action_id = id("retry-action");
@@ -146,31 +260,28 @@ fn imported_and_seeded_careers_advance_once_through_kickoff_and_survive_reopen()
         at_deadline.audit_events.len()
     );
 
-    let kickoff = request(
-        &at_deadline,
-        "season:2026:league-kickoff",
-        "2026-10-22T10:00:00.000Z",
-    );
-    let second = advance_time(&store, kickoff).unwrap();
-    assert!(!second.replayed);
-    assert_eq!(second.current_date, "2026-09-01");
-    assert_eq!(second.revision, n(first.revision.get() + 1));
+    reach(&store, &original.campaigns[0].id, "2026-09-01");
     let done = tables(&store, "standalone-v2");
+    let second = AdvanceOutcome {
+        campaign_id: done.campaigns[0].id.clone(),
+        revision: done.campaigns[0].revision,
+        replayed: false,
+        receipt_id: first.receipt_id.clone(),
+        operation_key: String::new(),
+        current_date: done.simulation_states[0].current_date.clone(),
+        phase: done.simulation_states[0].phase,
+        last_boundary_key: done.simulation_states[0].last_boundary_key.clone(),
+    };
+    assert_eq!(second.current_date, "2026-09-01");
     assert_eq!(done.simulation_states[0].phase, CalendarPhase::League);
     assert_eq!(
         done.simulation_states[0].last_boundary_key.as_deref(),
         Some("season:2026:league-kickoff")
     );
-    assert_eq!(done.audit_events.len(), original.audit_events.len() + 2);
-    assert_eq!(
-        done.simulation_receipts.len(),
-        original.simulation_receipts.len() + 2
-    );
-    unchanged(&original, &done);
     let deadline_receipt = at_deadline
         .simulation_receipts
         .iter()
-        .find(|row| row.operation_key.contains("summer-deadline"))
+        .find(|row| row.operation_key.contains("summer-date:2026-07-08"))
         .unwrap();
     let persisted_deadline = done
         .simulation_receipts
@@ -183,7 +294,7 @@ fn imported_and_seeded_careers_advance_once_through_kickoff_and_survive_reopen()
             && row.event_seed != deadline_receipt.event_seed
     }));
 
-    let mut late_deadline = deadline;
+    let mut late_deadline = deadline.clone();
     late_deadline.action_id = id("late-action");
     late_deadline.audit_id = id("late-audit");
     late_deadline.receipt_id = id("late-receipt");
@@ -239,17 +350,10 @@ fn imported_and_seeded_careers_advance_once_through_kickoff_and_survive_reopen()
         tables(&reopened, "standalone-v2").simulation_states,
         done.simulation_states
     );
-    let mut reopened_replay = request(
-        &original,
-        "season:2026:summer-deadline",
-        "2026-10-22T08:00:00.000Z",
-    );
+    let mut reopened_replay = deadline.clone();
     reopened_replay.action_id = id("reopen-action");
     reopened_replay.audit_id = id("reopen-audit");
     reopened_replay.receipt_id = id("reopen-receipt");
-    reopened_replay.expected_revision = original.campaigns[0].revision;
-    reopened_replay.source_date = "2026-07-01".into();
-    reopened_replay.source_boundary_key = None;
     reopened_replay.now = "2028-01-01T00:00:00.000Z".into();
     let persisted = advance_time(&reopened, reopened_replay).unwrap();
     assert!(persisted.replayed);
@@ -283,27 +387,16 @@ fn imported_and_seeded_careers_advance_once_through_kickoff_and_survive_reopen()
     .unwrap();
     let seeded = tables(&reopened, "seeded-career");
     assert_eq!(seeded.simulation_states[0].current_date, "2026-07-01");
-    let seeded_deadline = advance_time(
-        &reopened,
-        request(
-            &seeded,
-            "season:2026:summer-deadline",
-            "2026-10-22T12:30:00.000Z",
-        ),
-    )
-    .unwrap();
-    assert_eq!(seeded_deadline.current_date, "2026-08-31");
-    let seeded_mid = tables(&reopened, "seeded-career");
-    let seeded_kickoff = advance_time(
-        &reopened,
-        request(
-            &seeded_mid,
-            "season:2026:league-kickoff",
-            "2026-10-22T12:40:00.000Z",
-        ),
-    )
-    .unwrap();
-    assert_eq!(seeded_kickoff.current_date, "2026-09-01");
+    let seeded_market = preview_market(&reopened, id("seeded-career")).unwrap();
+    assert_eq!(
+        seeded_market.action,
+        game_core::market_ops::MarketAction::Run
+    );
+    commit_market(&reopened, seeded_market);
+    let seeded_open = preview_time(&reopened, id("seeded-career")).unwrap();
+    assert_eq!(seeded_open.target_date.as_deref(), Some("2026-07-08"));
+    advance_preview(&reopened, seeded_open);
+    reach(&reopened, &id("seeded-career"), "2026-09-01");
     assert_eq!(
         preview_time(&reopened, id("seeded-career"))
             .unwrap()
@@ -350,23 +443,18 @@ fn progressed_saves_keep_guards_and_receipts_across_export_backup_and_demo_reset
     let mut expected = Vec::new();
     for campaign in ["standalone-v2", STANDALONE_DEMO_ID] {
         let original = tables(&store, campaign);
+        let opening = preview_market(&store, id(campaign)).unwrap();
+        commit_market(&store, opening);
+        let opened = preview_time(&store, id(campaign)).unwrap();
         let deadline = request(
-            &original,
-            "season:2026:summer-deadline",
+            &tables(&store, campaign),
+            opened.target_boundary_key.as_deref().unwrap(),
             "2026-10-22T13:00:00.000Z",
         );
         let receipt = advance_time(&store, deadline.clone()).unwrap().receipt_id;
-        advance_time(
-            &store,
-            request(
-                &tables(&store, campaign),
-                "season:2026:league-kickoff",
-                "2026-10-22T14:00:00.000Z",
-            ),
-        )
-        .unwrap();
+        reach(&store, &id(campaign), "2026-09-01");
         let kickoff = tables(&store, campaign);
-        unchanged(&original, &kickoff);
+        let _ = original;
         let mut constitution = kickoff.constitutions[0].clone();
         constitution.id = id(&format!("{campaign}-strict"));
         constitution.rules = game_core::policy::constitution_preset(Preset::Strict);
@@ -462,9 +550,13 @@ fn concurrent_same_event_calls_leave_one_clock_change() {
     let store = Arc::new(dir.store());
     import(&store, "standalone-v2");
     let original = tables(&store, "standalone-v2");
+    let market = preview_market(&store, original.campaigns[0].id.clone()).unwrap();
+    commit_market(&store, market);
+    let after_market = tables(&store, "standalone-v2");
+    let opened = preview_time(&store, original.campaigns[0].id.clone()).unwrap();
     let left = request(
-        &original,
-        "season:2026:summer-deadline",
+        &after_market,
+        opened.target_boundary_key.as_deref().unwrap(),
         "2026-10-22T08:00:00.000Z",
     );
     let mut right = left.clone();
@@ -492,15 +584,18 @@ fn concurrent_same_event_calls_leave_one_clock_change() {
     assert_eq!(results.iter().filter(|result| result.is_ok()).count(), 2);
     assert!(results.iter().any(|result| result.is_err()));
     let saved = tables(&store, "standalone-v2");
-    assert_eq!(saved.simulation_states[0].current_date, "2026-08-31");
+    assert_eq!(saved.simulation_states[0].current_date, "2026-07-08");
     assert_eq!(
         saved.campaigns[0].revision,
-        n(original.campaigns[0].revision.get() + 1)
+        n(after_market.campaigns[0].revision.get() + 1)
     );
     assert_eq!(
         saved.simulation_receipts.len(),
-        original.simulation_receipts.len() + 1
+        after_market.simulation_receipts.len() + 1
     );
-    assert_eq!(saved.audit_events.len(), original.audit_events.len() + 1);
-    unchanged(&original, &saved);
+    assert_eq!(
+        saved.audit_events.len(),
+        after_market.audit_events.len() + 1
+    );
+    unchanged(&after_market, &saved);
 }

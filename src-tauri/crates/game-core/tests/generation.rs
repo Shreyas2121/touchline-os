@@ -375,7 +375,7 @@ fn prepared_careers_have_one_consistent_initialization_for_each_mode_and_preset(
             assert_eq!(career.clock.current_date, "2026-07-01");
             assert!(career.clock.last_boundary_key.is_none());
             assert!(
-                preview_time_advance(&career.clock, &career.season)
+                !preview_time_advance(&career.clock, &career.season)
                     .unwrap()
                     .allowed
             );

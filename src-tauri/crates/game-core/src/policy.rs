@@ -103,6 +103,9 @@ pub enum PolicyAction {
     SeasonRollover {
         unresolved_qualifying_offers: SafeInt,
     },
+    WindowClose {
+        unresolved_qualifying_offers: SafeInt,
+    },
     Registration {
         competition_key: String,
         players: Vec<RegistrationPlayer>,
@@ -127,6 +130,9 @@ impl PolicyAction {
                 optional_range(*seller_prestige, 100)?;
             }
             Self::SeasonRollover {
+                unresolved_qualifying_offers,
+            }
+            | Self::WindowClose {
                 unresolved_qualifying_offers,
             } if unresolved_qualifying_offers.get() < 0 => {
                 return Err(CoreError::Invalid("Action is not valid."))
@@ -270,6 +276,57 @@ pub fn count_unresolved_qualifying_offers(
                 .copied()
                 .flatten(),
             seller,
+            rule,
+        )? == Qualification::Qualifies
+        {
+            count += 1;
+        }
+    }
+    Ok(count)
+}
+
+/// Qualifying incoming bids use the offer snapshot and the current constitution.
+/// Player market value is not read.
+pub fn qualifying_stored_offer_count(
+    offers: &[OfferRow],
+    seller_club_id: &EntityId,
+    constitution: &ConstitutionRow,
+) -> CoreResult<usize> {
+    let Some(ConstitutionRule::PrestigeBidSale {
+        required_fee_numerator,
+        required_fee_denominator,
+        require_higher_prestige,
+        ..
+    }) = constitution.rules.iter().find(|rule| {
+        matches!(
+            rule,
+            ConstitutionRule::PrestigeBidSale { enabled: true, .. }
+        )
+    })
+    else {
+        return Ok(0);
+    };
+    let rule = QualificationRule {
+        required_fee_numerator: *required_fee_numerator,
+        required_fee_denominator: *required_fee_denominator,
+        require_higher_prestige: *require_higher_prestige,
+    };
+    let mut count = 0;
+    for offer in offers.iter().filter(|offer| {
+        offer.seller_club_id.as_ref() == Some(seller_club_id) && offer.status == OfferStatus::Open
+    }) {
+        let (Some(value), Some(bidder), Some(seller)) = (
+            offer.market_value_cents,
+            offer.bidder_prestige,
+            offer.seller_prestige,
+        ) else {
+            continue;
+        };
+        if offer_qualifies(
+            offer.fee_cents,
+            Some(value),
+            Some(bidder),
+            Some(seller),
             rule,
         )? == Qualification::Qualifies
         {
@@ -476,6 +533,20 @@ pub fn evaluate_action(
                     "A qualifying offer is still unresolved.",
                     json!({"unresolvedQualifyingOffers":unresolved_qualifying_offers}),
                     "Accept the qualifying offer, or change the constitution in an audited update.",
+                ));
+            }
+        }
+        if let PolicyAction::WindowClose {
+            unresolved_qualifying_offers,
+        } = action
+        {
+            if unresolved_qualifying_offers.get() > 0 {
+                verdicts.push(verdict(
+                    "PRESTIGE_BID_SALE",
+                    "UNRESOLVED_QUALIFYING_OFFER",
+                    crate::calendar::ACCEPT_QUALIFYING_OFFER,
+                    json!({"unresolvedQualifyingOffers":unresolved_qualifying_offers}),
+                    crate::calendar::ACCEPT_QUALIFYING_OFFER,
                 ));
             }
         }

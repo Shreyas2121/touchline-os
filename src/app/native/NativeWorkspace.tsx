@@ -29,6 +29,7 @@ import { NativeMatches } from './NativeMatches'
 import { NativeCareerForm } from './NativeCareerForm'
 import { NativeManagementPanel } from './NativeManagementPanel'
 import { NativeProgression } from './NativeProgression'
+import { NativeTransfers } from './NativeTransfers'
 
 const readOnly =
   'Standalone career management is available. Continue on the Command Center advances the foundation calendar. Match simulation and negotiations arrive in later phases.'
@@ -516,7 +517,21 @@ function ScreenContent({
               </div>
             )}
             {screen === 'tactics' && <NativeTactics model={data} />}
-            <NativeScreenTables model={data} screen={screen} />
+            {screen === 'transfers' && (
+              <NativeTransfers
+                client={client}
+                campaignId={campaignId}
+                revision={data.revision}
+                refresh={retry}
+                onChanged={() => {
+                  setNotice('Saved the transfer decision.')
+                  setRetry((value) => value + 1)
+                }}
+              />
+            )}
+            {screen !== 'transfers' && (
+              <NativeScreenTables model={data} screen={screen} />
+            )}
             {screen === 'matches' && (
               <NativeMatches client={client} campaignId={campaignId} />
             )}
@@ -551,7 +566,7 @@ function ScreenContent({
                 campaignId={campaignId}
               />
             )}
-            {screen !== 'matches' && (
+            {screen !== 'matches' && screen !== 'transfers' && (
               <Paging
                 page={page}
                 total={Math.max(0, ...Object.values(data.totals))}

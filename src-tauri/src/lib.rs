@@ -16,6 +16,62 @@ async fn preview_matchday(
     blocking(move || game_app::preview_matchday(&store, campaign_id)).await
 }
 #[tauri::command]
+async fn preview_market(
+    store: tauri::State<'_, Store>,
+    campaign_id: game_app::EntityId,
+) -> Result<game_app::MarketPreview, CommandError> {
+    let store = store.inner().clone();
+    blocking(move || game_app::preview_market(&store, campaign_id)).await
+}
+#[tauri::command]
+async fn transfer_board(
+    store: tauri::State<'_, Store>,
+    campaign_id: game_app::EntityId,
+) -> Result<game_app::TransferBoard, CommandError> {
+    let store = store.inner().clone();
+    blocking(move || game_app::transfer_board(&store, campaign_id)).await
+}
+#[tauri::command]
+async fn run_market(
+    store: tauri::State<'_, Store>,
+    request: game_app::RunMarketRequest,
+) -> Result<game_app::AdvanceOutcome, CommandError> {
+    let store = store.inner().clone();
+    blocking(move || game_app::run_market(&store, request)).await
+}
+#[tauri::command]
+async fn close_window(
+    store: tauri::State<'_, Store>,
+    request: game_app::CloseWindowRequest,
+) -> Result<game_app::AdvanceOutcome, CommandError> {
+    let store = store.inner().clone();
+    blocking(move || game_app::close_window(&store, request)).await
+}
+#[tauri::command]
+async fn propose_transfer(
+    store: tauri::State<'_, Store>,
+    request: game_app::ProposeTransferRequest,
+) -> Result<game_app::AdvanceOutcome, CommandError> {
+    let store = store.inner().clone();
+    blocking(move || game_app::propose_transfer(&store, request)).await
+}
+#[tauri::command]
+async fn respond_negotiation(
+    store: tauri::State<'_, Store>,
+    request: game_app::RespondNegotiationRequest,
+) -> Result<game_app::AdvanceOutcome, CommandError> {
+    let store = store.inner().clone();
+    blocking(move || game_app::respond_negotiation(&store, request)).await
+}
+#[tauri::command]
+async fn respond_offer(
+    store: tauri::State<'_, Store>,
+    request: game_app::RespondOfferRequest,
+) -> Result<game_app::AdvanceOutcome, CommandError> {
+    let store = store.inner().clone();
+    blocking(move || game_app::respond_offer(&store, request)).await
+}
+#[tauri::command]
 async fn settle_transfer(
     store: tauri::State<'_, Store>,
     request: game_app::SettleTransferRequest,
@@ -281,6 +337,13 @@ pub fn run() {
             preview_creation,
             preview_time,
             preview_matchday,
+            preview_market,
+            transfer_board,
+            run_market,
+            close_window,
+            propose_transfer,
+            respond_negotiation,
+            respond_offer,
             sim_matchday,
             settle_transfer,
             matchday_view,

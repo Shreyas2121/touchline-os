@@ -75,6 +75,125 @@ fn snapshot(store: &NativeStore, campaign: &EntityId) -> CampaignSnapshot {
         .export_snapshot(campaign.as_str(), "season-certification", NOW)
         .unwrap()
 }
+fn fresh() -> EntityId {
+    id(0x80600401, SEQUENCE.fetch_add(1, Ordering::Relaxed) as i64)
+}
+fn many(count: i64) -> Vec<EntityId> {
+    (0..count).map(|_| fresh()).collect()
+}
+fn commit_market(store: &NativeStore, preview: MarketPreview) {
+    run_market(
+        store,
+        RunMarketRequest {
+            campaign_id: preview.campaign_id,
+            expected_revision: preview.revision,
+            source_date: preview.from_date,
+            source_boundary_key: preview.source_boundary_key,
+            negotiation_ids: many(preview.negotiation_count.get()),
+            offer_ids: many(preview.offer_count.get()),
+            transfer_ids: many(preview.transfer_count.get()),
+            contract_ids: many(preview.contract_count.get()),
+            ledger_ids: many(preview.ledger_count.get()),
+            registration_ids: many(preview.registration_count.get()),
+            receipt_id: fresh(),
+            audit_id: fresh(),
+            action_id: fresh(),
+            now: NOW.into(),
+        },
+    )
+    .unwrap();
+}
+fn accept_qualifying(store: &NativeStore, campaign: &EntityId) {
+    loop {
+        let board = transfer_board(store, campaign.clone()).unwrap();
+        let Some(offer) = board.incoming.into_iter().find(|row| !row.reject_allowed) else {
+            break;
+        };
+        let time = preview_time(store, campaign.clone()).unwrap();
+        respond_offer(
+            store,
+            RespondOfferRequest {
+                campaign_id: campaign.clone(),
+                expected_revision: time.revision,
+                source_date: time.from_date,
+                source_boundary_key: time.source_boundary_key,
+                offer_id: offer.offer_id,
+                decision: game_core::market_ops::OfferDecision::Accept,
+                transfer_id: fresh(),
+                contract_id: fresh(),
+                ledger_ids: many(offer.ledger_count.get()),
+                registration_id: offer.needs_registration.then(fresh),
+                receipt_id: fresh(),
+                audit_id: fresh(),
+                action_id: fresh(),
+                now: NOW.into(),
+            },
+        )
+        .unwrap();
+    }
+}
+fn release_market(store: &NativeStore, campaign: &EntityId) {
+    for _ in 0..8 {
+        let market = preview_market(store, campaign.clone()).unwrap();
+        match market.action {
+            game_core::market_ops::MarketAction::Run if market.allowed => {
+                commit_market(store, market)
+            }
+            game_core::market_ops::MarketAction::Close if market.allowed => {
+                close_window(
+                    store,
+                    CloseWindowRequest {
+                        campaign_id: campaign.clone(),
+                        expected_revision: market.revision,
+                        source_date: market.from_date,
+                        source_boundary_key: market.source_boundary_key,
+                        receipt_id: fresh(),
+                        audit_id: fresh(),
+                        action_id: fresh(),
+                        now: NOW.into(),
+                    },
+                )
+                .unwrap();
+            }
+            game_core::market_ops::MarketAction::Close => accept_qualifying(store, campaign),
+            _ => break,
+        }
+    }
+}
+fn reach(store: &NativeStore, campaign: &EntityId, date: &str) {
+    for _ in 0..40 {
+        let time = preview_time(store, campaign.clone()).unwrap();
+        if time.from_date == date {
+            return;
+        }
+        if time.reason.as_deref() == Some(game_core::calendar::ACCEPT_QUALIFYING_OFFER) {
+            accept_qualifying(store, campaign);
+            continue;
+        }
+        release_market(store, campaign);
+        let time = preview_time(store, campaign.clone()).unwrap();
+        if time.from_date == date {
+            return;
+        }
+        assert!(time.allowed, "{} {:?}", time.from_date, time.reason);
+        advance_time(
+            store,
+            AdvanceRequest {
+                campaign_id: time.campaign_id,
+                expected_revision: time.revision,
+                source_date: time.from_date,
+                source_boundary_key: time.source_boundary_key,
+                target_boundary_key: time.target_boundary_key.unwrap(),
+                action_id: fresh(),
+                audit_id: fresh(),
+                receipt_id: fresh(),
+                now: NOW.into(),
+            },
+        )
+        .unwrap();
+    }
+    panic!("did not reach {date}");
+}
 fn advance(store: &NativeStore, campaign: &EntityId, ordinal: i64) {
     let p = preview_time(store, campaign.clone()).unwrap();
     assert!(p.allowed);
@@ -167,6 +286,26 @@ fn unchanged_except_matchday(kickoff: &SnapshotTables, finished: &SnapshotTables
     normalized
         .simulation_receipts
         .clone_from(&kickoff.simulation_receipts);
+    normalized.negotiations.clone_from(&kickoff.negotiations);
+    normalized.offers.clone_from(&kickoff.offers);
+    normalized.transfers.clone_from(&kickoff.transfers);
+    normalized.contracts.clone_from(&kickoff.contracts);
+    normalized
+        .ledger_entries
+        .clone_from(&kickoff.ledger_entries);
+    normalized.registrations.clone_from(&kickoff.registrations);
+    normalized.lineups.clone_from(&kickoff.lineups);
+    normalized
+        .club_simulation_states
+        .clone_from(&kickoff.club_simulation_states);
+    for player in &mut normalized.players {
+        let before = kickoff
+            .players
+            .iter()
+            .find(|row| row.id == player.id)
+            .unwrap();
+        player.club_id.clone_from(&before.club_id);
+    }
     // This includes every player/attribute, contract, ledger, offer, constitution,
     // registration, lineup, ownership, and planning row without a whitelist gap.
     assert_eq!(&normalized, kickoff);
@@ -397,12 +536,12 @@ fn full_season_reopens_replays_reconciles_and_exports_within_limit() {
         preview_time(&store, campaign.clone()).unwrap().from_date,
         "2026-07-01"
     );
-    advance(&store, &campaign, 1);
+    reach(&store, &campaign, "2026-08-31");
     assert_eq!(
         preview_time(&store, campaign.clone()).unwrap().from_date,
         "2026-08-31"
     );
-    advance(&store, &campaign, 2);
+    reach(&store, &campaign, "2026-09-01");
     let kickoff = snapshot(&store, &campaign).tables;
     assert_eq!(kickoff.simulation_states[0].current_date, "2026-09-01");
     assert!(kickoff.fixtures.is_empty());
@@ -415,6 +554,23 @@ fn full_season_reopens_replays_reconciles_and_exports_within_limit() {
     let mut first_matches = Vec::new();
     let kickoff_date = DateOnly::parse("2026-09-01").unwrap();
     for round in 1..=34 {
+        if round == 19 || round == 23 {
+            let before = snapshot(&store, &campaign).tables.simulated_matches;
+            let blocked = preview_matchday(&store, campaign.clone()).unwrap();
+            assert!(!blocked.allowed);
+            assert_eq!(
+                blocked.blocker.as_deref(),
+                Some(if round == 19 {
+                    game_core::calendar::RUN_MARKET_BEFORE_MATCHDAY
+                } else {
+                    game_core::calendar::CLOSE_WINDOW_BEFORE_MATCHDAY
+                })
+            );
+            release_market(&store, &campaign);
+            assert_eq!(snapshot(&store, &campaign).tables.simulated_matches, before);
+        } else {
+            release_market(&store, &campaign);
+        }
         let p = preview_matchday(&store, campaign.clone()).unwrap();
         // A fresh, unregistered career uses G03's advertised emergency selection.
         // The registered saved-XI/blocker path is certified separately by G05.
@@ -431,13 +587,11 @@ fn full_season_reopens_replays_reconciles_and_exports_within_limit() {
                 Some(calendar::TransferWindow::Winter)
             );
         }
+        let revision = p.revision.get();
         let req = request(p, round);
         let outcome = sim_matchday(&store, req.clone()).unwrap();
         assert!(!outcome.replayed);
-        assert_eq!(
-            outcome.revision.get(),
-            kickoff.campaigns[0].revision.get() + round
-        );
+        assert_eq!(outcome.revision.get(), revision + 1);
         assert_eq!(
             outcome.phase,
             if round == 34 {
@@ -470,10 +624,27 @@ fn full_season_reopens_replays_reconciles_and_exports_within_limit() {
     assert_eq!(snapshot(&store, &campaign).tables, finished);
     reconcile_season(&finished);
     unchanged_except_matchday(&kickoff, &finished);
-    assert_eq!(finished.audit_events.len(), kickoff.audit_events.len() + 34);
+    let market_writes = |rows: &SnapshotTables| {
+        rows.audit_events
+            .iter()
+            .filter(|audit| {
+                matches!(
+                    audit.action_type,
+                    AuditAction::MarketTick
+                        | AuditAction::MarketClose
+                        | AuditAction::TransferSettle
+                )
+            })
+            .count()
+    };
+    let added = market_writes(&finished) - market_writes(&kickoff);
+    assert_eq!(
+        finished.audit_events.len(),
+        kickoff.audit_events.len() + 34 + added
+    );
     assert_eq!(
         finished.simulation_receipts.len(),
-        kickoff.simulation_receipts.len() + 34
+        kickoff.simulation_receipts.len() + 34 + added
     );
     assert_eq!(
         finished
@@ -636,10 +807,11 @@ fn full_season_reopens_replays_reconciles_and_exports_within_limit() {
     session.confirm(&restored, &summary.token).unwrap();
     assert_eq!(snapshot(&restored, &campaign).tables, finished);
     assert_eq!(snapshot(&store, &other_id).tables, other_before);
+    release_market(&store, &other_id);
     advance(&store, &other_id, 3);
     assert_eq!(
         preview_time(&store, other_id).unwrap().from_date,
-        "2026-08-31"
+        "2026-07-08"
     );
     assert_eq!(snapshot(&store, &campaign).tables, finished);
     eprintln!("full-season certification passed: 34 rounds, 1,224 matches, {} appearances, {} export bytes, {:.2}s runtime",finished.simulated_appearances.len(),bytes.len(),started.elapsed().as_secs_f64());

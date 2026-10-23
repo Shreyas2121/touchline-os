@@ -19,6 +19,13 @@ import type { MatchdayPreview } from './generated/MatchdayPreview'
 import type { MatchdayView } from './generated/MatchdayView'
 import type { SimMatchdayRequest } from './generated/SimMatchdayRequest'
 import type { SettleTransferRequest } from './generated/SettleTransferRequest'
+import type { MarketPreview } from './generated/MarketPreview'
+import type { RunMarketRequest } from './generated/RunMarketRequest'
+import type { CloseWindowRequest } from './generated/CloseWindowRequest'
+import type { ProposeTransferRequest } from './generated/ProposeTransferRequest'
+import type { RespondNegotiationRequest } from './generated/RespondNegotiationRequest'
+import type { RespondOfferRequest } from './generated/RespondOfferRequest'
+import type { TransferBoard } from './generated/TransferBoard'
 export type GameClient = {
   health(): Promise<HealthReport>
   campaigns(page: number): Promise<CampaignPage>
@@ -40,6 +47,13 @@ export type GameClient = {
   simMatchday(request: SimMatchdayRequest): Promise<AdvanceOutcome>
   settleTransfer(request: SettleTransferRequest): Promise<AdvanceOutcome>
   matchdayView(campaignId: string, round: number | null): Promise<MatchdayView>
+  previewMarket(campaignId: string): Promise<MarketPreview>
+  transferBoard(campaignId: string): Promise<TransferBoard>
+  runMarket(request: RunMarketRequest): Promise<AdvanceOutcome>
+  closeWindow(request: CloseWindowRequest): Promise<AdvanceOutcome>
+  proposeTransfer(request: ProposeTransferRequest): Promise<AdvanceOutcome>
+  respondNegotiation(request: RespondNegotiationRequest): Promise<AdvanceOutcome>
+  respondOffer(request: RespondOfferRequest): Promise<AdvanceOutcome>
 }
 
 export function unavailableNativeReads() {
@@ -68,5 +82,12 @@ export function unavailableNativeReads() {
     simMatchday: reject,
     settleTransfer: reject,
     matchdayView: reject,
+    previewMarket: reject,
+    transferBoard: reject,
+    runMarket: reject,
+    closeWindow: reject,
+    proposeTransfer: reject,
+    respondNegotiation: reject,
+    respondOffer: reject,
   }
 }

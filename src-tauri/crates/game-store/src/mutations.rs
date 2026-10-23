@@ -122,6 +122,41 @@ fn write_diff(db: &Connection, before: &Value, after: &Value, campaign: &str) ->
 fn empty() -> Value {
     serde_json::to_value(SnapshotTables::default()).expect("empty tables")
 }
+fn market_scope(command: &game_core::market_ops::MarketCommand) -> (&game_core::EntityId, &str) {
+    use game_core::market_ops::MarketCommand::{
+        Close, Propose, RejectOffer, RespondNegotiation, Run,
+    };
+    match command {
+        Run(request) => (&request.campaign_id, request.now.as_str()),
+        Close(request) => (&request.campaign_id, request.now.as_str()),
+        Propose(request) => (&request.campaign_id, request.now.as_str()),
+        RespondNegotiation(request) => (&request.campaign_id, request.now.as_str()),
+        RejectOffer(request) => (&request.campaign_id, request.now.as_str()),
+    }
+}
+pub(super) fn market(
+    db: &mut Connection,
+    command: game_core::market_ops::MarketCommand,
+) -> Result<AdvanceOutcome> {
+    let (campaign_id, now) = market_scope(&command);
+    let campaign_id = campaign_id.as_str().to_owned();
+    let now = now.to_owned();
+    let tx = db.transaction_with_behavior(TransactionBehavior::Immediate)?;
+    let before = snapshots::read_from(&tx, &campaign_id)?;
+    let mut tables: SnapshotTables = serde_json::from_value(before.clone())?;
+    let material =
+        game_core::market_ops::material(&tables, &command).map_err(StoreError::Command)?;
+    let fingerprint = super::market_fingerprint(&material);
+    let outcome = game_core::market_ops::commit(&mut tables, &command, &fingerprint)
+        .map_err(StoreError::Command)?;
+    if !outcome.replayed {
+        let after = serde_json::to_value(&tables)?;
+        snapshots::envelope(after.clone(), "native-market", &now)?;
+        write_diff(&tx, &before, &after, &campaign_id)?;
+    }
+    tx.commit()?;
+    Ok(outcome)
+}
 pub(super) fn settle(
     db: &mut Connection,
     request: game_core::settlement::SettleTransferRequest,

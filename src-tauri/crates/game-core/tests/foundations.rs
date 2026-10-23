@@ -707,16 +707,14 @@ fn calendar_previews_stop_at_foundation_boundaries_and_never_write_time() {
     let original = state.clone();
     let preview = preview_time_advance(&state, &season).unwrap();
     assert_eq!(state, original);
-    assert!(preview.allowed);
-    assert_eq!(preview.target.unwrap().date, date("2026-08-31"));
+    assert!(!preview.allowed);
+    assert!(preview.target.is_none());
     assert_eq!(
         active_transfer_window(&state, &season).unwrap(),
         Some(TransferWindow::Summer)
     );
     state.current_date = "2026-08-31".into();
-    let same_day = preview_time_advance(&state, &season).unwrap();
-    assert!(same_day.allowed);
-    assert_eq!(same_day.from_date, same_day.target.unwrap().date);
+    assert!(preview_time_advance(&state, &season).is_err());
     state.last_boundary_key = Some("season:2026:summer-deadline".into());
     assert_eq!(active_transfer_window(&state, &season).unwrap(), None);
     assert_eq!(

@@ -91,6 +91,21 @@ function client(preview: TimePreview = july): GameClient {
     campaigns: vi.fn().mockResolvedValue({ campaigns: [], total: 0, page: 0 }),
     screen: vi.fn().mockResolvedValue(model()),
     previewTime: vi.fn().mockResolvedValue(preview),
+    previewMarket: vi.fn().mockResolvedValue({
+      campaignId: campaign.id,
+      revision: campaign.revision,
+      fromDate: preview.fromDate,
+      sourceBoundaryKey: preview.sourceBoundaryKey,
+      action: 'none',
+      allowed: false,
+      reason: null,
+      negotiationCount: 0,
+      offerCount: 0,
+      transferCount: 0,
+      contractCount: 0,
+      ledgerCount: 0,
+      registrationCount: 0,
+    }),
     previewMatchday: vi.fn().mockResolvedValue(matchday),
     simMatchday: vi.fn().mockResolvedValue({
       campaignId: campaign.id,
@@ -307,5 +322,134 @@ describe('native continue', () => {
       expect(vi.mocked(api.screen).mock.calls.length).toBeGreaterThan(reads),
     )
     expect(api.advanceTime).toHaveBeenCalledOnce()
+  })
+
+  it('shows Run Market on July 1 and ignores a second click while it is saving', async () => {
+    const api = client({
+      ...july,
+      allowed: false,
+      targetBoundaryKey: null,
+      targetDate: null,
+      nextEvent: null,
+      reason: null,
+    })
+    api.previewMarket = vi.fn().mockResolvedValue({
+      campaignId: campaign.id,
+      revision: campaign.revision,
+      fromDate: '2026-07-01',
+      sourceBoundaryKey: null,
+      action: 'run',
+      allowed: true,
+      reason: null,
+      negotiationCount: 2,
+      offerCount: 1,
+      transferCount: 1,
+      contractCount: 1,
+      ledgerCount: 2,
+      registrationCount: 0,
+    })
+    let resolve: (value: unknown) => void = () => undefined
+    api.runMarket = vi.fn().mockReturnValue(
+      new Promise((done) => {
+        resolve = done
+      }),
+    )
+    show(api)
+    const button = await screen.findByRole('button', { name: 'Run Market' })
+    expect(screen.queryByRole('button', { name: 'Continue' })).toBeNull()
+    fireEvent.click(button)
+    fireEvent.click(button)
+    expect(api.runMarket).toHaveBeenCalledOnce()
+    expect(button).toBeDisabled()
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Calculating the transfer market.',
+    )
+    const request = vi.mocked(api.runMarket).mock.calls[0]![0]
+    expect(request.negotiationIds).toHaveLength(2)
+    expect(request.offerIds).toHaveLength(1)
+    expect(request.ledgerIds).toHaveLength(2)
+    resolve({})
+  })
+
+  it('runs the January market before Sim Matchday and closes the window before the next match', async () => {
+    const api = client(kickoff)
+    api.previewMarket = vi.fn().mockResolvedValue({
+      campaignId: campaign.id,
+      revision: campaign.revision,
+      fromDate: '2027-01-05',
+      sourceBoundaryKey: 'season:season-1:matchday:2026-12-29',
+      action: 'run',
+      allowed: true,
+      reason: 'Run the transfer market before this matchday.',
+      negotiationCount: 0,
+      offerCount: 0,
+      transferCount: 0,
+      contractCount: 0,
+      ledgerCount: 0,
+      registrationCount: 0,
+    })
+    show(api)
+    expect(
+      await screen.findByText('Run the transfer market before this matchday.'),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Run Market' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Sim Matchday' })).toBeNull()
+    api.previewMarket = vi.fn().mockResolvedValue({
+      campaignId: campaign.id,
+      revision: campaign.revision,
+      fromDate: '2027-02-02',
+      sourceBoundaryKey: 'season:season-1:matchday:2027-01-26',
+      action: 'close',
+      allowed: true,
+      reason: 'Close the winter window before this matchday.',
+      negotiationCount: 0,
+      offerCount: 0,
+      transferCount: 0,
+      contractCount: 0,
+      ledgerCount: 0,
+      registrationCount: 0,
+    })
+    show(api)
+    expect(
+      await screen.findByText('Close the winter window before this matchday.'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Close Window' }),
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Sim Matchday' })).toBeNull()
+  })
+
+  it('blocks Continue while a qualifying offer is open', async () => {
+    const api = client({
+      ...july,
+      fromDate: '2026-08-31',
+      allowed: false,
+      targetBoundaryKey: null,
+      targetDate: null,
+      nextEvent: null,
+      reason: 'Accept the qualifying offer before the window can close.',
+    })
+    api.previewMarket = vi.fn().mockResolvedValue({
+      campaignId: campaign.id,
+      revision: campaign.revision,
+      fromDate: '2026-08-31',
+      sourceBoundaryKey: 'season:2026:summer-deadline',
+      action: 'none',
+      allowed: false,
+      reason: null,
+      negotiationCount: 0,
+      offerCount: 0,
+      transferCount: 0,
+      contractCount: 0,
+      ledgerCount: 0,
+      registrationCount: 0,
+    })
+    show(api)
+    expect(
+      await screen.findByText(
+        'Accept the qualifying offer before the window can close.',
+      ),
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Continue' })).toBeNull()
   })
 })

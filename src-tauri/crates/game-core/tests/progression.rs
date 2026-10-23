@@ -97,15 +97,25 @@ fn transport_ids_and_audit_time_do_not_change_the_operation_identity() {
 #[test]
 fn both_boundaries_commit_once_and_a_later_replay_does_not_roll_back() {
     let mut saved = tables();
+    let blocked_market = preview_saved(&saved, &id("career")).unwrap();
+    assert!(!blocked_market.allowed);
+    assert_eq!(blocked_market.from_date, "2026-07-01");
+    assert!(blocked_market.target_boundary_key.is_none());
+    saved.simulation_states[0].last_boundary_key = Some("season:season:market:2026-07-01".into());
     let preview = preview_saved(&saved, &id("career")).unwrap();
     assert!(preview.allowed);
-    assert_eq!(preview.from_date, "2026-07-01");
+    assert_eq!(preview.target_date.as_deref(), Some("2026-07-08"));
     assert_eq!(
         preview.target_boundary_key.as_deref(),
-        Some("season:2026:summer-deadline")
+        Some("season:season:summer-date:2026-07-08")
     );
-    assert_eq!(preview.next_event.as_deref(), Some("Summer deadline"));
-    let deadline = request(4, "2026-07-01", None, "season:2026:summer-deadline");
+    assert_eq!(preview.next_event.as_deref(), Some("Next window date"));
+    let deadline = request(
+        4,
+        "2026-07-01",
+        Some("season:season:market:2026-07-01"),
+        "season:season:summer-date:2026-07-08",
+    );
     let material = fingerprint(&saved, &deadline);
     let again = evaluate(&saved, &deadline, &material).unwrap();
     let AdvancePlan::Commit(planned) = again else {
@@ -116,11 +126,11 @@ fn both_boundaries_commit_once_and_a_later_replay_does_not_roll_back() {
     let first = commit(&mut saved, *planned);
     assert!(!first.replayed);
     assert_eq!(first.revision, n(5));
-    assert_eq!(first.current_date, "2026-08-31");
+    assert_eq!(first.current_date, "2026-07-08");
     assert_eq!(saved.simulation_states[0].phase, CalendarPhase::Preseason);
     assert_eq!(
         saved.simulation_states[0].last_boundary_key.as_deref(),
-        Some("season:2026:summer-deadline")
+        Some("season:season:summer-date:2026-07-08")
     );
     assert_eq!(saved.simulation_receipts.len(), 1);
     assert_eq!(saved.audit_events.len(), 1);
@@ -138,6 +148,8 @@ fn both_boundaries_commit_once_and_a_later_replay_does_not_roll_back() {
     assert_eq!(replay.revision, n(5));
     assert_eq!(saved.simulation_receipts.len(), 1);
 
+    saved.simulation_states[0].current_date = "2026-08-31".into();
+    saved.simulation_states[0].last_boundary_key = Some("season:2026:summer-deadline".into());
     let mut kickoff = request(
         5,
         "2026-08-31",
@@ -199,7 +211,13 @@ fn both_boundaries_commit_once_and_a_later_replay_does_not_roll_back() {
 #[test]
 fn stale_and_changed_inputs_do_not_change_rows() {
     let mut saved = tables();
-    let deadline = request(4, "2026-07-01", None, "season:2026:summer-deadline");
+    saved.simulation_states[0].last_boundary_key = Some("season:season:market:2026-07-01".into());
+    let deadline = request(
+        4,
+        "2026-07-01",
+        Some("season:season:market:2026-07-01"),
+        "season:season:summer-date:2026-07-08",
+    );
     let material = fingerprint(&saved, &deadline);
     let AdvancePlan::Commit(planned) = evaluate(&saved, &deadline, &material).unwrap() else {
         panic!("commit");

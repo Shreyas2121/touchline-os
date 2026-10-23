@@ -754,6 +754,6 @@ fn agreed_transfer_settles_once_and_leaves_july_on_august() {
 
     let preview = preview_time(&store, campaign).unwrap();
     assert_eq!(preview.from_date, "2026-07-01");
-    assert_eq!(preview.target_date.as_deref(), Some("2026-08-31"));
-    assert!(preview.allowed);
+    assert!(preview.target_date.is_none());
+    assert!(!preview.allowed);
 }

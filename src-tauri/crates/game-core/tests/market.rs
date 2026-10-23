@@ -1,10 +1,11 @@
 use game_core::market::{
-    plan_tick, resolve_terms, Agreement, MarketClub, MarketPlayer, MarketSeedInputs, OpeningBid,
-    TermProposal, MARKET_ENGINE_VERSION,
+    plan_openings, plan_tick, resolve_terms, Agreement, MarketClub, MarketPlayer, MarketSeedInputs,
+    OpeningBid, TermProposal, MARKET_ENGINE_VERSION,
 };
 use game_core::policy::QualificationRule;
 use game_core::random::{derive_event_seed, EventKind, Mulberry32};
 use game_core::{CoreError, PositionGroup, SafeInt, SquadTier};
+use std::collections::BTreeSet;
 
 fn seed() -> MarketSeedInputs {
     MarketSeedInputs {
@@ -716,4 +717,39 @@ fn term_inputs_reject_bad_money_and_repeat() {
         resolve_terms(zero).unwrap_err(),
         CoreError::Invalid("Invalid valuation.")
     );
+}
+
+#[test]
+fn a_second_compulsory_bid_for_one_player_is_absent() {
+    let mut player = contracted("player", PositionGroup::Def, 50, 101, "managed");
+    player.seller_prestige = Some(40);
+    let clubs = [
+        club("a", 80, 50_000_000_000, 50_000_000, 0),
+        club("b", 90, 50_000_000_000, 50_000_000, 0),
+    ];
+    let bids = plan_openings(
+        &clubs,
+        std::slice::from_ref(&player),
+        "managed",
+        &seed(),
+        Some(rule(3, 2)),
+        &BTreeSet::new(),
+        &BTreeSet::new(),
+    )
+    .unwrap();
+    assert_eq!(bids.len(), 1);
+    assert_eq!(bids[0].player_key, "player");
+    let mut already = BTreeSet::new();
+    already.insert("player".into());
+    let skipped = plan_openings(
+        &clubs,
+        std::slice::from_ref(&player),
+        "managed",
+        &seed(),
+        Some(rule(3, 2)),
+        &already,
+        &BTreeSet::new(),
+    )
+    .unwrap();
+    assert!(skipped.is_empty());
 }

@@ -65,6 +65,21 @@ function client(): GameClient {
     cancelImport: vi.fn().mockResolvedValue(undefined),
     backupDatabase: vi.fn().mockResolvedValue(false),
     exportCampaign: vi.fn().mockResolvedValue(false),
+    previewMarket: vi.fn().mockResolvedValue({
+      campaignId: campaign.id,
+      revision: campaign.revision,
+      fromDate: '2026-07-01',
+      sourceBoundaryKey: null,
+      action: 'none',
+      allowed: false,
+      reason: null,
+      negotiationCount: 0,
+      offerCount: 0,
+      transferCount: 0,
+      contractCount: 0,
+      ledgerCount: 0,
+      registrationCount: 0,
+    }),
     previewTime: vi.fn().mockResolvedValue({
       campaignId: campaign.id,
       revision: campaign.revision,
@@ -280,5 +295,50 @@ describe('native read and migration UI', () => {
       'This campaign was not found.',
     )
     expect(screen.getByRole('button', { name: 'Retry' })).toBeInTheDocument()
+  })
+  it('lists a compulsory incoming offer and keeps Reject unavailable', async () => {
+    const api = client()
+    api.transferBoard = vi.fn().mockResolvedValue({
+      incoming: [
+        {
+          offerId: 'offer-1',
+          negotiationId: 'negotiation-1',
+          playerName: 'Ada Forward',
+          bidderName: 'North Town',
+          feeCents: 5000000,
+          wageCents: 20000,
+          squadTier: 'key',
+          term: '2027-06-30',
+          deadline: '2026-07-15',
+          compulsory: 'Compulsory',
+          rejectAllowed: false,
+          ledgerCount: 2,
+          needsRegistration: false,
+        },
+      ],
+      outgoing: [
+        {
+          negotiationId: 'negotiation-2',
+          playerName: 'Bea Midfielder',
+          sellerName: 'South Town',
+          feeCents: 1000,
+          wageCents: 1000,
+          squadTier: 'rotation',
+          status: 'agreed',
+          deadline: '2026-08-31',
+          canWithdraw: true,
+          canSettle: true,
+          ledgerCount: 2,
+          needsRegistration: true,
+        },
+      ],
+      completed: [],
+    })
+    show(api, `/app/${campaign.id}/transfers`)
+    expect(await screen.findByText('Compulsory')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Reject' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Accept' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Withdraw' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Settle' })).toBeEnabled()
   })
 })
