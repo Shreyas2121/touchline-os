@@ -524,7 +524,11 @@ fn rejects_blocked_invalid_keys_duplicate_players_and_unsafe_arithmetic() {
     let home = squad("h", false);
     let away = squad("a", false);
     let bad = ClubSelection::Blocked { message: "blocked" };
-    let run = |home, away, fixture_key| {
+    fn run(
+        home: &ClubSelection,
+        away: &ClubSelection,
+        fixture_key: &str,
+    ) -> game_core::CoreResult<EngineMatch> {
         simulate_fixture(&EngineInput {
             root_seed: "tiny",
             fixture_key,
@@ -532,7 +536,7 @@ fn rejects_blocked_invalid_keys_duplicate_players_and_unsafe_arithmetic() {
             home,
             away,
         })
-    };
+    }
     assert!(run(&bad, &away, "valid").is_err());
     assert!(run(&home, &away, "").is_err());
     assert!(run(&home, &away, &"x".repeat(201)).is_err());

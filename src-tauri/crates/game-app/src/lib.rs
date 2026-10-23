@@ -2,14 +2,17 @@
 
 #![forbid(unsafe_code)]
 mod management;
+mod matchday;
 mod migration;
 mod progression;
 mod reads;
 pub use game_core::management::ClubChoices;
 pub use game_core::management::{CreationRequest, ManagementCommand, ManagementOutcome};
+pub use game_core::matchday::{MatchdayPreview, MatchdayView, SimMatchdayRequest};
 pub use game_core::progression::{AdvanceOutcome, AdvanceRequest, TimePreview};
 pub use game_core::{queries::*, EntityId, PlayerRow, SafeInt};
 pub use management::{create_career, manage, preview_creation};
+pub use matchday::{matchday_view, preview_matchday, sim_matchday};
 pub use migration::{backup_file, export_file, MigrationSession};
 pub use progression::{advance_time, preview_time};
 pub use reads::{preview, read_screen, store_error, validation};

@@ -17,6 +17,7 @@ mod ids;
 pub mod management;
 pub mod match_engine;
 pub mod match_selection;
+pub mod matchday;
 pub mod money;
 mod nulls;
 mod numbers;

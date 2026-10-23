@@ -44,7 +44,8 @@ pub enum SelectionMode {
     Emergency,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SelectedPlayer {
     pub simulation_key: String,
     pub slot: String,

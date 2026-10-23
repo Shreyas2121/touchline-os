@@ -15,6 +15,9 @@ import type { PlayerPlanning } from './generated/PlayerPlanning'
 import type { TimePreview } from './generated/TimePreview'
 import type { AdvanceRequest } from './generated/AdvanceRequest'
 import type { AdvanceOutcome } from './generated/AdvanceOutcome'
+import type { MatchdayPreview } from './generated/MatchdayPreview'
+import type { MatchdayView } from './generated/MatchdayView'
+import type { SimMatchdayRequest } from './generated/SimMatchdayRequest'
 export type GameClient = {
   health(): Promise<HealthReport>
   campaigns(page: number): Promise<CampaignPage>
@@ -32,6 +35,9 @@ export type GameClient = {
   manage(command: ManagementCommand): Promise<ManagementOutcome>
   previewTime(campaignId: string): Promise<TimePreview>
   advanceTime(request: AdvanceRequest): Promise<AdvanceOutcome>
+  previewMatchday(campaignId: string): Promise<MatchdayPreview>
+  simMatchday(request: SimMatchdayRequest): Promise<AdvanceOutcome>
+  matchdayView(campaignId: string, round: number | null): Promise<MatchdayView>
 }
 
 export function unavailableNativeReads() {
@@ -56,5 +62,8 @@ export function unavailableNativeReads() {
     manage: reject,
     previewTime: reject,
     advanceTime: reject,
+    previewMatchday: reject,
+    simMatchday: reject,
+    matchdayView: reject,
   }
 }

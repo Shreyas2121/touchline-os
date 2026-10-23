@@ -8,6 +8,31 @@ use tauri_plugin_dialog::DialogExt;
 type Store = Arc<game_app::NativeStore>;
 type Imports = Arc<game_app::MigrationSession>;
 #[tauri::command]
+async fn preview_matchday(
+    store: tauri::State<'_, Store>,
+    campaign_id: game_app::EntityId,
+) -> Result<game_app::MatchdayPreview, CommandError> {
+    let store = store.inner().clone();
+    blocking(move || game_app::preview_matchday(&store, campaign_id)).await
+}
+#[tauri::command]
+async fn sim_matchday(
+    store: tauri::State<'_, Store>,
+    request: game_app::SimMatchdayRequest,
+) -> Result<game_app::AdvanceOutcome, CommandError> {
+    let store = store.inner().clone();
+    blocking(move || game_app::sim_matchday(&store, request)).await
+}
+#[tauri::command]
+async fn matchday_view(
+    store: tauri::State<'_, Store>,
+    campaign_id: game_app::EntityId,
+    round: Option<game_app::SafeInt>,
+) -> Result<game_app::MatchdayView, CommandError> {
+    let store = store.inner().clone();
+    blocking(move || game_app::matchday_view(&store, campaign_id, round)).await
+}
+#[tauri::command]
 async fn player_planning(
     store: tauri::State<'_, Store>,
     campaign_id: game_app::EntityId,
@@ -247,6 +272,9 @@ pub fn run() {
             manage_campaign,
             preview_creation,
             preview_time,
+            preview_matchday,
+            sim_matchday,
+            matchday_view,
             advance_time,
             create_career,
             select_import,

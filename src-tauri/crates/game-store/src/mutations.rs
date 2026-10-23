@@ -122,6 +122,25 @@ fn write_diff(db: &Connection, before: &Value, after: &Value, campaign: &str) ->
 fn empty() -> Value {
     serde_json::to_value(SnapshotTables::default()).expect("empty tables")
 }
+pub(super) fn matchday(
+    db: &mut Connection,
+    request: game_core::matchday::SimMatchdayRequest,
+    prepared: game_core::matchday::PreparedMatchday,
+) -> Result<AdvanceOutcome> {
+    let fingerprint = super::matchday_fingerprint(&prepared.fingerprint_material);
+    let tx = db.transaction_with_behavior(TransactionBehavior::Immediate)?;
+    let before = snapshots::read_from(&tx, request.campaign_id.as_str())?;
+    let mut tables: SnapshotTables = serde_json::from_value(before.clone())?;
+    let outcome = game_core::matchday::commit(&mut tables, &request, prepared, &fingerprint)
+        .map_err(StoreError::Command)?;
+    if !outcome.replayed {
+        let after = serde_json::to_value(&tables)?;
+        snapshots::envelope(after.clone(), "native-matchday", &request.now)?;
+        write_diff(&tx, &before, &after, request.campaign_id.as_str())?;
+    }
+    tx.commit()?;
+    Ok(outcome)
+}
 pub(super) fn advance(db: &mut Connection, request: AdvanceRequest) -> Result<AdvanceOutcome> {
     let tx = db.transaction_with_behavior(TransactionBehavior::Immediate)?;
     let before = snapshots::read_from(&tx, request.campaign_id.as_str())?;

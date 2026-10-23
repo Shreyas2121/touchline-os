@@ -12,6 +12,9 @@ pub fn creation_fingerprint(canonical: &str) -> String {
 pub fn advance_fingerprint(canonical: &str) -> String {
     hashed_fingerprint("native-advance:1:", canonical)
 }
+pub fn matchday_fingerprint(canonical: &str) -> String {
+    hashed_fingerprint("native-matchday:1:", canonical)
+}
 fn hashed_fingerprint(prefix: &str, canonical: &str) -> String {
     use sha2::{Digest, Sha256};
     format!(
@@ -122,6 +125,11 @@ pub struct ImportOutcome {
 
 type Reply<T> = mpsc::Sender<Result<T>>;
 enum Request {
+    Matchday(
+        game_core::matchday::SimMatchdayRequest,
+        game_core::matchday::PreparedMatchday,
+        Reply<game_core::progression::AdvanceOutcome>,
+    ),
     Planning(
         game_core::EntityId,
         game_core::EntityId,
@@ -166,6 +174,13 @@ pub struct Store {
     worker: Option<JoinHandle<()>>,
 }
 impl Store {
+    pub fn matchday(
+        &self,
+        request: game_core::matchday::SimMatchdayRequest,
+        prepared: game_core::matchday::PreparedMatchday,
+    ) -> Result<game_core::progression::AdvanceOutcome> {
+        self.call(|reply| Request::Matchday(request, prepared, reply))
+    }
     pub fn planning(
         &self,
         campaign: game_core::EntityId,
@@ -248,6 +263,10 @@ impl Store {
                 };
                 while let Ok(request) = receiver.recv() {
                     match request {
+                        Request::Matchday(request, prepared, reply) => {
+                            let _ =
+                                reply.send(mutations::matchday(&mut connection, request, prepared));
+                        }
                         Request::Planning(campaign, player, reply) => {
                             let _ =
                                 reply.send(queries::planning(&mut connection, &campaign, &player));

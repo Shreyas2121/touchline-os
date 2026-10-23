@@ -34,6 +34,10 @@ export function createNativeClient(): GameClient {
     manage: (command) => call('manage_campaign', { command }),
     previewTime: (campaignId) => call('preview_time', { campaignId }),
     advanceTime: (request) => call('advance_time', { request }),
+    previewMatchday: (campaignId) => call('preview_matchday', { campaignId }),
+    simMatchday: (request) => call('sim_matchday', { request }),
+    matchdayView: (campaignId, round) =>
+      call('matchday_view', { campaignId, round }),
   }
 }
 

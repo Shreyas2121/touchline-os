@@ -19,13 +19,15 @@ pub struct EngineInput<'a> {
     pub away: &'a ClubSelection,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, serde::Serialize)]
+#[serde(rename_all = "lowercase")]
 pub enum ClubSide {
     Home,
     Away,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
+#[serde(rename_all = "lowercase")]
 pub enum MatchEventKind {
     Goal,
     Yellow,
@@ -34,7 +36,8 @@ pub enum MatchEventKind {
     Injury,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct MatchEvent {
     pub kind: MatchEventKind,
     pub minute: u8,
@@ -47,7 +50,8 @@ pub struct MatchEvent {
 }
 
 /// All shots, including misses. Goals also appear in the closed event timeline.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct EngineChance {
     pub minute: u8,
     pub side: ClubSide,

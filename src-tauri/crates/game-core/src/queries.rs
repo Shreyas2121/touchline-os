@@ -51,6 +51,15 @@ pub struct PlayerFact {
     pub availability: String,
     pub homegrown_club: Option<bool>,
     pub homegrown_nation: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub minutes: Option<SafeInt>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub goals: Option<SafeInt>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub assists: Option<SafeInt>,
 }
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]

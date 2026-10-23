@@ -25,6 +25,7 @@ import { CrestSvg } from '../../components/graphics/CrestSvg'
 import { NativeTactics } from './NativeTactics'
 import { Button } from '../../components/ui/Button'
 import { NativeScreenTables } from './NativeScreenTables'
+import { NativeMatches } from './NativeMatches'
 import { NativeCareerForm } from './NativeCareerForm'
 import { NativeManagementPanel } from './NativeManagementPanel'
 import { NativeProgression } from './NativeProgression'
@@ -89,7 +90,10 @@ export function NativeRoutes({ client }: { client: GameClient }) {
                 <p>
                   Continue on the Command Center advances a standalone career
                   from July 1 to the summer deadline and then to league kickoff.
-                  Match simulation arrives in Phase 8.
+                  At kickoff, Sim Matchday previews the opponent and asks for
+                  confirmation before saving all four leagues. Fixtures &
+                  Results shows saved reports and tables. Season rollover
+                  arrives in Phase 10.
                 </p>
               </>
             }
@@ -513,6 +517,9 @@ function ScreenContent({
             )}
             {screen === 'tactics' && <NativeTactics model={data} />}
             <NativeScreenTables model={data} screen={screen} />
+            {screen === 'matches' && (
+              <NativeMatches client={client} campaignId={campaignId} />
+            )}
             <NativeManagementPanel
               key={data.revision}
               client={client}
@@ -544,11 +551,13 @@ function ScreenContent({
                 campaignId={campaignId}
               />
             )}
-            <Paging
-              page={page}
-              total={Math.max(0, ...Object.values(data.totals))}
-              onPage={setPage}
-            />
+            {screen !== 'matches' && (
+              <Paging
+                page={page}
+                total={Math.max(0, ...Object.values(data.totals))}
+                onPage={setPage}
+              />
+            )}
           </>
         )
       )}

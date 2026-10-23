@@ -6,7 +6,7 @@ use crate::{
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
-pub const MATCH_SIMULATION_UNAVAILABLE: &str = "Match simulation arrives in Phase 8.";
+pub const MATCH_SIMULATION_UNAVAILABLE: &str = "Use Sim Matchday to play the next league round.";
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum TransferWindow {
@@ -115,7 +115,24 @@ fn foundation_clock(state: &SimulationStateRow, season: &SeasonRow) -> CoreResul
     let consumed_kickoff = state.phase == CalendarPhase::League
         && state.last_boundary_key.as_deref() == Some(&kickoff.key)
         && current == kickoff.date;
-    if !unconsumed && !consumed_deadline && !consumed_kickoff {
+    let mut matchday = false;
+    for round in 1..=34 {
+        let played_date = add_days(&kickoff.date, (round - 1) * 7)?;
+        let key = format!(
+            "season:{}:matchday:{}",
+            season.id.as_str(),
+            played_date.as_str()
+        );
+        if state.last_boundary_key.as_deref() == Some(&key) {
+            matchday = if round == 34 {
+                state.phase == CalendarPhase::Review && current == played_date
+            } else {
+                state.phase == CalendarPhase::League && current == add_days(&played_date, 7)?
+            };
+            break;
+        }
+    }
+    if !unconsumed && !consumed_deadline && !consumed_kickoff && !matchday {
         return Err(CoreError::Invalid(
             "Game date, phase and consumed boundary are inconsistent.",
         ));
@@ -170,9 +187,13 @@ pub fn preview_time_advance(
         allowed: target.is_some(),
         target_boundary_key: target.as_ref().map(|t| t.key.clone()),
         event_seed,
-        reason: target
-            .is_none()
-            .then(|| MATCH_SIMULATION_UNAVAILABLE.into()),
+        reason: target.is_none().then(|| {
+            if state.phase == CalendarPhase::Review {
+                crate::matchday::ROLLOVER_UNAVAILABLE.into()
+            } else {
+                MATCH_SIMULATION_UNAVAILABLE.into()
+            }
+        }),
         target,
     })
 }

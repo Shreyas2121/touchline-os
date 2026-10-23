@@ -954,6 +954,7 @@ version = "0.0.0"
 dependencies = [
  "game-core",
  "game-store",
+ "rusqlite",
  "serde_json",
 ]
 

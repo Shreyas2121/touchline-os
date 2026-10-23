@@ -266,9 +266,15 @@ export default defineConfig(
             },
             {
               regex:
-                '(^|/)(data|features)(/|$)|(^|/)domain/(?!graphics(/|$))|(^|/)providers/database',
+                '(^|/)(data|features)(/|$)|(^|/)domain/(?!graphics(/|$)|matches/xg$)|(^|/)providers/database',
               message:
                 'Native UI cannot use browser storage or TypeScript gameplay logic. Pure graphics are presentation only.',
+            },
+            {
+              regex: '(^|/)domain/matches/xg$',
+              allowImportNames: ['formatXg'],
+              message:
+                'Native match UI may import only milli-unit display formatting.',
             },
           ],
         },

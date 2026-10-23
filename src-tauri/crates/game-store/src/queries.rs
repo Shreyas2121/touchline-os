@@ -179,7 +179,11 @@ pub(super) fn screen(db: &mut Connection, query: &ScreenQuery) -> Result<ScreenR
             .map(|i| format!("?{i}"))
             .collect::<Vec<_>>()
             .join(",");
-        let values = scope.iter().cloned().chain(ids).collect::<Vec<_>>();
+        let values = scope
+            .iter()
+            .cloned()
+            .chain(ids.iter().cloned())
+            .collect::<Vec<_>>();
         for table in ["contracts", "playerSimulationStates"] {
             rows[table] = Value::Array(select(
                 &tx,
@@ -211,6 +215,22 @@ pub(super) fn screen(db: &mut Connection, query: &ScreenQuery) -> Result<ScreenR
         )?);
     }
     let mut selection = serde_json::to_value(SnapshotTables::default())?;
+    selection["fixtures"] = Value::Array(select(
+        &tx,
+        "fixtures",
+        "campaignId = ?1 AND seasonId = ?2",
+        &season,
+        1,
+        0,
+    )?);
+    if !ids.is_empty() {
+        let placeholders = (3..=ids.len() + 2)
+            .map(|i| format!("?{i}"))
+            .collect::<Vec<_>>()
+            .join(",");
+        let values = season.iter().cloned().chain(ids).collect::<Vec<_>>();
+        selection["simulatedAppearances"] = Value::Array(select(&tx, "simulatedAppearances", &format!("campaignId = ?1 AND playerId IN ({placeholders}) AND fixtureId IN (SELECT id FROM fixtures WHERE campaignId = ?1 AND seasonId = ?2)"), &values, -1, 0)?);
+    }
     if matches!(query.screen, Screen::Tactics | Screen::Registration) {
         selection["players"] = Value::Array(select(
             &tx,

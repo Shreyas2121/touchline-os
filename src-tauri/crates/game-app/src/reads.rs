@@ -151,7 +151,7 @@ pub fn read_screen(store: &Store, query: ScreenQuery) -> Result<ScreenModel, Com
                                 .rows
                                 .simulation_states
                                 .first()
-                                .is_some_and(|clock| date >= &clock.current_date)
+                                .is_some_and(|clock| date > &clock.current_date)
                         }) {
                             "Injured"
                         } else if p.suspension_matches.get() > 0 {
@@ -163,6 +163,39 @@ pub fn read_screen(store: &Store, query: ScreenQuery) -> Result<ScreenModel, Com
                     .into(),
                 homegrown_club: profile.map(|p| p.homegrown_club),
                 homegrown_nation: profile.map(|p| p.homegrown_nation),
+                minutes: (!read.selection.fixtures.is_empty()).then(|| {
+                    SafeInt::new(
+                        read.selection
+                            .simulated_appearances
+                            .iter()
+                            .filter(|a| a.player_id == player.id)
+                            .map(|a| a.minutes.get())
+                            .sum(),
+                    )
+                    .expect("bounded season minutes")
+                }),
+                goals: (!read.selection.fixtures.is_empty()).then(|| {
+                    SafeInt::new(
+                        read.selection
+                            .simulated_appearances
+                            .iter()
+                            .filter(|a| a.player_id == player.id)
+                            .map(|a| a.goals.get())
+                            .sum(),
+                    )
+                    .expect("bounded season goals")
+                }),
+                assists: (!read.selection.fixtures.is_empty()).then(|| {
+                    SafeInt::new(
+                        read.selection
+                            .simulated_appearances
+                            .iter()
+                            .filter(|a| a.player_id == player.id)
+                            .map(|a| a.assists.get())
+                            .sum(),
+                    )
+                    .expect("bounded season assists")
+                }),
             }
         })
         .collect();
