@@ -78,8 +78,13 @@ pub fn export_file(
     let snapshot = store
         .export_snapshot(campaign_id, export_id, exported_at)
         .map_err(store_error)?;
-    let bytes = serde_json::to_vec_pretty(&snapshot)
+    // Use the same compact encoding budget enforced by the snapshot parser.
+    // Indentation alone can push a complete season over the import ceiling.
+    let bytes = serde_json::to_vec(&snapshot)
         .map_err(|_| validation("The snapshot could not be encoded."))?;
+    if bytes.len() as u64 > MAX_FILE_BYTES {
+        return Err(validation("The snapshot exceeds the 32 MiB limit."));
+    }
     // A new destination protects both a prior export and the live database.
     let mut file = OpenOptions::new()
         .write(true)
