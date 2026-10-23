@@ -1,11 +1,11 @@
-use crate::enums::{position_group_for, LedgerKind, OfferStatus, TransferKind};
+use crate::enums::{position_group_for, LedgerKind, NegotiationStatus, OfferStatus, TransferKind};
 use crate::numbers::JS_MAX_SAFE_INTEGER;
 use crate::rows::{
     AuditPayload, CampaignRow, ClubRow, ConstitutionRow, ConstitutionRule, ContractRow,
-    DevelopmentPlanRow, ImportReceiptRow, LeagueRow, LineupRow, OfferRow, OutcomeRef,
-    PlayerAttributes, PlayerRow, PlayerSimulationStateRow, RegistrationRow, ScoutingReportRow,
-    SeasonRow, ShortlistItemRow, SimulationReceiptRow, SimulationStateRow, SnapshotTables,
-    TransferRow,
+    DevelopmentPlanRow, ImportReceiptRow, LeagueRow, LineupRow, NegotiationRow, OfferRow,
+    OutcomeRef, PlayerAttributes, PlayerRow, PlayerSimulationStateRow, RegistrationRow,
+    ScoutingReportRow, SeasonRow, ShortlistItemRow, SimulationReceiptRow, SimulationStateRow,
+    SnapshotTables, TransferRow,
 };
 use crate::snapshot::{CampaignSnapshot, SnapshotError};
 use serde_json::Value;
@@ -64,7 +64,7 @@ pub fn validate_snapshot(snapshot: &CampaignSnapshot) -> Result<(), SnapshotErro
         snapshot.source_storage,
         snapshot.source_schema_version.get(),
     ) {
-        (crate::enums::SourceStorage::Sqlite, 2 | 3) => {}
+        (crate::enums::SourceStorage::Sqlite, 2..=4) => {}
         _ => return Err(SnapshotError::UnsupportedVersion("source schema".into())),
     }
     if snapshot.campaign_revision.get() < 0 {
@@ -82,6 +82,7 @@ pub fn validate_snapshot(snapshot: &CampaignSnapshot) -> Result<(), SnapshotErro
     require_len(tables.ledger_entries.len(), 0, 8_000, "ledgerEntries")?;
     require_len(tables.transfers.len(), 0, 8_000, "transfers")?;
     require_len(tables.offers.len(), 0, 8_000, "offers")?;
+    require_len(tables.negotiations.len(), 0, 4_000, "negotiations")?;
     require_len(tables.lineups.len(), 0, 256, "lineups")?;
     require_len(tables.registrations.len(), 0, 16_000, "registrations")?;
     require_len(tables.shortlist_items.len(), 0, 2_000, "shortlistItems")?;
@@ -220,6 +221,19 @@ fn validate_tables(tables: &SnapshotTables) -> Result<(), SnapshotError> {
     }
     for row in &tables.offers {
         validate_offer(row)?;
+    }
+    let mut open_buys = BTreeSet::new();
+    for row in &tables.negotiations {
+        validate_negotiation(row)?;
+        if negotiation_is_open(row.status)
+            && !open_buys.insert((
+                row.campaign_id.as_str(),
+                row.buyer_club_id.as_str(),
+                row.player_id.as_str(),
+            ))
+        {
+            return Err(SnapshotError::Invalid("open negotiation".into()));
+        }
     }
     for row in &tables.lineups {
         validate_lineup(row)?;
@@ -454,8 +468,72 @@ fn validate_transfer(row: &TransferRow) -> Result<(), SnapshotError> {
 fn validate_offer(row: &OfferRow) -> Result<(), SnapshotError> {
     require_date(&row.received_on, "offer received")?;
     require_optional_date(row.resolved_on.as_deref(), "offer resolved")?;
+    require_optional_date(row.deadline_on.as_deref(), "offer deadline")?;
     if row.status == OfferStatus::Open && row.resolved_on.is_some() {
         return Err(SnapshotError::Invalid("open offer".into()));
+    }
+    if let Some(prestige) = row.bidder_prestige {
+        require_range(prestige.get(), 0, 100, "bidder prestige")?;
+    }
+    if let Some(prestige) = row.seller_prestige {
+        require_range(prestige.get(), 0, 100, "seller prestige")?;
+    }
+    if let Some(version) = row.constitution_version {
+        require_range(version.get(), 1, JS_MAX_SAFE_INTEGER, "offer constitution")?;
+    }
+    Ok(())
+}
+
+fn negotiation_is_open(status: NegotiationStatus) -> bool {
+    matches!(
+        status,
+        NegotiationStatus::Proposed | NegotiationStatus::Countered | NegotiationStatus::Agreed
+    )
+}
+
+fn validate_negotiation(row: &NegotiationRow) -> Result<(), SnapshotError> {
+    require_date(&row.expires_on, "negotiation expires")?;
+    require_date(&row.opened_on, "negotiation opened")?;
+    require_date(&row.deadline_on, "negotiation deadline")?;
+    require_optional_date(row.resolved_on.as_deref(), "negotiation resolved")?;
+    require_nonnegative(row.fee_cents.get(), "negotiation fee")?;
+    require_nonnegative(row.reserved_cents.get(), "reserved cents")?;
+    require_nonnegative(row.wage_cents.get(), "negotiation wage")?;
+    require_nonnegative(row.reserved_wage_cents.get(), "reserved wage")?;
+    require_range(row.counter_count.get(), 0, 2, "counter count")?;
+    require_range(row.event_seed.get(), 0, 0xffff_ffff, "negotiation seed")?;
+    let open = negotiation_is_open(row.status);
+    if open != row.resolved_on.is_none() {
+        return Err(SnapshotError::Invalid("negotiation resolution".into()));
+    }
+    if !open && row.reserved_cents.get() != 0 {
+        return Err(SnapshotError::Invalid("reserved cents".into()));
+    }
+    if let Some(qualification) = &row.qualification {
+        require_nonnegative(qualification.fee_cents.get(), "qualification fee")?;
+        require_nonnegative(
+            qualification.valuation_cents.get(),
+            "qualification valuation",
+        )?;
+        require_range(qualification.buyer_prestige.get(), 0, 100, "buyer prestige")?;
+        require_range(
+            qualification.seller_prestige.get(),
+            0,
+            100,
+            "seller prestige",
+        )?;
+        require_range(
+            qualification.constitution_version.get(),
+            1,
+            JS_MAX_SAFE_INTEGER,
+            "qualification constitution",
+        )?;
+        require_range(
+            qualification.compulsory.get(),
+            0,
+            1,
+            "qualification compulsory",
+        )?;
     }
     Ok(())
 }

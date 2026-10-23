@@ -165,6 +165,28 @@ pub enum OfferStatus {
     Open,
     Accepted,
     Rejected,
+    Expired,
+    Withdrawn,
+    Superseded,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "lowercase")]
+pub enum NegotiationStatus {
+    Proposed,
+    Countered,
+    Agreed,
+    Settled,
+    Rejected,
+    Expired,
+    Withdrawn,
+    Superseded,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "lowercase")]
+pub enum OfferOrigin {
+    Ai,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
@@ -255,6 +277,16 @@ pub enum AuditAction {
     SimulationAdvance,
     #[serde(rename = "simulation.matchday")]
     SimulationMatchday,
+    #[serde(rename = "market.tick")]
+    MarketTick,
+    #[serde(rename = "market.close")]
+    MarketClose,
+    #[serde(rename = "transfer.propose")]
+    TransferPropose,
+    #[serde(rename = "transfer.settle")]
+    TransferSettle,
+    #[serde(rename = "offer.respond")]
+    OfferRespond,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]

@@ -51,13 +51,17 @@ fn committed_fixtures_match_the_snapshot_dto() {
 fn sqlite_schema_version_follows_the_snapshot_contract() {
     let mut value = fixture("save-b");
     value["sourceStorage"] = json!("sqlite");
-    value["sourceSchemaVersion"] = json!(2);
-    assert!(parse(&value).is_ok());
-    value["sourceSchemaVersion"] = json!(1);
-    assert!(matches!(
-        parse(&value),
-        Err(SnapshotError::UnsupportedVersion(_))
-    ));
+    for version in [2, 3, 4] {
+        value["sourceSchemaVersion"] = json!(version);
+        assert!(parse(&value).is_ok(), "{version}");
+    }
+    for version in [1, 5] {
+        value["sourceSchemaVersion"] = json!(version);
+        assert!(
+            matches!(parse(&value), Err(SnapshotError::UnsupportedVersion(_))),
+            "{version}"
+        );
+    }
 }
 
 #[test]

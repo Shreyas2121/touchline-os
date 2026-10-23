@@ -11,6 +11,7 @@ import type { ImportReceiptRow } from "./ImportReceiptRow";
 import type { LeagueRow } from "./LeagueRow";
 import type { LedgerEntryRow } from "./LedgerEntryRow";
 import type { LineupRow } from "./LineupRow";
+import type { NegotiationRow } from "./NegotiationRow";
 import type { OfferRow } from "./OfferRow";
 import type { PlayerRow } from "./PlayerRow";
 import type { PlayerSimulationStateRow } from "./PlayerSimulationStateRow";
@@ -24,4 +25,4 @@ import type { SimulationReceiptRow } from "./SimulationReceiptRow";
 import type { SimulationStateRow } from "./SimulationStateRow";
 import type { TransferRow } from "./TransferRow";
 
-export type SnapshotTables = { fixtures: Array<FixtureRow>, simulatedMatches: Array<SimulatedMatchRow>, simulatedAppearances: Array<SimulatedAppearanceRow>, campaigns: Array<CampaignRow>, seasons: Array<SeasonRow>, leagues: Array<LeagueRow>, clubs: Array<ClubRow>, players: Array<PlayerRow>, contracts: Array<ContractRow>, constitutions: Array<ConstitutionRow>, ledgerEntries: Array<LedgerEntryRow>, transfers: Array<TransferRow>, offers: Array<OfferRow>, lineups: Array<LineupRow>, registrations: Array<RegistrationRow>, shortlistItems: Array<ShortlistItemRow>, scoutingReports: Array<ScoutingReportRow>, developmentPlans: Array<DevelopmentPlanRow>, auditEvents: Array<AuditEventRow>, importReceipts: Array<ImportReceiptRow>, simulationStates: Array<SimulationStateRow>, clubSimulationStates: Array<ClubSimulationStateRow>, playerSimulationStates: Array<PlayerSimulationStateRow>, simulationReceipts: Array<SimulationReceiptRow>, };
+export type SnapshotTables = { fixtures: Array<FixtureRow>, simulatedMatches: Array<SimulatedMatchRow>, simulatedAppearances: Array<SimulatedAppearanceRow>, negotiations: Array<NegotiationRow>, campaigns: Array<CampaignRow>, seasons: Array<SeasonRow>, leagues: Array<LeagueRow>, clubs: Array<ClubRow>, players: Array<PlayerRow>, contracts: Array<ContractRow>, constitutions: Array<ConstitutionRow>, ledgerEntries: Array<LedgerEntryRow>, transfers: Array<TransferRow>, offers: Array<OfferRow>, lineups: Array<LineupRow>, registrations: Array<RegistrationRow>, shortlistItems: Array<ShortlistItemRow>, scoutingReports: Array<ScoutingReportRow>, developmentPlans: Array<DevelopmentPlanRow>, auditEvents: Array<AuditEventRow>, importReceipts: Array<ImportReceiptRow>, simulationStates: Array<SimulationStateRow>, clubSimulationStates: Array<ClubSimulationStateRow>, playerSimulationStates: Array<PlayerSimulationStateRow>, simulationReceipts: Array<SimulationReceiptRow>, };

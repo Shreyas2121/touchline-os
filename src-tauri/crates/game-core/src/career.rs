@@ -349,7 +349,7 @@ pub fn validate_prepared_career(career: &PreparedCareer, input: &CareerInput) ->
         format: SnapshotFormat::TouchlineCampaign,
         format_version: FormatVersion,
         source_storage: SourceStorage::Sqlite,
-        source_schema_version: SafeInt::new(3)?,
+        source_schema_version: SafeInt::new(4)?,
         export_id: input.receipt_id.clone(),
         exported_at: input.now.clone(),
         campaign_revision: career.campaign.revision,

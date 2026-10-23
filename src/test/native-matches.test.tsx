@@ -181,7 +181,8 @@ describe('native persisted match reports', () => {
         fixtures: [],
         simulatedMatches: [],
         simulatedAppearances: [],
-      } as ScreenModel['rows'],
+        negotiations: [],
+      } as unknown as ScreenModel['rows'],
       playerFacts: [
         {
           playerId: source.tables.players[0]!.id,

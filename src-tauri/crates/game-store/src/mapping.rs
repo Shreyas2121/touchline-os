@@ -1,4 +1,4 @@
-// Explicit column mappings for the 24 standalone collections; nested values alone use JSON.
+// Explicit column mappings for the stored collections; nested values alone use JSON.
 use super::{Column, Kind, Table};
 pub(super) const TABLES: &[Table] = &[
     Table {
@@ -395,6 +395,91 @@ pub(super) const TABLES: &[Table] = &[
         ],
     },
     Table {
+        name: "negotiations",
+        columns: &[
+            Column {
+                name: "id",
+                kind: Kind::Text,
+            },
+            Column {
+                name: "campaignId",
+                kind: Kind::Text,
+            },
+            Column {
+                name: "seasonId",
+                kind: Kind::Text,
+            },
+            Column {
+                name: "playerId",
+                kind: Kind::Text,
+            },
+            Column {
+                name: "buyerClubId",
+                kind: Kind::Text,
+            },
+            Column {
+                name: "sellerClubId",
+                kind: Kind::Text,
+            },
+            Column {
+                name: "status",
+                kind: Kind::Text,
+            },
+            Column {
+                name: "feeCents",
+                kind: Kind::Integer,
+            },
+            Column {
+                name: "reservedCents",
+                kind: Kind::Integer,
+            },
+            Column {
+                name: "wageCents",
+                kind: Kind::Integer,
+            },
+            Column {
+                name: "reservedWageCents",
+                kind: Kind::Integer,
+            },
+            Column {
+                name: "squadTier",
+                kind: Kind::Text,
+            },
+            Column {
+                name: "expiresOn",
+                kind: Kind::Text,
+            },
+            Column {
+                name: "counterCount",
+                kind: Kind::Integer,
+            },
+            Column {
+                name: "openedOn",
+                kind: Kind::Text,
+            },
+            Column {
+                name: "deadlineOn",
+                kind: Kind::Text,
+            },
+            Column {
+                name: "resolvedOn",
+                kind: Kind::Text,
+            },
+            Column {
+                name: "engineVersion",
+                kind: Kind::Text,
+            },
+            Column {
+                name: "eventSeed",
+                kind: Kind::Integer,
+            },
+            Column {
+                name: "qualification",
+                kind: Kind::Json,
+            },
+        ],
+    },
+    Table {
         name: "offers",
         columns: &[
             Column {
@@ -432,6 +517,42 @@ pub(super) const TABLES: &[Table] = &[
             Column {
                 name: "resolvedOn",
                 kind: Kind::Text,
+            },
+            Column {
+                name: "negotiationId",
+                kind: Kind::Text,
+            },
+            Column {
+                name: "sellerClubId",
+                kind: Kind::Text,
+            },
+            Column {
+                name: "deadlineOn",
+                kind: Kind::Text,
+            },
+            Column {
+                name: "origin",
+                kind: Kind::Text,
+            },
+            Column {
+                name: "marketValueCents",
+                kind: Kind::Integer,
+            },
+            Column {
+                name: "bidderPrestige",
+                kind: Kind::Integer,
+            },
+            Column {
+                name: "sellerPrestige",
+                kind: Kind::Integer,
+            },
+            Column {
+                name: "constitutionVersion",
+                kind: Kind::Integer,
+            },
+            Column {
+                name: "compulsory",
+                kind: Kind::Bool,
             },
         ],
     },

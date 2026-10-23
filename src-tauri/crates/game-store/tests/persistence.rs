@@ -1,7 +1,7 @@
 #[path = "../../../test-support.rs"]
 mod support;
 use game_core::parse_snapshot;
-use game_store::{database_path, Store, StoreError, INITIAL_MIGRATION};
+use game_store::{database_path, Store, StoreError, INITIAL_MIGRATION, MATCHDAY_MIGRATION};
 use rusqlite::{params, Connection};
 use serde_json::{json, Value};
 use std::path::{Path, PathBuf};
@@ -44,14 +44,56 @@ fn matchday_source() -> Value {
     source
 }
 
-#[test]
-fn schema_two_upgrades_empty_match_tables_and_preserves_all_existing_rows() {
-    let dir = Directory::new();
-    let path = dir.file("schema-two.sqlite3");
-    let mut db = Connection::open(&path).unwrap();
-    db.execute_batch(INITIAL_MIGRATION).unwrap();
-    let source = value("save-b");
-    // Populate the real schema 2 using its own columns, including audit history.
+fn market_source() -> Value {
+    let mut source = matchday_source();
+    source["sourceSchemaVersion"] = json!(4);
+    let campaign = source["tables"]["campaigns"][0]["id"].clone();
+    let season = source["tables"]["seasons"][0]["id"].clone();
+    let player = source["tables"]["players"][0]["id"].clone();
+    let seller = source["tables"]["clubs"][0]["id"].clone();
+    source["tables"]["negotiations"] = json!([{
+        "id": "negotiation-1",
+        "campaignId": campaign,
+        "seasonId": season,
+        "playerId": player,
+        "buyerClubId": "away-club",
+        "sellerClubId": seller,
+        "status": "agreed",
+        "feeCents": 1000,
+        "reservedCents": 1000,
+        "wageCents": 500,
+        "reservedWageCents": 500,
+        "squadTier": "rotation",
+        "expiresOn": "2027-06-30",
+        "counterCount": 1,
+        "openedOn": "2026-07-01",
+        "deadlineOn": "2026-07-15",
+        "resolvedOn": null,
+        "engineVersion": "1",
+        "eventSeed": 7,
+        "qualification": {
+            "feeCents": 1000,
+            "valuationCents": 900,
+            "buyerPrestige": 70,
+            "sellerPrestige": 60,
+            "constitutionVersion": 1,
+            "compulsory": 1
+        }
+    }]);
+    let offer = &mut source["tables"]["offers"][0];
+    offer["negotiationId"] = json!("negotiation-1");
+    offer["sellerClubId"] = seller;
+    offer["deadlineOn"] = json!("2026-07-15");
+    offer["origin"] = json!("ai");
+    offer["marketValueCents"] = json!(900);
+    offer["bidderPrestige"] = json!(70);
+    offer["sellerPrestige"] = json!(60);
+    offer["constitutionVersion"] = json!(1);
+    offer["compulsory"] = json!(true);
+    source
+}
+
+fn insert_rows(db: &mut Connection, source: &Value) {
     let tx = db.transaction().unwrap();
     for (table, rows) in source["tables"].as_object().unwrap() {
         for row in rows.as_array().unwrap() {
@@ -79,24 +121,43 @@ fn schema_two_upgrades_empty_match_tables_and_preserves_all_existing_rows() {
         }
     }
     tx.commit().unwrap();
+}
+
+#[test]
+fn schema_three_upgrades_to_empty_negotiations_and_preserves_rows() {
+    let dir = Directory::new();
+    let path = dir.file("schema-three.sqlite3");
+    let mut db = Connection::open(&path).unwrap();
+    db.execute_batch(INITIAL_MIGRATION).unwrap();
+    db.execute_batch(MATCHDAY_MIGRATION).unwrap();
+    let source = matchday_source();
+    assert!(source["tables"].get("negotiations").is_none());
+    insert_rows(&mut db, &source);
+    let campaigns = count(&path, "campaigns");
+    let matches = count(&path, "simulatedMatches");
     drop(db);
     let store = Store::open(&path).unwrap();
     assert_eq!(tables(&store, "save-b"), sorted_tables(&bytes(&source)));
-    for table in ["fixtures", "simulatedMatches", "simulatedAppearances"] {
-        assert_eq!(count(&path, table), 0);
-    }
+    assert_eq!(count(&path, "negotiations"), 0);
+    assert_eq!(count(&path, "campaigns"), campaigns);
+    assert_eq!(count(&path, "simulatedMatches"), matches);
+    assert!(matches > 0 && campaigns > 0);
     let db = Connection::open(&path).unwrap();
     assert_eq!(
         db.pragma_query_value(None, "user_version", |r| r.get::<_, i64>(0))
             .unwrap(),
-        3
+        4
     );
-    assert_eq!(count(&path, "schemaMigrations"), 2);
-    db.execute(
-        "UPDATE auditEvents SET actionType = 'simulation.matchday'",
-        [],
-    )
-    .unwrap();
+    assert_eq!(count(&path, "schemaMigrations"), 3);
+    let compulsory: i64 = db
+        .query_row("SELECT compulsory FROM offers", [], |r| r.get(0))
+        .unwrap();
+    assert_eq!(compulsory, 0);
+    db.execute("UPDATE auditEvents SET actionType = 'market.tick'", [])
+        .unwrap();
+    assert!(db
+        .execute("UPDATE auditEvents SET actionType = 'not.an.action'", [])
+        .is_err());
 }
 
 #[test]
@@ -109,10 +170,15 @@ fn legacy_snapshot_exports_explicit_empty_schema_three_collections() {
     let exported = store
         .export_snapshot("save-b", "export", "2026-10-22T12:00:00.000Z")
         .unwrap();
-    assert_eq!(exported.source_schema_version.get(), 3);
+    assert_eq!(exported.source_schema_version.get(), 4);
     let encoded = bytes(&serde_json::to_value(exported).unwrap());
     let parsed: Value = serde_json::from_slice(&encoded).unwrap();
-    for table in ["fixtures", "simulatedMatches", "simulatedAppearances"] {
+    for table in [
+        "fixtures",
+        "simulatedMatches",
+        "simulatedAppearances",
+        "negotiations",
+    ] {
         assert_eq!(parsed["tables"][table], json!([]));
     }
     let other = Store::open(dir.file("reimport.sqlite3")).unwrap();
@@ -133,7 +199,10 @@ fn matchday_rows_round_trip_and_sql_enforces_identities_and_scope() {
     let export = store
         .export_snapshot("save-b", "export", "2026-10-22T12:00:00.000Z")
         .unwrap();
-    assert_eq!(export.source_schema_version.get(), 3);
+    assert_eq!(export.source_schema_version.get(), 4);
+    assert!(export.tables.negotiations.is_empty());
+    assert!(!export.tables.offers[0].compulsory);
+    assert!(export.tables.offers[0].negotiation_id.is_none());
     let other = Store::open(dir.file("roundtrip.sqlite3")).unwrap();
     other
         .import_snapshot(&serde_json::to_vec(&export).unwrap())
@@ -171,6 +240,109 @@ fn matchday_rows_round_trip_and_sql_enforces_identities_and_scope() {
     ] {
         assert!(db.execute(sql, []).is_err(), "accepted {sql}");
     }
+}
+
+#[test]
+fn agreed_negotiation_and_offer_snapshot_round_trip() {
+    let dir = Directory::new();
+    let path = dir.file("market.sqlite3");
+    let source = market_source();
+    let store = Store::open(&path).unwrap();
+    store.import_snapshot(&bytes(&source)).unwrap();
+    assert_eq!(tables(&store, "save-b"), sorted_tables(&bytes(&source)));
+    drop(store);
+    let store = Store::open(&path).unwrap();
+    let export = store
+        .export_snapshot("save-b", "export", "2026-10-22T12:00:00.000Z")
+        .unwrap();
+    assert_eq!(export.source_schema_version.get(), 4);
+    assert_eq!(export.tables.negotiations.len(), 1);
+    assert_eq!(
+        export.tables.negotiations[0].status,
+        game_core::NegotiationStatus::Agreed
+    );
+    assert!(export.tables.offers[0].compulsory);
+    assert_eq!(
+        export.tables.offers[0]
+            .negotiation_id
+            .as_ref()
+            .map(|id| id.as_str()),
+        Some("negotiation-1")
+    );
+    assert_eq!(
+        export.tables.negotiations[0]
+            .qualification
+            .as_ref()
+            .map(|item| item.compulsory.get()),
+        Some(1)
+    );
+    let other = Store::open(dir.file("market-reimport.sqlite3")).unwrap();
+    other
+        .import_snapshot(&serde_json::to_vec(&export).unwrap())
+        .unwrap();
+    assert_eq!(tables(&other, "save-b"), tables(&store, "save-b"));
+    drop(store);
+    let db = Connection::open(&path).unwrap();
+    db.pragma_update(None, "foreign_keys", true).unwrap();
+    let duplicate = "INSERT INTO negotiations (
+        id, campaignId, seasonId, playerId, buyerClubId, sellerClubId, status,
+        feeCents, reservedCents, wageCents, reservedWageCents, squadTier,
+        expiresOn, counterCount, openedOn, deadlineOn, resolvedOn,
+        engineVersion, eventSeed, qualification
+    ) SELECT
+        'negotiation-2', campaignId, seasonId, playerId, buyerClubId, sellerClubId, 'proposed',
+        feeCents, reservedCents, wageCents, reservedWageCents, squadTier,
+        expiresOn, counterCount, openedOn, deadlineOn, NULL,
+        engineVersion, eventSeed, qualification
+    FROM negotiations";
+    let error = db.execute(duplicate, []).unwrap_err();
+    assert!(
+        error.to_string().to_lowercase().contains("unique"),
+        "{error}"
+    );
+    db.execute(
+        "INSERT INTO negotiations (
+            id, campaignId, seasonId, playerId, buyerClubId, sellerClubId, status,
+            feeCents, reservedCents, wageCents, reservedWageCents, squadTier,
+            expiresOn, counterCount, openedOn, deadlineOn, resolvedOn,
+            engineVersion, eventSeed, qualification
+        ) SELECT
+            'negotiation-3', campaignId, seasonId, playerId, buyerClubId, sellerClubId, 'settled',
+            feeCents, 0, wageCents, 0, squadTier,
+            expiresOn, counterCount, openedOn, deadlineOn, '2026-07-20',
+            engineVersion, eventSeed, qualification
+        FROM negotiations",
+        [],
+    )
+    .unwrap();
+}
+
+#[test]
+fn negotiation_rules_reject_reserved_cents_counter_count_and_engine() {
+    let mut reserved = market_source();
+    let row = &mut reserved["tables"]["negotiations"][0];
+    row["status"] = json!("rejected");
+    row["resolvedOn"] = json!("2026-07-02");
+    row["reservedCents"] = json!(1);
+    assert!(parse_snapshot(&bytes(&reserved)).is_err());
+    let mut counters = market_source();
+    counters["tables"]["negotiations"][0]["counterCount"] = json!(3);
+    assert!(parse_snapshot(&bytes(&counters)).is_err());
+    let mut engine = market_source();
+    engine["tables"]["negotiations"][0]["engineVersion"] = json!("2");
+    assert!(parse_snapshot(&bytes(&engine)).is_err());
+    let mut extra = market_source();
+    extra["tables"]["negotiations"][0]["qualification"]["player"] = json!({"id": "save-b-player"});
+    assert!(parse_snapshot(&bytes(&extra)).is_err());
+    let mut duplicate = market_source();
+    let mut second = duplicate["tables"]["negotiations"][0].clone();
+    second["id"] = json!("negotiation-2");
+    second["status"] = json!("proposed");
+    duplicate["tables"]["negotiations"]
+        .as_array_mut()
+        .unwrap()
+        .push(second);
+    assert!(parse_snapshot(&bytes(&duplicate)).is_err());
 }
 
 #[test]
@@ -216,7 +388,7 @@ fn invalid_matchday_values_and_duplicate_players_fail_before_import() {
 #[test]
 fn unsupported_versions_leave_database_bytes_unchanged() {
     let dir = Directory::new();
-    for version in [1, 4, 99, -1] {
+    for version in [1, 2, 5, 99, -1] {
         let path = dir.file(&format!("unsupported-{version}.sqlite3"));
         let db = Connection::open(&path).unwrap();
         db.execute_batch(
@@ -554,7 +726,7 @@ fn invalid_scope_references_keys_numbers_and_versions_never_promote() {
             json!(9_007_199_254_740_992_i64),
         ),
         ("/campaignRevision", json!(999)),
-        ("/sourceSchemaVersion", json!(4)),
+        ("/sourceSchemaVersion", json!(5)),
         ("/formatVersion", json!(2)),
     ] {
         let mut source = value("save-b");
@@ -593,9 +765,9 @@ fn fresh_and_version_zero_upgrade_are_transactional_and_future_versions_refuse()
     assert_eq!(
         db.query_row("PRAGMA user_version", [], |r| r.get::<_, i64>(0))
             .unwrap(),
-        3
+        4
     );
-    assert_eq!(count(&path, "schemaMigrations"), 2);
+    assert_eq!(count(&path, "schemaMigrations"), 3);
     drop(store);
     drop(db);
     drop(Store::open(&path).unwrap());

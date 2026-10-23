@@ -59,9 +59,10 @@ use std::sync::mpsc::{self, SyncSender};
 use std::thread::{self, JoinHandle};
 use std::time::Duration;
 
-pub const SCHEMA_VERSION: i64 = 3;
+pub const SCHEMA_VERSION: i64 = 4;
 pub const INITIAL_MIGRATION: &str = include_str!("../../../migrations/0002_standalone.sql");
 pub const MATCHDAY_MIGRATION: &str = include_str!("../../../migrations/0003_matchday.sql");
+pub const MARKET_MIGRATION: &str = include_str!("../../../migrations/0004_market.sql");
 pub type Result<T> = std::result::Result<T, StoreError>;
 
 #[derive(Debug)]
@@ -333,7 +334,7 @@ impl Store {
         self.call(|reply| Request::Import(prepared, reply))
     }
 
-    /// All 21 arrays and the revision are read in one consistent transaction. IDs and
+    /// Campaign tables and the revision are read in one consistent transaction. IDs and
     /// audit time for the envelope are explicit caller inputs, never gameplay writes.
     pub fn export_snapshot(
         &self,
@@ -395,12 +396,13 @@ fn migrate(connection: &mut Connection) -> Result<()> {
             let transaction = connection.transaction()?;
             transaction.execute_batch(INITIAL_MIGRATION)?;
             transaction.execute_batch(MATCHDAY_MIGRATION)?;
+            transaction.execute_batch(MARKET_MIGRATION)?;
             check_database(&transaction)?;
             transaction.commit()?;
         }
-        2 => {
+        3 => {
             let transaction = connection.transaction()?;
-            transaction.execute_batch(MATCHDAY_MIGRATION)?;
+            transaction.execute_batch(MARKET_MIGRATION)?;
             check_database(&transaction)?;
             transaction.commit()?;
         }
@@ -415,7 +417,11 @@ fn check_database(connection: &Connection) -> Result<()> {
     if version != SCHEMA_VERSION {
         return Err(StoreError::UnsupportedSchema(version));
     }
-    for (version, name) in [(2, "0002_standalone"), (3, "0003_matchday")] {
+    for (version, name) in [
+        (2, "0002_standalone"),
+        (3, "0003_matchday"),
+        (4, "0004_market"),
+    ] {
         let migration: Option<String> = connection
             .query_row(
                 "SELECT name FROM schemaMigrations WHERE version = ?1",

@@ -25,8 +25,9 @@ const snapshot = {
     fixtures: [],
     simulatedMatches: [],
     simulatedAppearances: [],
+    negotiations: [],
   },
-} as CampaignSnapshot
+} as unknown as CampaignSnapshot
 const campaign = snapshot.tables.campaigns[0]!
 const july: TimePreview = {
   campaignId: campaign.id,

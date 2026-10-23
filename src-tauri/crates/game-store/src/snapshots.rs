@@ -129,6 +129,9 @@ fn validate_relationships(tables: &Value) -> Result<()> {
                 ("clubId", "clubs"),
                 ("managedClubId", "clubs"),
                 ("bidderClubId", "clubs"),
+                ("buyerClubId", "clubs"),
+                ("sellerClubId", "clubs"),
+                ("negotiationId", "negotiations"),
                 ("fromClubId", "clubs"),
                 ("toClubId", "clubs"),
                 ("playerId", "players"),
@@ -182,6 +185,9 @@ fn validate_relationships(tables: &Value) -> Result<()> {
                 Some("player") => "players",
                 Some("fixture") => "fixtures",
                 Some("match") => "simulatedMatches",
+                Some("negotiation") => "negotiations",
+                Some("offer") => "offers",
+                Some("transfer") => "transfers",
                 _ => continue,
             };
             reference(target, &outcome["id"])?;
@@ -343,7 +349,7 @@ pub(super) fn envelope(
     validate_relationships(&tables)?;
     let value = json!({
         "format": "touchline-campaign", "formatVersion": 1,
-        "sourceStorage": "sqlite", "sourceSchemaVersion": 3,
+        "sourceStorage": "sqlite", "sourceSchemaVersion": 4,
         "exportId": export_id, "exportedAt": exported_at,
         "campaignRevision": tables["campaigns"][0]["revision"], "tables": tables,
     });

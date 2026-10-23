@@ -1,8 +1,8 @@
 use crate::enums::{
     AuditAction, CalendarPhase, CampaignKind, CampaignMode, CampaignStatus, Confidence,
-    ContractStatus, Formation, ImportSourceType, LedgerKind, OfferStatus, OpenClosed, PlayerLife,
-    Position, PositionGroup, RecordSource, RegistrationStatus, RulesMode, SeasonStatus, SquadTier,
-    TransferKind,
+    ContractStatus, Formation, ImportSourceType, LedgerKind, NegotiationStatus, OfferOrigin,
+    OfferStatus, OpenClosed, PlayerLife, Position, PositionGroup, RecordSource, RegistrationStatus,
+    RulesMode, SeasonStatus, SquadTier, TransferKind,
 };
 use crate::ids::{EntityId, Euro, VersionOne};
 use crate::nulls::nullable;
@@ -255,6 +255,45 @@ pub struct TransferRow {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct NegotiationQualification {
+    pub fee_cents: MoneyCents,
+    pub valuation_cents: MoneyCents,
+    pub buyer_prestige: SafeInt,
+    pub seller_prestige: SafeInt,
+    pub constitution_version: SafeInt,
+    pub compulsory: SafeInt,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct NegotiationRow {
+    pub id: EntityId,
+    pub campaign_id: EntityId,
+    pub season_id: EntityId,
+    pub player_id: EntityId,
+    pub buyer_club_id: EntityId,
+    #[serde(deserialize_with = "nullable")]
+    pub seller_club_id: Option<EntityId>,
+    pub status: NegotiationStatus,
+    pub fee_cents: MoneyCents,
+    pub reserved_cents: MoneyCents,
+    pub wage_cents: MoneyCents,
+    pub reserved_wage_cents: MoneyCents,
+    pub squad_tier: SquadTier,
+    pub expires_on: String,
+    pub counter_count: SafeInt,
+    pub opened_on: String,
+    pub deadline_on: String,
+    #[serde(deserialize_with = "nullable")]
+    pub resolved_on: Option<String>,
+    pub engine_version: VersionOne,
+    pub event_seed: SafeInt,
+    #[serde(default, deserialize_with = "nullable")]
+    pub qualification: Option<NegotiationQualification>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct OfferRow {
     pub id: EntityId,
     pub campaign_id: EntityId,
@@ -266,6 +305,24 @@ pub struct OfferRow {
     pub received_on: String,
     #[serde(deserialize_with = "nullable")]
     pub resolved_on: Option<String>,
+    #[serde(default, deserialize_with = "nullable")]
+    pub negotiation_id: Option<EntityId>,
+    #[serde(default, deserialize_with = "nullable")]
+    pub seller_club_id: Option<EntityId>,
+    #[serde(default, deserialize_with = "nullable")]
+    pub deadline_on: Option<String>,
+    #[serde(default, deserialize_with = "nullable")]
+    pub origin: Option<OfferOrigin>,
+    #[serde(default, deserialize_with = "nullable")]
+    pub market_value_cents: Option<MoneyCents>,
+    #[serde(default, deserialize_with = "nullable")]
+    pub bidder_prestige: Option<SafeInt>,
+    #[serde(default, deserialize_with = "nullable")]
+    pub seller_prestige: Option<SafeInt>,
+    #[serde(default, deserialize_with = "nullable")]
+    pub constitution_version: Option<SafeInt>,
+    #[serde(default)]
+    pub compulsory: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
@@ -444,6 +501,12 @@ pub enum OutcomeRef {
     Player { id: EntityId },
     #[serde(rename = "boundary")]
     Boundary { key: String },
+    #[serde(rename = "negotiation")]
+    Negotiation { id: EntityId },
+    #[serde(rename = "offer")]
+    Offer { id: EntityId },
+    #[serde(rename = "transfer")]
+    Transfer { id: EntityId },
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
@@ -519,6 +582,8 @@ pub struct SnapshotTables {
     pub simulated_matches: Vec<SimulatedMatchRow>,
     #[serde(default)]
     pub simulated_appearances: Vec<SimulatedAppearanceRow>,
+    #[serde(default)]
+    pub negotiations: Vec<NegotiationRow>,
 
     pub campaigns: Vec<CampaignRow>,
     pub seasons: Vec<SeasonRow>,
