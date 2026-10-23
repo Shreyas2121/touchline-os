@@ -36,6 +36,7 @@ export function createNativeClient(): GameClient {
     advanceTime: (request) => call('advance_time', { request }),
     previewMatchday: (campaignId) => call('preview_matchday', { campaignId }),
     simMatchday: (request) => call('sim_matchday', { request }),
+    settleTransfer: (request) => call('settle_transfer', { request }),
     matchdayView: (campaignId, round) =>
       call('matchday_view', { campaignId, round }),
   }

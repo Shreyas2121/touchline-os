@@ -15,6 +15,9 @@ pub fn advance_fingerprint(canonical: &str) -> String {
 pub fn matchday_fingerprint(canonical: &str) -> String {
     hashed_fingerprint("native-matchday:1:", canonical)
 }
+pub fn settlement_fingerprint(canonical: &str) -> String {
+    hashed_fingerprint("native-settlement:1:", canonical)
+}
 fn hashed_fingerprint(prefix: &str, canonical: &str) -> String {
     use sha2::{Digest, Sha256};
     format!(
@@ -126,6 +129,11 @@ pub struct ImportOutcome {
 
 type Reply<T> = mpsc::Sender<Result<T>>;
 enum Request {
+    Settle(
+        game_core::settlement::SettleTransferRequest,
+        game_core::settlement::PreparedSettlement,
+        Reply<game_core::progression::AdvanceOutcome>,
+    ),
     Matchday(
         game_core::matchday::SimMatchdayRequest,
         game_core::matchday::PreparedMatchday,
@@ -175,6 +183,13 @@ pub struct Store {
     worker: Option<JoinHandle<()>>,
 }
 impl Store {
+    pub fn settle(
+        &self,
+        request: game_core::settlement::SettleTransferRequest,
+        prepared: game_core::settlement::PreparedSettlement,
+    ) -> Result<game_core::progression::AdvanceOutcome> {
+        self.call(|reply| Request::Settle(request, prepared, reply))
+    }
     pub fn matchday(
         &self,
         request: game_core::matchday::SimMatchdayRequest,
@@ -264,6 +279,10 @@ impl Store {
                 };
                 while let Ok(request) = receiver.recv() {
                     match request {
+                        Request::Settle(request, prepared, reply) => {
+                            let _ =
+                                reply.send(mutations::settle(&mut connection, request, prepared));
+                        }
                         Request::Matchday(request, prepared, reply) => {
                             let _ =
                                 reply.send(mutations::matchday(&mut connection, request, prepared));

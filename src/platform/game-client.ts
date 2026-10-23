@@ -18,6 +18,7 @@ import type { AdvanceOutcome } from './generated/AdvanceOutcome'
 import type { MatchdayPreview } from './generated/MatchdayPreview'
 import type { MatchdayView } from './generated/MatchdayView'
 import type { SimMatchdayRequest } from './generated/SimMatchdayRequest'
+import type { SettleTransferRequest } from './generated/SettleTransferRequest'
 export type GameClient = {
   health(): Promise<HealthReport>
   campaigns(page: number): Promise<CampaignPage>
@@ -37,6 +38,7 @@ export type GameClient = {
   advanceTime(request: AdvanceRequest): Promise<AdvanceOutcome>
   previewMatchday(campaignId: string): Promise<MatchdayPreview>
   simMatchday(request: SimMatchdayRequest): Promise<AdvanceOutcome>
+  settleTransfer(request: SettleTransferRequest): Promise<AdvanceOutcome>
   matchdayView(campaignId: string, round: number | null): Promise<MatchdayView>
 }
 
@@ -64,6 +66,7 @@ export function unavailableNativeReads() {
     advanceTime: reject,
     previewMatchday: reject,
     simMatchday: reject,
+    settleTransfer: reject,
     matchdayView: reject,
   }
 }

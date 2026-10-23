@@ -32,4 +32,5 @@ fn export_bindings() {
     game_core::progression::TimePreview::export_all(&config).expect("time preview bindings");
     game_core::progression::AdvanceRequest::export_all(&config).expect("advance bindings");
     game_core::progression::AdvanceOutcome::export_all(&config).expect("advance result bindings");
+    game_core::settlement::SettleTransferRequest::export_all(&config).expect("settlement bindings");
 }

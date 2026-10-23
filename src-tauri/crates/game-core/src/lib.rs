@@ -29,6 +29,7 @@ pub mod random;
 mod rows;
 pub mod schedule;
 pub mod selection;
+pub mod settlement;
 mod snapshot;
 mod validate;
 mod world_validation;

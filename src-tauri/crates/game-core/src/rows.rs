@@ -507,6 +507,8 @@ pub enum OutcomeRef {
     Offer { id: EntityId },
     #[serde(rename = "transfer")]
     Transfer { id: EntityId },
+    #[serde(rename = "ledger")]
+    Ledger { id: EntityId },
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]

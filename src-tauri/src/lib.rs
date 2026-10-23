@@ -16,6 +16,14 @@ async fn preview_matchday(
     blocking(move || game_app::preview_matchday(&store, campaign_id)).await
 }
 #[tauri::command]
+async fn settle_transfer(
+    store: tauri::State<'_, Store>,
+    request: game_app::SettleTransferRequest,
+) -> Result<game_app::AdvanceOutcome, CommandError> {
+    let store = store.inner().clone();
+    blocking(move || game_app::settle_transfer(&store, request)).await
+}
+#[tauri::command]
 async fn sim_matchday(
     store: tauri::State<'_, Store>,
     request: game_app::SimMatchdayRequest,
@@ -274,6 +282,7 @@ pub fn run() {
             preview_time,
             preview_matchday,
             sim_matchday,
+            settle_transfer,
             matchday_view,
             advance_time,
             create_career,
