@@ -2223,7 +2223,8 @@ pub fn accept_settlement_request(
         .iter()
         .find(|row| row.campaign_id == campaign.id && row.id == request.offer_id)
         .ok_or_else(|| invalid("Offer was not found."))?;
-    if offer.status != OfferStatus::Open || offer.origin.is_none() {
+    let repeated = offer.status == OfferStatus::Accepted;
+    if !repeated && (offer.status != OfferStatus::Open || offer.origin.is_none()) {
         return Err(invalid("A legacy offer cannot be settled."));
     }
     let negotiation_id = offer

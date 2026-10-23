@@ -2,7 +2,7 @@
 
 > **Authority:** `MASTER_PLAN.md` 3.0.4 / DEC-003 / DEC-004 / DEC-005 / DEC-006
 > **Phase IDs:** `P09-G01` … `P09-G06`
-> **Status:** In progress. G01 through G05 are implemented. Phase 8 matchdays stay closed.
+> **Status:** Complete through G06. All six guides are implemented, and the required checks pass; see the exit criteria and progress log below. Season rollover remains Phase 10 work.
 > **Predecessor:** Phase 8 full-season certification, `test(p08-g06): verify a full simulated season` at `e673d15ffc486d51790c1beaa26de3dec8d745c7`. This file does not authorize lifecycle, analytics, dataset import, or release work.
 
 ## 1. Parent plan contract
@@ -353,12 +353,12 @@ Rollback is a forward schema fix or a restored backup. Do not downgrade user ver
 
 ## 10. Exit criteria and handoff
 
-- [ ] G01–G06 are committed with recorded checks in the progress log.
-- [ ] Schema 4 is the native schema, and schema 3 snapshots still import.
-- [ ] A fixed seed completes the summer ticks, reopens, and replays without a second set of bids.
-- [ ] A qualifying bid blocks window close until one Accept, and the balances stay conserved.
-- [ ] Review still refuses rollover with the Phase 10 sentence.
-- [ ] README describes Run Market and the inbox and does not claim a second season.
+- [x] G01–G06 are committed with recorded checks in the progress log.
+- [x] Schema 4 is the native schema, and schema 3 snapshots still import.
+- [x] A fixed seed completes the summer ticks, reopens, and replays without a second set of bids.
+- [x] A qualifying bid blocks window close until one Accept, and the balances stay conserved.
+- [x] Review still refuses rollover with the Phase 10 sentence.
+- [x] README describes Run Market and the inbox and does not claim a second season.
 
 ### Progress log
 
@@ -369,7 +369,7 @@ Rollback is a forward schema fix or a restored backup. Do not downgrade user ver
 | G03 | `63a945a` | Pure term agreement: seller and player bands, at most two counters, and an AI buyer finishes inside the call. A managed seller does not accept the fee. No SQLite, IPC, clock, or UI change. `pnpm native:check` (fmt, Clippy `-D warnings`, 121 workspace tests), `pnpm lint`, `pnpm typecheck`, `pnpm test` (704), and `pnpm build` pass. |
 | G04 | `6e888c6` | One agreed negotiation settles in a single transaction: balances, one ledger pair, both contracts, ownership, lineup, and registration. A replay does not pay again. A quota block, stale revision, fingerprint mismatch, and injected audit failure leave every table unchanged. July 1 still continues to August 31. `pnpm native:bindings:check`, `pnpm native:check` (fmt, Clippy `-D warnings`, 122 workspace tests), `pnpm lint`, `pnpm typecheck`, `pnpm test` (704), `pnpm build`, and `pnpm tauri build` (MSI and NSIS) pass. |
 | G05 | `f1d5b10` | July 1 runs the market, then Continue targets July 8. After the August 26 tick, Continue targets August 31. A qualifying offer refuses Reject and blocks the August 31 advance until Accept. January refuses Sim Matchday until Run Market, and the next fixture refuses it until Close Window. The Transfers board lists incoming, outgoing, and completed rows with Accept, Reject, Withdraw, and Settle. `pnpm native:bindings:check`, `pnpm native:check` (fmt, Clippy `-D warnings`, 126 workspace tests), `pnpm lint`, `pnpm typecheck`, `pnpm test` (708), `pnpm build`, and `pnpm tauri build` (MSI and NSIS) pass. |
-| G06 | | Not started. |
+| G06 | | A fixed seed runs all nine summer ticks, reopens after July 1 and August 26, and replays July 1 without a second set of bids or a balance change. An imported qualifying offer refuses Reject and Withdraw, blocks August 31, and Accepts once; repeating Accept replays and the balance sum stays the same. The winter path runs the market before the first January fixture and closes the window before the next match, leaving earlier match rows unchanged. Reservation release, a stale revision, a fingerprint conflict, one effect from two same-tick calls, an injected audit failure, and a second campaign are covered. Review still returns `Season rollover arrives in Phase 10.` Release winter certification: 146.54s, export 20,929,198 bytes. `pnpm native:bindings:check`, `pnpm native:check` (fmt, Clippy `-D warnings`, 130 workspace tests), `pnpm lint`, `pnpm typecheck`, `pnpm test` (708), `pnpm build`, and `pnpm tauri build` (MSI and NSIS) pass. |
 
 ### Handoff to Phase 10
 
