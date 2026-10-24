@@ -1,5 +1,54 @@
 // Explicit column mappings for the stored collections; nested values alone use JSON.
 use super::{Column, Kind, Table};
+
+impl Table {
+    pub(super) fn column_names(&self) -> String {
+        self.columns
+            .iter()
+            .map(|column| column.name)
+            .collect::<Vec<_>>()
+            .join(",")
+    }
+
+    pub(super) fn scope(&self) -> &'static str {
+        if self.name == "campaigns" {
+            "id"
+        } else {
+            "campaignId"
+        }
+    }
+
+    pub(super) fn insert_sql(&self) -> String {
+        let names = self.column_names();
+        let placeholders = vec!["?"; self.columns.len()].join(",");
+        format!(
+            "INSERT INTO {} ({names}) VALUES ({placeholders})",
+            self.name
+        )
+    }
+
+    pub(super) fn update_sql(&self) -> String {
+        let assignments = self
+            .columns
+            .iter()
+            .map(|column| format!("{}=?", column.name))
+            .collect::<Vec<_>>()
+            .join(",");
+        format!(
+            "UPDATE {} SET {assignments} WHERE id=? AND {}=?",
+            self.name,
+            self.scope()
+        )
+    }
+
+    pub(super) fn delete_sql(&self) -> String {
+        format!(
+            "DELETE FROM {} WHERE id=?1 AND {}=?2",
+            self.name,
+            self.scope()
+        )
+    }
+}
 pub(super) const TABLES: &[Table] = &[
     Table {
         name: "campaigns",

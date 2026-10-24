@@ -4,7 +4,7 @@ import type { PlayerPlanning } from '../../platform/generated/PlayerPlanning'
 import { mapInvokeError } from '../../platform/errors'
 import type { ScreenModel } from '../../platform/generated/ScreenModel'
 import { submit, type SendAction } from './management-forms'
-import type { ConstitutionRule } from '../../platform/generated/ConstitutionRule'
+import { ruleFields, serializeRule } from './constitution-form'
 import type { PlayerRow } from '../../platform/generated/PlayerRow'
 import type { Formation } from '../../platform/generated/Formation'
 import { formationSlots } from '../../domain/graphics/pitch'
@@ -19,8 +19,6 @@ type Props = {
   stamp: string
 }
 const text = (data: FormData, key: string) => String(data.get(key) ?? '').trim()
-const nullableNumber = (data: FormData, key: string) =>
-  text(data, key) === '' ? null : Number(text(data, key))
 
 export function LineupEditor({ model, send, stableId, stamp, client }: Props) {
   const [selected, setSelected] = useState('new')
@@ -237,6 +235,7 @@ export function LineupEditor({ model, send, stableId, stamp, client }: Props) {
 }
 
 export function ConstitutionEditor({ model, send, stableId, stamp }: Props) {
+  const [error, setError] = useState('')
   const campaign = model.rows.campaigns[0]!
   const current =
     model.activeConstitution ??
@@ -260,10 +259,14 @@ export function ConstitutionEditor({ model, send, stableId, stamp }: Props) {
           : 'Rules change prospectively. Editing the opening allocation does not add money to an existing allocation.'}
       </p>
       <form
-        onSubmit={(e) =>
-          submit(
-            e,
-            (data) => ({
+        onSubmit={(e) => {
+          e.preventDefault()
+          if (locked) return
+          setError('')
+          try {
+            const data = new FormData(e.currentTarget)
+            const rules = current.rules.map((rule) => serializeRule(rule, data))
+            void send({
               type: 'save-constitution',
               allocationId: stableId('allocation'),
               constitution: {
@@ -271,26 +274,15 @@ export function ConstitutionEditor({ model, send, stableId, stamp }: Props) {
                 campaignId: campaign.id,
                 version: 0,
                 updatedAt: stamp,
-                rules: current.rules.map(
-                  (rule) =>
-                    Object.fromEntries(
-                      Object.entries(rule).map(([key, value]) => [
-                        key,
-                        key === 'id'
-                          ? value
-                          : typeof value === 'boolean'
-                            ? data.has(`${rule.id}.${key}`)
-                            : typeof value === 'string'
-                              ? text(data, `${rule.id}.${key}`)
-                              : nullableNumber(data, `${rule.id}.${key}`),
-                      ]),
-                    ) as ConstitutionRule,
-                ),
+                rules,
               },
-            }),
-            send,
-          )
-        }
+            })
+          } catch (error) {
+            setError(
+              error instanceof Error ? error.message : 'Check the rule fields.',
+            )
+          }
+        }}
       >
         <fieldset disabled={locked} className="space-y-4">
           {current.rules.map((rule) => (
@@ -299,34 +291,39 @@ export function ConstitutionEditor({ model, send, stableId, stamp }: Props) {
               className="flex flex-wrap gap-4 border border-[var(--border)] p-3"
             >
               <legend>{rule.id.replaceAll('_', ' ')}</legend>
-              {Object.entries(rule)
-                .filter(([key]) => key !== 'id')
-                .map(([key, value]) => (
-                  <label key={key}>
-                    {key.replace(/([A-Z])/g, ' $1')}{' '}
-                    <input
-                      name={`${rule.id}.${key}`}
-                      type={
-                        typeof value === 'boolean'
-                          ? 'checkbox'
-                          : typeof value === 'string'
-                            ? 'text'
-                            : 'number'
-                      }
-                      min={typeof value === 'number' ? 0 : undefined}
-                      defaultChecked={
-                        typeof value === 'boolean' ? value : undefined
-                      }
-                      defaultValue={
-                        typeof value === 'boolean' ? undefined : (value ?? '')
-                      }
-                    />
-                  </label>
-                ))}
+              {ruleFields(rule).map(({ key, label, kind, value }) => (
+                <label key={key}>
+                  {label}{' '}
+                  <input
+                    name={`${rule.id}.${key}`}
+                    type={
+                      kind === 'checkbox'
+                        ? 'checkbox'
+                        : kind === 'text'
+                          ? 'text'
+                          : 'number'
+                    }
+                    min={
+                      kind === 'integer' || kind === 'nullable' ? 0 : undefined
+                    }
+                    step={
+                      kind === 'integer' || kind === 'nullable' ? 1 : undefined
+                    }
+                    required={kind === 'integer' || kind === 'text'}
+                    defaultChecked={
+                      kind === 'checkbox' ? value === true : undefined
+                    }
+                    defaultValue={
+                      typeof value === 'boolean' ? undefined : (value ?? '')
+                    }
+                  />
+                </label>
+              ))}
             </fieldset>
           ))}
           <Button type="submit">Save constitution</Button>
         </fieldset>
+        {error && <p role="alert">{error}</p>}
       </form>
     </section>
   )

@@ -1,7 +1,7 @@
-use super::{invalid, mapping::TABLES, Kind, Result, StoreError};
+use super::{codec, invalid, mapping::TABLES, Result, StoreError};
 use game_core::{queries::*, CampaignRow, EntityId, SafeInt, SnapshotTables};
 use rusqlite::{params_from_iter, Connection};
-use serde_json::{Map, Value};
+use serde_json::Value;
 use std::collections::BTreeMap;
 
 pub const PAGE_SIZE: i64 = 50;
@@ -11,6 +11,7 @@ pub struct ScreenRead {
     pub financial: SnapshotTables,
     pub selection: SnapshotTables,
 }
+
 fn select(
     db: &Connection,
     name: &str,
@@ -23,38 +24,14 @@ fn select(
         .iter()
         .find(|t| t.name == name)
         .ok_or_else(|| invalid("Unknown read table"))?;
-    let columns = table
-        .columns
-        .iter()
-        .map(|c| c.name)
-        .collect::<Vec<_>>()
-        .join(",");
+    let columns = table.column_names();
     let mut statement = db.prepare(&format!(
         "SELECT {columns} FROM {name} WHERE {predicate} ORDER BY id LIMIT {limit} OFFSET {offset}"
     ))?;
     let mut cursor = statement.query(params_from_iter(values))?;
     let mut result = Vec::new();
     while let Some(row) = cursor.next()? {
-        let mut object = Map::new();
-        for (i, column) in table.columns.iter().enumerate() {
-            let value = match column.kind {
-                Kind::Text => row
-                    .get::<_, Option<String>>(i)?
-                    .map_or(Value::Null, Value::from),
-                Kind::Integer => row
-                    .get::<_, Option<i64>>(i)?
-                    .map_or(Value::Null, Value::from),
-                Kind::Bool => row
-                    .get::<_, Option<bool>>(i)?
-                    .map_or(Value::Null, Value::from),
-                Kind::Json => match row.get::<_, Option<String>>(i)? {
-                    Some(text) => serde_json::from_str(&text)?,
-                    None => Value::Null,
-                },
-            };
-            object.insert(column.name.into(), value);
-        }
-        result.push(Value::Object(object));
+        result.push(codec::decode_row(table, row)?);
     }
     Ok(result)
 }
@@ -398,4 +375,82 @@ pub(super) fn planning(
         note,
         shortlist,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::snapshots;
+
+    fn seeded() -> Connection {
+        let mut db = Connection::open_in_memory().unwrap();
+        db.pragma_update(None, "foreign_keys", true).unwrap();
+        crate::migrate(&mut db).unwrap();
+        snapshots::import(
+            &mut db,
+            snapshots::prepare(include_bytes!("../../../fixtures/standalone.json")).unwrap(),
+        )
+        .unwrap();
+        db
+    }
+
+    #[test]
+    fn snapshot_and_normal_reads_preserve_the_same_mapped_values() {
+        let db = seeded();
+        db.execute(
+            "UPDATE campaigns SET name=?1, revision=?2",
+            rusqlite::params!["Quoted ' career 🏟", 9007199254740991_i64],
+        )
+        .unwrap();
+        let payload =
+            serde_json::json!({"values": [null, false, true, 0, 9007199254740991_i64, "text"]});
+        db.execute("UPDATE auditEvents SET payload=?1", [payload.to_string()])
+            .unwrap();
+        for compulsory in [false, true] {
+            db.execute("UPDATE offers SET compulsory=?1", [compulsory])
+                .unwrap();
+            let snapshot = snapshots::read_from(&db, "standalone-v2").unwrap();
+            assert_eq!(snapshot["campaigns"][0]["revision"], 9007199254740991_i64);
+            assert_eq!(snapshot["auditEvents"][0]["payload"], payload);
+            assert_eq!(snapshot["offers"][0]["compulsory"], compulsory);
+            assert!(snapshot["seasons"][0]["closedAt"].is_null());
+            for table in TABLES {
+                let predicate = format!("{}=?1", table.scope());
+                let rows = select(
+                    &db,
+                    table.name,
+                    &predicate,
+                    &["standalone-v2".into()],
+                    1000,
+                    0,
+                )
+                .unwrap();
+                assert_eq!(Value::Array(rows), snapshot[table.name], "{}", table.name);
+            }
+        }
+    }
+
+    #[test]
+    fn malformed_stored_values_fail_both_read_paths() {
+        for (table, column, value) in [
+            ("auditEvents", "payload", "not-json"),
+            ("campaigns", "revision", "not-an-integer"),
+            ("offers", "compulsory", "not-a-boolean"),
+        ] {
+            let db = seeded();
+            // A temporary shadow table simulates malformed storage; real
+            // STRICT tables correctly refuse these scalar types at write time.
+            db.execute_batch(&format!(
+                "CREATE TEMP TABLE {table} AS SELECT * FROM main.{table}"
+            ))
+            .unwrap();
+            db.execute(&format!("UPDATE {table} SET {column}=?1"), [value])
+                .unwrap();
+            assert!(select(&db, table, "1=1", &[], 1000, 0).is_err(), "{column}");
+            assert!(
+                snapshots::read_from(&db, "standalone-v2").is_err(),
+                "{column}"
+            );
+        }
+    }
 }

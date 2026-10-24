@@ -386,6 +386,49 @@ describe('native management forms', () => {
       'ledgerEntries',
     )
   })
+  it('rejects invalid constitution numbers before invoking management and preserves null age exemptions', async () => {
+    const api = client()
+    const sandbox = model()
+    sandbox.rows.campaigns[0]!.rulesMode = 'sandbox'
+    api.screen = vi.fn().mockResolvedValue(sandbox)
+    show(api, 'constitution')
+    await screen.findByRole('heading', { name: campaign.name })
+    const button = screen.getByRole('button', { name: 'Save constitution' })
+    const form = button.closest('form')!
+    const allocation = screen.getByLabelText('initial Allocation Cents')
+    for (const value of ['', '1.5', '-1']) {
+      fireEvent.change(allocation, { target: { value } })
+      fireEvent.submit(form)
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        'enter a whole number',
+      )
+      expect(api.manage).not.toHaveBeenCalled()
+    }
+    fireEvent.change(allocation, { target: { value: '0' } })
+    fireEvent.change(screen.getByLabelText('age Exemption Under'), {
+      target: { value: '' },
+    })
+    fireEvent.submit(form)
+    await waitFor(() => expect(api.manage).toHaveBeenCalledOnce())
+    expect(api.manage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: expect.objectContaining({
+          constitution: expect.objectContaining({
+            rules: expect.arrayContaining([
+              expect.objectContaining({
+                id: 'REGISTRATION_QUOTA',
+                ageExemptionUnder: null,
+              }),
+              expect.objectContaining({
+                id: 'SELL_TO_BUY',
+                initialAllocationCents: 0,
+              }),
+            ]),
+          }),
+        }),
+      }),
+    )
+  })
   it('waits for deletion confirmation and preserves a canceled action', async () => {
     const api = client()
     show(api, 'command-center')

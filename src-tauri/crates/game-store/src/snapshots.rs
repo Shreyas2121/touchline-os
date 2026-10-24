@@ -1,4 +1,4 @@
-use super::{check_database, invalid, mapping::TABLES, ImportOutcome, Kind, Result, StoreError};
+use super::{check_database, codec, invalid, mapping::TABLES, ImportOutcome, Result, StoreError};
 use game_core::{parse_snapshot, CampaignSnapshot};
 use rusqlite::{
     backup::{Backup, StepResult},
@@ -47,33 +47,7 @@ pub(super) fn prepare(bytes: &[u8]) -> Result<PreparedImport> {
                 .as_array()
                 .ok_or_else(|| invalid("missing store"))?
                 .iter()
-                .map(|row| {
-                    table
-                        .columns
-                        .iter()
-                        .map(|column| {
-                            let value = &row[column.name];
-                            if value.is_null() {
-                                return Ok(SqlValue::Null);
-                            }
-                            Ok(match column.kind {
-                                Kind::Text => SqlValue::Text(
-                                    value
-                                        .as_str()
-                                        .ok_or_else(|| invalid("text column"))?
-                                        .to_owned(),
-                                ),
-                                Kind::Integer => SqlValue::Integer(
-                                    value.as_i64().ok_or_else(|| invalid("integer column"))?,
-                                ),
-                                Kind::Bool => SqlValue::Integer(i64::from(
-                                    value.as_bool().ok_or_else(|| invalid("bool column"))?,
-                                )),
-                                Kind::Json => SqlValue::Text(serde_json::to_string(value)?),
-                            })
-                        })
-                        .collect::<Result<Vec<_>>>()
-                })
+                .map(|row| codec::encode_row(table, row))
                 .collect::<Result<Vec<_>>>()
         })
         .collect::<Result<Vec<_>>>()?;
@@ -258,17 +232,7 @@ pub(super) fn import(
         return Err(StoreError::Collision(outcome.campaign_id));
     }
     for (table, rows) in TABLES.iter().zip(prepared.tables) {
-        let names = table
-            .columns
-            .iter()
-            .map(|c| c.name)
-            .collect::<Vec<_>>()
-            .join(",");
-        let placeholders = vec!["?"; table.columns.len()].join(",");
-        let mut statement = transaction.prepare_cached(&format!(
-            "INSERT INTO {} ({names}) VALUES ({placeholders})",
-            table.name
-        ))?;
+        let mut statement = transaction.prepare_cached(&table.insert_sql())?;
         for row in rows {
             statement.execute(params_from_iter(row))?;
         }
@@ -294,17 +258,8 @@ pub(super) fn read(connection: &mut Connection, campaign_id: &str) -> Result<Val
 pub(super) fn read_from(transaction: &Connection, campaign_id: &str) -> Result<Value> {
     let mut tables = Map::new();
     for table in TABLES {
-        let names = table
-            .columns
-            .iter()
-            .map(|c| c.name)
-            .collect::<Vec<_>>()
-            .join(",");
-        let scope = if table.name == "campaigns" {
-            "id"
-        } else {
-            "campaignId"
-        };
+        let names = table.column_names();
+        let scope = table.scope();
         let mut statement = transaction.prepare(&format!(
             "SELECT {names} FROM {} WHERE {scope} = ?1 ORDER BY id",
             table.name
@@ -312,26 +267,7 @@ pub(super) fn read_from(transaction: &Connection, campaign_id: &str) -> Result<V
         let mut cursor = statement.query([campaign_id])?;
         let mut rows = Vec::new();
         while let Some(row) = cursor.next()? {
-            let mut object = Map::new();
-            for (index, column) in table.columns.iter().enumerate() {
-                let value = match column.kind {
-                    Kind::Integer => row
-                        .get::<_, Option<i64>>(index)?
-                        .map_or(Value::Null, Value::from),
-                    Kind::Bool => row
-                        .get::<_, Option<bool>>(index)?
-                        .map_or(Value::Null, Value::from),
-                    Kind::Text => row
-                        .get::<_, Option<String>>(index)?
-                        .map_or(Value::Null, Value::from),
-                    Kind::Json => match row.get::<_, Option<String>>(index)? {
-                        Some(json) => serde_json::from_str(&json)?,
-                        None => Value::Null,
-                    },
-                };
-                object.insert(column.name.to_owned(), value);
-            }
-            rows.push(Value::Object(object));
+            rows.push(codec::decode_row(table, row)?);
         }
         if table.name == "campaigns" && rows.is_empty() {
             return Err(StoreError::NotFound);

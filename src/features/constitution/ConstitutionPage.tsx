@@ -1,4 +1,5 @@
 import { loadConstitutionScreen } from '../../data/queries/constitution-screen'
+import { ruleFields, serializeRule } from './constitution-form'
 import { useEffect, useState } from 'react'
 import { Navigate, useParams } from 'react-router'
 import {
@@ -17,12 +18,11 @@ import {
   constitutionPreset,
   type ConstitutionPresetName,
 } from '../../domain/rules/presets'
-import { invalidMoneyMessage, parseMoneyCents } from '../../domain/models/money'
+import { invalidMoneyMessage } from '../../domain/models/money'
 import {
   entityIdSchema,
   type Campaign,
   type Constitution,
-  type ConstitutionRule,
 } from '../../domain/validation/schemas'
 
 const presetDescriptions = {
@@ -44,52 +44,6 @@ const descriptions = {
   REGISTRATION_QUOTA:
     'Registration checks run on the Registration screen when this rule is on.',
 }
-type Field = {
-  key: string
-  label: string
-  kind?: 'money' | 'checkbox' | 'text' | 'nullable'
-}
-const fields: Record<ConstitutionRule['id'], Field[]> = {
-  SELL_TO_BUY: [
-    { key: 'salesReinvestmentPct', label: 'Sales percent' },
-    { key: 'prizeReinvestmentPct', label: 'Prize percent' },
-    { key: 'carryoverPct', label: 'Carryover percent' },
-    {
-      key: 'initialAllocationCents',
-      label: 'Opening allocation',
-      kind: 'money',
-    },
-  ],
-  MAX_SIGNING_AGE: [
-    { key: 'maxAge', label: 'Age cap' },
-    {
-      key: 'freeTransfersExempt',
-      label: 'Free transfers are exempt',
-      kind: 'checkbox',
-    },
-  ],
-  WAGE_TIER_CAP: [
-    { key: 'keyWeeklyCapCents', label: 'Key cap', kind: 'money' },
-    { key: 'rotationWeeklyCapCents', label: 'Rotation cap', kind: 'money' },
-    { key: 'youthWeeklyCapCents', label: 'Youth cap', kind: 'money' },
-  ],
-  PRESTIGE_BID_SALE: [
-    { key: 'requiredFeeNumerator', label: 'Required fee numerator' },
-    { key: 'requiredFeeDenominator', label: 'Required fee denominator' },
-    {
-      key: 'requireHigherPrestige',
-      label: 'Require higher prestige',
-      kind: 'checkbox',
-    },
-  ],
-  REGISTRATION_QUOTA: [
-    { key: 'rosterLimit', label: 'Roster limit' },
-    { key: 'minimumHomegrown', label: 'Minimum homegrown' },
-    { key: 'ageExemptionUnder', label: 'Age exemption', kind: 'nullable' },
-    { key: 'competitionKey', label: 'Competition', kind: 'text' },
-  ],
-}
-
 function ConstitutionForm({
   campaign,
   constitution,
@@ -107,31 +61,8 @@ function ConstitutionForm({
     if (busy) return
     setMessage('')
     const values = new FormData(form)
-    const rules: unknown[] = constitution
-      ? constitution.rules.map((rule) => {
-          const changes: Record<string, unknown> = {
-            enabled: values.has(`${rule.id}-enabled`),
-          }
-          for (const field of fields[rule.id]) {
-            const name = `${rule.id}-${field.key}`
-            const text = String(values.get(name) ?? '').trim()
-            if (field.kind === 'checkbox') changes[field.key] = values.has(name)
-            else if (field.kind === 'money') {
-              const parsed = parseMoneyCents(text)
-              if (!parsed.ok) throw new Error(invalidMoneyMessage)
-              changes[field.key] = parsed.value
-            } else
-              changes[field.key] =
-                field.kind === 'text'
-                  ? text
-                  : field.kind === 'nullable' && text === ''
-                    ? null
-                    : text === ''
-                      ? NaN
-                      : Number(text)
-          }
-          return { ...rule, ...changes }
-        })
+    const rules = constitution
+      ? constitution.rules.map((rule) => serializeRule(rule, values))
       : constitutionPreset(preset)
     setBusy(true)
     try {
@@ -229,13 +160,8 @@ function ConstitutionForm({
                 />{' '}
                 Enabled
               </label>
-              {fields[rule.id].map((field) => {
-                const value = (
-                  rule as unknown as Record<
-                    string,
-                    string | number | boolean | null
-                  >
-                )[field.key]
+              {ruleFields(rule).map((field) => {
+                const value = field.value
                 const name = `${rule.id}-${field.key}`
                 return (
                   <div key={name}>

@@ -1,17 +1,9 @@
-import { invoke } from '@tauri-apps/api/core'
-import { mapInvokeError } from './errors'
+import { call } from './native-commands'
 import { type GameClient } from './game-client'
-import type { HealthReport } from './generated/HealthReport'
 
 export function createNativeClient(): GameClient {
   return {
-    async health(): Promise<HealthReport> {
-      try {
-        return await invoke<HealthReport>('health')
-      } catch (error) {
-        throw mapInvokeError(error)
-      }
-    },
+    health: () => call('health'),
     campaigns: (page) => call('list_campaigns', { page }),
     screen: (query) => call('read_screen', { query }),
     player: (campaignId, playerId) =>
@@ -46,16 +38,5 @@ export function createNativeClient(): GameClient {
     proposeTransfer: (request) => call('propose_transfer', { request }),
     respondNegotiation: (request) => call('respond_negotiation', { request }),
     respondOffer: (request) => call('respond_offer', { request }),
-  }
-}
-
-async function call<T>(
-  command: string,
-  args?: Record<string, unknown>,
-): Promise<T> {
-  try {
-    return await invoke<T>(command, args)
-  } catch (error) {
-    throw mapInvokeError(error)
   }
 }

@@ -1,4 +1,4 @@
-use super::{invalid, mapping::TABLES, snapshots, Kind, Result, StoreError};
+use super::{codec, invalid, mapping::TABLES, snapshots, Result, StoreError};
 use game_core::{
     guards::{next_revision, require_revision},
     management::*,
@@ -17,20 +17,9 @@ fn reject(message: &str) -> StoreError {
         message: message.into(),
     })
 }
-fn sql_value(value: &Value, kind: Kind) -> Result<SqlValue> {
-    if value.is_null() {
-        return Ok(SqlValue::Null);
-    }
-    Ok(match kind {
-        Kind::Text => SqlValue::Text(value.as_str().ok_or_else(|| invalid("text"))?.into()),
-        Kind::Integer => SqlValue::Integer(value.as_i64().ok_or_else(|| invalid("integer"))?),
-        Kind::Bool => SqlValue::Integer(i64::from(
-            value.as_bool().ok_or_else(|| invalid("boolean"))?,
-        )),
-        Kind::Json => SqlValue::Text(serde_json::to_string(value)?),
-    })
-}
 fn write_diff(db: &Connection, before: &Value, after: &Value, campaign: &str) -> Result<()> {
+    // Delete dependents first; insert/update parents first. Keep the original
+    // per-table row order and campaign predicates, including for cached SQL.
     for table in TABLES.iter().rev() {
         let retained = after[table.name]
             .as_array()
@@ -38,20 +27,16 @@ fn write_diff(db: &Connection, before: &Value, after: &Value, campaign: &str) ->
             .iter()
             .map(|row| row["id"].as_str().expect("validated id"))
             .collect::<std::collections::BTreeSet<_>>();
-        for row in before[table.name]
+        let deleted = before[table.name]
             .as_array()
             .ok_or_else(|| invalid("before rows"))?
-        {
-            if !retained.contains(row["id"].as_str().expect("validated id")) {
-                let scope = if table.name == "campaigns" {
-                    "id"
-                } else {
-                    "campaignId"
-                };
-                db.execute(
-                    &format!("DELETE FROM {} WHERE id=?1 AND {scope}=?2", table.name),
-                    [row["id"].as_str().ok_or_else(|| invalid("id"))?, campaign],
-                )?;
+            .iter()
+            .filter(|row| !retained.contains(row["id"].as_str().expect("validated id")))
+            .collect::<Vec<_>>();
+        if !deleted.is_empty() {
+            let mut statement = db.prepare_cached(&table.delete_sql())?;
+            for row in deleted {
+                statement.execute([row["id"].as_str().ok_or_else(|| invalid("id"))?, campaign])?;
             }
         }
     }
@@ -60,60 +45,48 @@ fn write_diff(db: &Connection, before: &Value, after: &Value, campaign: &str) ->
             .as_array()
             .ok_or_else(|| invalid("old rows"))?
             .iter()
-            .map(|r| (r["id"].as_str().expect("validated id"), r))
+            .map(|row| (row["id"].as_str().expect("validated id"), row))
             .collect::<BTreeMap<_, _>>();
+        let mut changed = Vec::new();
         for row in after[table.name]
             .as_array()
             .ok_or_else(|| invalid("new rows"))?
         {
             let existing = old.get(row["id"].as_str().ok_or_else(|| invalid("id"))?);
-            if existing.is_some_and(|old| **old == *row) {
-                continue;
+            if !existing.is_some_and(|old| **old == *row) {
+                changed.push((row, existing.is_some()));
             }
-            let mut values = table
-                .columns
-                .iter()
-                .map(|c| sql_value(&row[c.name], c.kind))
-                .collect::<Result<Vec<_>>>()?;
-            if existing.is_some() {
-                let assignments = table
-                    .columns
-                    .iter()
-                    .map(|c| format!("{}=?", c.name))
-                    .collect::<Vec<_>>()
-                    .join(",");
+        }
+        // Do not construct/prepare statements for unchanged tables or unused
+        // operations. Each needed statement is reused for all of its rows.
+        let mut update = changed
+            .iter()
+            .any(|(_, existing)| *existing)
+            .then(|| db.prepare_cached(&table.update_sql()))
+            .transpose()?;
+        let mut insert = changed
+            .iter()
+            .any(|(_, existing)| !*existing)
+            .then(|| db.prepare_cached(&table.insert_sql()))
+            .transpose()?;
+        for (row, existing) in changed {
+            let mut values = codec::encode_row(table, row)?;
+            if existing {
                 values.push(SqlValue::Text(row["id"].as_str().expect("id").into()));
                 values.push(SqlValue::Text(campaign.into()));
-                let scope = if table.name == "campaigns" {
-                    "id"
-                } else {
-                    "campaignId"
-                };
-                if db.execute(
-                    &format!(
-                        "UPDATE {} SET {assignments} WHERE id=? AND {scope}=?",
-                        table.name
-                    ),
-                    params_from_iter(values),
-                )? != 1
+                if update
+                    .as_mut()
+                    .expect("updates prepared")
+                    .execute(params_from_iter(values))?
+                    != 1
                 {
                     return Err(reject("The saved row changed."));
                 }
             } else {
-                let names = table
-                    .columns
-                    .iter()
-                    .map(|c| c.name)
-                    .collect::<Vec<_>>()
-                    .join(",");
-                let placeholders = vec!["?"; values.len()].join(",");
-                db.execute(
-                    &format!(
-                        "INSERT INTO {} ({names}) VALUES ({placeholders})",
-                        table.name
-                    ),
-                    params_from_iter(values),
-                )?;
+                insert
+                    .as_mut()
+                    .expect("inserts prepared")
+                    .execute(params_from_iter(values))?;
             }
         }
     }
@@ -122,6 +95,7 @@ fn write_diff(db: &Connection, before: &Value, after: &Value, campaign: &str) ->
 fn empty() -> Value {
     serde_json::to_value(SnapshotTables::default()).expect("empty tables")
 }
+
 fn market_scope(command: &game_core::market_ops::MarketCommand) -> (&game_core::EntityId, &str) {
     use game_core::market_ops::MarketCommand::{
         Close, Propose, RejectOffer, RespondNegotiation, Run,
@@ -362,4 +336,119 @@ pub(super) fn create(
         replayed: false,
         deleted: false,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn seeded() -> (Connection, Value) {
+        let mut db = Connection::open_in_memory().unwrap();
+        db.pragma_update(None, "foreign_keys", true).unwrap();
+        super::super::migrate(&mut db).unwrap();
+        snapshots::import(
+            &mut db,
+            snapshots::prepare(include_bytes!("../../../fixtures/standalone.json")).unwrap(),
+        )
+        .unwrap();
+        let before = snapshots::read_from(&db, "standalone-v2").unwrap();
+        (db, before)
+    }
+
+    #[test]
+    fn diff_writes_only_changed_rows_and_reuses_statements_across_operations() {
+        let (mut db, before) = seeded();
+        db.execute_batch("CREATE TEMP TABLE writes (operation TEXT, id TEXT);
+            CREATE TEMP TRIGGER record_update AFTER UPDATE ON players BEGIN INSERT INTO writes VALUES ('update', new.id); END;
+            CREATE TEMP TRIGGER record_insert AFTER INSERT ON players BEGIN INSERT INTO writes VALUES ('insert', new.id); END;
+            CREATE TEMP TRIGGER record_delete AFTER DELETE ON players BEGIN INSERT INTO writes VALUES ('delete', old.id); END;").unwrap();
+        let mut after = before.clone();
+        after["players"][0]["name"] = Value::String("Updated player".into());
+        for index in 1..4 {
+            let mut player = before["players"][0].clone();
+            player["id"] = Value::String(format!("new-player-{index}"));
+            after["players"].as_array_mut().unwrap().push(player);
+        }
+        let tx = db.transaction().unwrap();
+        write_diff(&tx, &before, &after, "standalone-v2").unwrap();
+        tx.commit().unwrap();
+        let committed = snapshots::read_from(&db, "standalone-v2").unwrap();
+        assert_eq!(committed["players"].as_array().unwrap().len(), 4);
+        assert_eq!(
+            db.query_row(
+                "SELECT count(*) FROM writes WHERE operation='update'",
+                [],
+                |row| row.get::<_, i64>(0)
+            )
+            .unwrap(),
+            1
+        );
+        assert_eq!(
+            db.query_row(
+                "SELECT count(*) FROM writes WHERE operation='insert'",
+                [],
+                |row| row.get::<_, i64>(0)
+            )
+            .unwrap(),
+            3
+        );
+        write_diff(&db, &after, &after, "standalone-v2").unwrap();
+        assert_eq!(
+            db.query_row("SELECT count(*) FROM writes", [], |row| row
+                .get::<_, i64>(0))
+                .unwrap(),
+            4
+        );
+        let tx = db.transaction().unwrap();
+        write_diff(&tx, &after, &before, "standalone-v2").unwrap();
+        tx.commit().unwrap();
+        assert_eq!(snapshots::read_from(&db, "standalone-v2").unwrap(), before);
+        assert_eq!(
+            db.query_row(
+                "SELECT count(*) FROM writes WHERE operation='delete'",
+                [],
+                |row| row.get::<_, i64>(0)
+            )
+            .unwrap(),
+            3
+        );
+    }
+
+    #[test]
+    #[ignore = "manual changed-row statement benchmark; run with --ignored --nocapture"]
+    fn changed_row_benchmark() {
+        use std::time::Instant;
+        let (mut db, original) = seeded();
+        let mut before = original.clone();
+        for index in 1..500 {
+            let mut player = original["players"][0].clone();
+            player["id"] = Value::String(format!("bench-player-{index}"));
+            before["players"].as_array_mut().unwrap().push(player);
+        }
+        write_diff(&db, &original, &before, "standalone-v2").unwrap();
+        for changed in [0, 1, 50, 500] {
+            let mut after = before.clone();
+            for player in after["players"]
+                .as_array_mut()
+                .unwrap()
+                .iter_mut()
+                .take(changed)
+            {
+                player["name"] = Value::String("Benchmark change".into());
+            }
+            for repetition in 0..5 {
+                let start = Instant::now();
+                for _ in 0..100 {
+                    let tx = db.transaction().unwrap();
+                    write_diff(&tx, &before, &after, "standalone-v2").unwrap();
+                    write_diff(&tx, &after, &before, "standalone-v2").unwrap();
+                    tx.commit().unwrap();
+                }
+                eprintln!(
+                    "changed={changed} repetition={repetition} pairs=100 elapsed_ms={:.3}",
+                    start.elapsed().as_secs_f64() * 1000.0
+                );
+            }
+        }
+    }
 }

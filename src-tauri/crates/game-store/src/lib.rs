@@ -1,6 +1,7 @@
 //! SQLite connection ownership and bounded storage operations. No SQL crosses IPC.
 #![forbid(unsafe_code)]
 
+mod codec;
 mod mapping;
 mod mutations;
 mod queries;
