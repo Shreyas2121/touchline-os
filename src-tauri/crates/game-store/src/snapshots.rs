@@ -1,5 +1,5 @@
 use super::{check_database, codec, invalid, mapping::TABLES, ImportOutcome, Result, StoreError};
-use game_core::{parse_snapshot, CampaignSnapshot};
+use game_core::{parse_snapshot, CampaignSnapshot, SnapshotTables};
 use rusqlite::{
     backup::{Backup, StepResult},
     params, params_from_iter,
@@ -289,7 +289,73 @@ pub(super) fn envelope(
         "exportId": export_id, "exportedAt": exported_at,
         "campaignRevision": tables["campaigns"][0]["revision"], "tables": tables,
     });
-    Ok(parse_snapshot(&serde_json::to_vec(&value)?)?)
+    check_size(&value)?;
+    Ok(game_core::decode_snapshot(value)?)
+}
+
+pub(super) fn decode_tables(tables: Value) -> Result<SnapshotTables> {
+    validate_relationships(&tables)?;
+    Ok(game_core::decode_campaign_tables(tables)?)
+}
+
+/// Authoritative post-command validation. Count the compact export bytes without
+/// allocating an encoded campaign or parsing it back. Metadata preserves the
+/// previous command-specific exportability budget.
+pub(super) fn validate_state(
+    tables: &SnapshotTables,
+    value: &Value,
+    export_id: &str,
+    exported_at: &str,
+) -> Result<()> {
+    game_core::validate_campaign_json(value)?;
+    game_core::validate_campaign_tables(tables)?;
+    validate_relationships(value)?;
+    #[derive(serde::Serialize)]
+    #[serde(rename_all = "camelCase")]
+    struct ExportBudget<'a> {
+        format: &'static str,
+        format_version: u8,
+        source_storage: &'static str,
+        source_schema_version: u8,
+        export_id: &'a str,
+        exported_at: &'a str,
+        campaign_revision: game_core::SafeInt,
+        tables: &'a Value,
+    }
+    check_size(&ExportBudget {
+        format: "touchline-campaign",
+        format_version: 1,
+        source_storage: "sqlite",
+        source_schema_version: 4,
+        export_id,
+        exported_at,
+        campaign_revision: tables.campaigns[0].revision,
+        tables: value,
+    })
+}
+
+fn check_size(value: &impl serde::Serialize) -> Result<()> {
+    struct Budget(usize);
+    impl std::io::Write for Budget {
+        fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
+            self.0 = self.0.saturating_add(bytes.len());
+            if self.0 > game_core::MAX_UTF8_BYTES {
+                return Err(std::io::Error::other("snapshot is too large"));
+            }
+            Ok(bytes.len())
+        }
+        fn flush(&mut self) -> std::io::Result<()> {
+            Ok(())
+        }
+    }
+    let mut budget = Budget(0);
+    serde_json::to_writer(&mut budget, value).map_err(|error| {
+        if budget.0 > game_core::MAX_UTF8_BYTES {
+            game_core::SnapshotError::Invalid("snapshot is too large".into()).into()
+        } else {
+            error.into()
+        }
+    })
 }
 
 static BACKUP_SEQUENCE: AtomicU64 = AtomicU64::new(0);
@@ -373,4 +439,103 @@ pub(super) fn backup(connection: &Connection, source: &Path, target: &Path) -> R
         let _ = fs::remove_file(&staging);
     }
     result
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const STAMP: &str = "2026-01-01T00:00:00.000Z";
+    fn source() -> Value {
+        serde_json::to_value(
+            parse_snapshot(include_bytes!("../../../fixtures/standalone.json"))
+                .unwrap()
+                .tables,
+        )
+        .unwrap()
+    }
+
+    #[test]
+    fn internal_and_transport_reads_preserve_tables_and_validation() {
+        let original = source();
+        let internal = decode_tables(original.clone()).unwrap();
+        let exported = envelope(original.clone(), "parity", STAMP).unwrap();
+        assert_eq!(internal, exported.tables);
+        assert_eq!(
+            parse_snapshot(&serde_json::to_vec(&exported).unwrap()).unwrap(),
+            exported
+        );
+        validate_state(&internal, &original, "parity", STAMP).unwrap();
+        for (table, field, bad) in [
+            ("players", "clubId", json!("missing-club")),
+            ("clubs", "prestige", json!(101)),
+            ("players", "attributes", json!({"pace":null})),
+            ("players", "positions", json!([])),
+            ("players", "potential", json!(1.5)),
+        ] {
+            let mut corrupt = original.clone();
+            corrupt[table][0][field] = bad;
+            assert!(decode_tables(corrupt.clone()).is_err(), "{table}.{field}");
+            assert!(
+                envelope(corrupt, "invalid", STAMP).is_err(),
+                "{table}.{field}"
+            );
+        }
+        let mut duplicate = original;
+        let row = duplicate["auditEvents"][0].clone();
+        duplicate["auditEvents"].as_array_mut().unwrap().push(row);
+        assert!(decode_tables(duplicate).is_err());
+    }
+
+    #[test]
+    fn internal_read_rejects_corrupt_stored_relationships() {
+        let mut db = Connection::open_in_memory().unwrap();
+        super::super::migrate(&mut db).unwrap();
+        import(
+            &mut db,
+            prepare(include_bytes!("../../../fixtures/standalone.json")).unwrap(),
+        )
+        .unwrap();
+        // Corruption introduced outside the store, with FK checks disabled.
+        db.pragma_update(None, "foreign_keys", false).unwrap();
+        db.execute("UPDATE players SET clubId='missing-club'", [])
+            .unwrap();
+        let raw = read(&mut db, "standalone-v2").unwrap();
+        assert!(decode_tables(raw)
+            .unwrap_err()
+            .to_string()
+            .contains("missing clubs reference"));
+    }
+
+    #[test]
+    fn export_budget_remains_explicit_for_large_valid_internal_states() {
+        let mut value = source();
+        let mut audit = value["auditEvents"][0].clone();
+        audit["summary"] = json!("s".repeat(4_000));
+        for index in 0..8_500 {
+            audit["id"] = json!(format!("large-audit-{index}"));
+            audit["actionId"] = json!(format!("large-action-{index}"));
+            value["auditEvents"]
+                .as_array_mut()
+                .unwrap()
+                .push(audit.clone());
+        }
+        let typed = decode_tables(value.clone()).unwrap();
+        assert!(validate_state(&typed, &value, "budget", STAMP)
+            .unwrap_err()
+            .to_string()
+            .contains("snapshot is too large"));
+        assert!(envelope(value, "budget", STAMP).is_err());
+    }
+
+    #[test]
+    fn streaming_budget_matches_compact_utf8_boundary() {
+        let exact = "x".repeat(game_core::MAX_UTF8_BYTES - 2);
+        check_size(&exact).unwrap(); // Include the two JSON quote bytes.
+        assert!(check_size(&(exact + "x")).is_err());
+        let escaped = json!(["�", "\n", "\"", "\\"]);
+        let exported = envelope(source(), "budget", STAMP).unwrap();
+        check_size(&escaped).unwrap();
+        check_size(&exported).unwrap();
+    }
 }

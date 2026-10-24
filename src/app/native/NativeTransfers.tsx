@@ -1,9 +1,8 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import type { GameClient } from '../../platform/game-client'
-import type { TransferBoard } from '../../platform/generated/TransferBoard'
-import type { TimePreview } from '../../platform/generated/TimePreview'
 import { mapInvokeError } from '../../platform/errors'
 import { staleSave } from '../copy'
+import { useNativeRead } from './useNativeRead'
 import { Button } from '../../components/ui/Button'
 
 export function NativeTransfers({
@@ -20,46 +19,31 @@ export function NativeTransfers({
   onChanged: () => void
 }) {
   const requestKey = `${campaignId}:${revision}:${refresh}`
-  const [board, setBoard] = useState<{
-    key: string
-    value: TransferBoard
-  } | null>(null)
-  const [clock, setClock] = useState<{
-    key: string
-    value: TimePreview
-  } | null>(null)
   const [error, setError] = useState<{ key: string; message: string } | null>(
     null,
   )
   const [busyId, setBusyId] = useState<string | null>(null)
   const submitting = useRef(false)
-  const shown = board?.key === requestKey ? board.value : null
-  const cursor = clock?.key === requestKey ? clock.value : null
-  const shownError = error?.key === requestKey ? error.message : ''
-  useEffect(() => {
-    let active = true
-    client.transferBoard(campaignId).then(
-      (value) => {
-        if (active) setBoard({ key: requestKey, value })
-      },
-      (failure) => {
-        if (active)
-          setError({ key: requestKey, message: mapInvokeError(failure).message })
-      },
-    )
-    client.previewTime(campaignId).then(
-      (value) => {
-        if (active) setClock({ key: requestKey, value })
-      },
-      (failure) => {
-        if (active)
-          setError({ key: requestKey, message: mapInvokeError(failure).message })
-      },
-    )
-    return () => {
-      active = false
-    }
-  }, [client, campaignId, requestKey])
+  const loadBoard = useCallback(
+    () => client.transferBoard(campaignId),
+    [client, campaignId],
+  )
+  const loadClock = useCallback(
+    () => client.previewTime(campaignId),
+    [client, campaignId],
+  )
+  const { state: board } = useNativeRead(requestKey, loadBoard)
+  const { state: clock } = useNativeRead(requestKey, loadClock)
+  const shown = board.status === 'success' ? board.data : null
+  const cursor = clock.status === 'success' ? clock.data : null
+  const shownError =
+    error?.key === requestKey
+      ? error.message
+      : board.status === 'error'
+        ? board.error
+        : clock.status === 'error'
+          ? clock.error
+          : ''
   async function submit(id: string, work: () => Promise<unknown>) {
     if (submitting.current || cursor === null) return
     submitting.current = true

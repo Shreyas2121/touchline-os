@@ -1,4 +1,5 @@
 import {
+  act,
   fireEvent,
   render,
   screen,
@@ -8,6 +9,7 @@ import {
 import { MemoryRouter } from 'react-router'
 import { describe, expect, it, vi } from 'vitest'
 import { NativeRoutes } from '../app/native/NativeWorkspace'
+import { PlanningEditor } from '../app/native/NativeEditors'
 import { createBrowserClient } from '../platform/browser-client'
 import type { GameClient } from '../platform/game-client'
 import type { CampaignSnapshot } from '../platform/generated/CampaignSnapshot'
@@ -111,6 +113,74 @@ function show(api: GameClient, section?: string) {
 }
 
 describe('native management forms', () => {
+  it('resets unsaved editor drafts when navigating to a different screen', async () => {
+    const api = client()
+    show(api, 'scouting')
+    await screen.findByLabelText('Development notes')
+    fireEvent.change(screen.getByLabelText('Campaign name'), {
+      target: { value: 'Unsaved campaign' },
+    })
+    fireEvent.change(screen.getByLabelText('Development notes'), {
+      target: { value: 'Unsaved note' },
+    })
+    fireEvent.click(screen.getByRole('link', { name: 'Transfers' }))
+    expect(await screen.findByLabelText('Development notes')).not.toHaveValue(
+      'Unsaved note',
+    )
+    expect(screen.getByLabelText('Campaign name')).toHaveValue(campaign.name)
+    expect(api.manage).not.toHaveBeenCalled()
+  })
+
+  it('discards drafts and replay identity on an explicit saved-campaign reload', async () => {
+    const api = client()
+    let saved = model()
+    api.screen = vi.fn(async () => saved)
+    api.planning = vi.fn(async () => ({
+      player: saved.rows.players[0]!,
+      revision: saved.revision,
+      note: saved.rows.developmentPlans[0] ?? null,
+      shortlist: saved.rows.shortlistItems[0] ?? null,
+    }))
+    api.manage = vi.fn().mockRejectedValue({
+      code: 'CONFLICT',
+      message: 'Reload the changed campaign.',
+    })
+    show(api, 'scouting')
+    await screen.findByLabelText('Development notes')
+    fireEvent.change(screen.getByLabelText('Campaign name'), {
+      target: { value: 'Unsaved campaign' },
+    })
+    fireEvent.change(screen.getByLabelText('Development notes'), {
+      target: { value: 'Unsaved note' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Rename campaign' }))
+    await screen.findByText('Reload the changed campaign.')
+    saved = model()
+    saved.revision += 1
+    saved.rows.campaigns[0]!.revision = saved.revision
+    saved.rows.campaigns[0]!.name = 'Persisted newer campaign'
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Reload saved campaign (discard drafts)',
+      }),
+    )
+    await screen.findByLabelText('Development notes')
+    expect(screen.getByLabelText('Development notes')).not.toHaveValue(
+      'Unsaved note',
+    )
+    expect(screen.getByLabelText('Campaign name')).toHaveValue(
+      'Persisted newer campaign',
+    )
+    fireEvent.change(screen.getByLabelText('Campaign name'), {
+      target: { value: 'New draft' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Rename campaign' }))
+    await waitFor(() => expect(api.manage).toHaveBeenCalledTimes(2))
+    const [first, second] = vi.mocked(api.manage).mock.calls
+    expect(second![0].actionId).not.toBe(first![0].actionId)
+    expect(second![0].expectedRevision).toBe(saved.revision)
+  })
+
   it('offers standalone demo creation with its reserved identity and seed', async () => {
     const api = client()
     show(api)
@@ -448,6 +518,79 @@ describe('native management forms', () => {
           expectedRevision: campaign.revision,
         }),
       ),
+    )
+  })
+})
+
+describe('native planning editor read identity', () => {
+  function props(api: GameClient, saved = model()) {
+    return {
+      client: api,
+      model: saved,
+      send: vi.fn(),
+      stableId: (key: string) => key,
+      stamp: '2026-10-24T00:00:00.000Z',
+      onReload: vi.fn(),
+    }
+  }
+  it('preserves a draft across an unrelated parent render at the same revision', async () => {
+    const api = client(),
+      initial = props(api)
+    const view = render(<PlanningEditor {...initial} />)
+    const notes = await screen.findByLabelText('Development notes')
+    fireEvent.change(notes, { target: { value: 'Keep this draft' } })
+    view.rerender(
+      <PlanningEditor
+        {...initial}
+        model={{ ...initial.model, labels: { player: 'Updated label' } }}
+      />,
+    )
+    expect(screen.getByLabelText('Development notes')).toBe(notes)
+    expect(notes).toHaveValue('Keep this draft')
+    expect(api.planning).toHaveBeenCalledOnce()
+  })
+
+  it('hides old planning on revision change and ignores a late older response', async () => {
+    const api = client()
+    let resolve!: (value: Awaited<ReturnType<GameClient['planning']>>) => void
+    const old = new Promise<Awaited<ReturnType<GameClient['planning']>>>(
+      (done) => {
+        resolve = done
+      },
+    )
+    const initial = props(api)
+    const note = initial.model.rows.developmentPlans[0]!
+    const latest = {
+      player: initial.model.rows.players[0]!,
+      revision: initial.model.revision + 1,
+      note: { ...note, notes: 'New saved revision' },
+      shortlist: null,
+    }
+    api.planning = vi
+      .fn()
+      .mockReturnValueOnce(old)
+      .mockResolvedValueOnce(latest)
+    const view = render(<PlanningEditor {...initial} />)
+    await waitFor(() => expect(api.planning).toHaveBeenCalledOnce())
+    view.rerender(
+      <PlanningEditor
+        {...initial}
+        model={{ ...initial.model, revision: latest.revision }}
+      />,
+    )
+    expect(screen.queryByLabelText('Development notes')).toBeNull()
+    expect(await screen.findByLabelText('Development notes')).toHaveValue(
+      'New saved revision',
+    )
+    await act(async () =>
+      resolve({
+        ...latest,
+        revision: initial.model.revision,
+        note: { ...note, notes: 'Obsolete response' },
+      }),
+    )
+    expect(screen.getByLabelText('Development notes')).toHaveValue(
+      'New saved revision',
     )
   })
 })

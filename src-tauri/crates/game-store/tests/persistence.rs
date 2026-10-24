@@ -591,6 +591,7 @@ fn all_source_arrays_survive_close_reopen_native_export_and_reimport() {
             .export_snapshot(name, "native-export", "2026-10-20T12:00:00.000Z")
             .unwrap();
         let encoded = serde_json::to_vec(&exported).unwrap();
+        assert_eq!(store.read_campaign(name).unwrap(), exported.tables);
         assert_eq!(
             serde_json::from_slice::<Value>(&encoded).unwrap()["sourceStorage"],
             "sqlite"
@@ -1035,8 +1036,16 @@ fn concurrent_retries_share_one_commit_and_reads_use_committed_wal_state() {
         .unwrap();
     // A concurrent uncommitted write cannot leak half a revision into an export.
     assert_eq!(tables(&store, "save-b"), before);
+    assert_eq!(
+        serde_json::to_value(store.read_campaign("save-b").unwrap()).unwrap(),
+        before
+    );
     transaction.commit().unwrap();
     let after = tables(&store, "save-b");
+    assert_eq!(
+        serde_json::to_value(store.read_campaign("save-b").unwrap()).unwrap(),
+        after
+    );
     assert_eq!(after["campaigns"][0]["name"], "Next revision");
     assert_eq!(after["players"][0]["name"], "Next player");
     assert_eq!(

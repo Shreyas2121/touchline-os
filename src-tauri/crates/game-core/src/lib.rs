@@ -41,7 +41,10 @@ pub use ids::{EntityId, Euro, FormatVersion, VersionOne};
 pub use market::{resolve_terms, Agreement, TermProposal};
 pub use numbers::{MoneyCents, SafeInt, JS_MAX_SAFE_INTEGER};
 pub use rows::*;
-pub use snapshot::{parse_snapshot, CampaignSnapshot, SnapshotError};
+pub use snapshot::{
+    decode_campaign_tables, decode_snapshot, parse_snapshot, validate_campaign_json,
+    validate_campaign_tables, CampaignSnapshot, SnapshotError, MAX_UTF8_BYTES,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CoreError {

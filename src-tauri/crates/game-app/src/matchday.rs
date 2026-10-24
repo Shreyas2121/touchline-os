@@ -2,14 +2,9 @@ use crate::{store_error, CommandError, EntityId, NativeStore, SafeInt};
 use game_core::{matchday, progression::AdvanceOutcome, SnapshotTables};
 
 fn tables(store: &NativeStore, campaign_id: &EntityId) -> Result<SnapshotTables, CommandError> {
-    Ok(store
-        .export_snapshot(
-            campaign_id.as_str(),
-            "matchday-read",
-            "2026-01-01T00:00:00.000Z",
-        )
-        .map_err(store_error)?
-        .tables)
+    store
+        .read_campaign(campaign_id.as_str())
+        .map_err(store_error)
 }
 pub fn preview_matchday(
     store: &NativeStore,

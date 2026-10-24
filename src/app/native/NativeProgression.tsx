@@ -1,10 +1,8 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import type { GameClient } from '../../platform/game-client'
-import type { TimePreview } from '../../platform/generated/TimePreview'
-import type { MatchdayPreview } from '../../platform/generated/MatchdayPreview'
-import type { MarketPreview } from '../../platform/generated/MarketPreview'
 import { mapInvokeError } from '../../platform/errors'
 import { staleSave } from '../copy'
+import { useNativeRead } from './useNativeRead'
 import { Button } from '../../components/ui/Button'
 
 export function NativeProgression({
@@ -23,30 +21,47 @@ export function NativeProgression({
   onReload: () => void
 }) {
   const requestKey = `${campaignId}:${revision}:${refresh}`
-  const [preview, setPreview] = useState<{
-    key: string
-    value: TimePreview
-  } | null>(null)
   const [error, setError] = useState<{ key: string; message: string } | null>(
     null,
   )
-  const [matchday, setMatchday] = useState<{
-    key: string
-    value: MatchdayPreview
-  } | null>(null)
-  const [market, setMarket] = useState<{
-    key: string
-    value: MarketPreview
-  } | null>(null)
   const [confirming, setConfirming] = useState(false)
-  const [busyKind, setBusyKind] = useState<'market' | 'advance' | 'match' | null>(
-    null,
-  )
+  const [busyKind, setBusyKind] = useState<
+    'market' | 'advance' | 'match' | null
+  >(null)
   const submitting = useRef(false)
-  const shown = preview?.key === requestKey ? preview.value : null
-  const shownError = error?.key === requestKey ? error.message : ''
-  const round = matchday?.key === requestKey ? matchday.value : null
-  const marketShown = market?.key === requestKey ? market.value : null
+  const loadTime = useCallback(
+    () => client.previewTime(campaignId),
+    [client, campaignId],
+  )
+  const loadMarket = useCallback(
+    () => client.previewMarket(campaignId),
+    [client, campaignId],
+  )
+  const loadMatchday = useCallback(
+    () => client.previewMatchday(campaignId),
+    [client, campaignId],
+  )
+  const { state: preview } = useNativeRead(requestKey, loadTime)
+  const { state: market } = useNativeRead(requestKey, loadMarket)
+  const shown = preview.status === 'success' ? preview.data : null
+  const { state: matchday } = useNativeRead(
+    requestKey,
+    shown?.phase === 'league' || shown?.phase === 'review'
+      ? loadMatchday
+      : null,
+  )
+  const round = matchday.status === 'success' ? matchday.data : null
+  const marketShown = market.status === 'success' ? market.data : null
+  const shownError =
+    error?.key === requestKey
+      ? error.message
+      : preview.status === 'error'
+        ? preview.error
+        : market.status === 'error'
+          ? market.error
+          : matchday.status === 'error'
+            ? matchday.error
+            : ''
   const matchdayMode = shown?.phase === 'league' || shown?.phase === 'review'
   const runMarket = marketShown?.action === 'run' && marketShown.allowed
   const closeWindow = marketShown?.action === 'close' && marketShown.allowed
@@ -54,51 +69,6 @@ export function NativeProgression({
     (marketShown?.action === 'close' && !marketShown.allowed) ||
     shown?.reason === 'Accept the qualifying offer before the window can close.'
   const marketFirst = runMarket || closeWindow || holdForOffer
-  useEffect(() => {
-    let active = true
-    client.previewMarket(campaignId).then(
-      (result) => {
-        if (active) setMarket({ key: requestKey, value: result })
-      },
-      (failure) => {
-        if (active) {
-          setError({
-            key: requestKey,
-            message: mapInvokeError(failure).message,
-          })
-        }
-      },
-    )
-    client.previewTime(campaignId).then(
-      async (result) => {
-        if (!active) return
-        setPreview({ key: requestKey, value: result })
-        if (result.phase === 'league' || result.phase === 'review') {
-          try {
-            const value = await client.previewMatchday(campaignId)
-            if (active) setMatchday({ key: requestKey, value })
-          } catch (failure) {
-            if (active)
-              setError({
-                key: requestKey,
-                message: mapInvokeError(failure).message,
-              })
-          }
-        }
-      },
-      (failure) => {
-        if (active) {
-          setError({
-            key: requestKey,
-            message: mapInvokeError(failure).message,
-          })
-        }
-      },
-    )
-    return () => {
-      active = false
-    }
-  }, [client, campaignId, requestKey])
   async function simulateRound() {
     if (
       submitting.current ||
@@ -177,7 +147,8 @@ export function NativeProgression({
     }
   }
   async function confirmMarket(action: 'run' | 'close') {
-    if (submitting.current || marketShown === null || !marketShown.allowed) return
+    if (submitting.current || marketShown === null || !marketShown.allowed)
+      return
     submitting.current = true
     setBusyKind('market')
     setError(null)
@@ -260,16 +231,19 @@ export function NativeProgression({
           Close Window
         </Button>
       )}
-      {shown?.allowed && !matchdayMode && !marketFirst && marketShown !== null && (
-        <Button
-          disabled={busyKind !== null}
-          onClick={() => {
-            void continueCareer()
-          }}
-        >
-          Continue
-        </Button>
-      )}
+      {shown?.allowed &&
+        !matchdayMode &&
+        !marketFirst &&
+        marketShown !== null && (
+          <Button
+            disabled={busyKind !== null}
+            onClick={() => {
+              void continueCareer()
+            }}
+          >
+            Continue
+          </Button>
+        )}
       {round?.emergency && <p>Emergency selection</p>}
       {round?.allowed && !marketFirst && !confirming && (
         <Button

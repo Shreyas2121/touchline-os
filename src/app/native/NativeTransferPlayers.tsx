@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { Button } from '../../components/ui/Button'
 import type { GameClient } from '../../platform/game-client'
 import type { ScreenModel } from '../../platform/generated/ScreenModel'
 import type { ManagementOutcome } from '../../platform/generated/ManagementOutcome'
-import { mapInvokeError } from '../../platform/errors'
+import { useNativeRead, type NativeReadState } from './useNativeRead'
 import { NativeManagementPanel } from './NativeManagementPanel'
 import { Paging } from './NativePaging'
 
@@ -26,48 +26,28 @@ export function NativeTransferPlayers({
     allPlayers: false,
     attempt: 0,
   })
-  const key = JSON.stringify(query)
-  const [state, setState] = useState<{
-    key: string
-    data?: ScreenModel
-    error?: string
-  }>({ key, data: initialModel })
-  useEffect(() => {
-    // The first unfiltered page was already loaded with the screen. Subsequent
-    // player queries have their own lifetime and never reload the transfer board.
-    if (query.attempt === 0) return
-    let active = true
-    client
-      .screen({
-        campaignId,
-        screen: 'transfers',
-        page: query.page,
-        search: query.search,
-        allPlayers: query.allPlayers,
-      })
-      .then(
-        (data) => {
-          if (!active) return
-          setState(
-            data.revision === revision
-              ? { key, data }
-              : {
-                  key,
-                  error:
-                    'The campaign changed. Reload before editing player planning.',
-                },
-          )
-        },
-        (error) => {
-          if (active) setState({ key, error: mapInvokeError(error).message })
-        },
-      )
-    return () => {
-      active = false
-    }
-  }, [client, campaignId, revision, key, query])
-  const shown = state.key === key ? state : undefined
-  const model = shown?.data
+  const key = JSON.stringify([campaignId, revision, query])
+  const load = useCallback(async () => {
+    const data = await client.screen({
+      campaignId,
+      screen: 'transfers',
+      page: query.page,
+      search: query.search,
+      allPlayers: query.allPlayers,
+    })
+    if (data.revision !== revision)
+      throw {
+        code: 'CONFLICT',
+        message: 'The campaign changed. Reload before editing player planning.',
+      }
+    return data
+  }, [client, campaignId, revision, query])
+  // Reuse the screen's first page without another request. Later queries have
+  // an independent lifetime, so paging never reloads the transfer board.
+  const read = useNativeRead(key, query.attempt === 0 ? null : load)
+  const state: NativeReadState<ScreenModel> =
+    query.attempt === 0 ? { status: 'success', data: initialModel } : read.state
+  const model = state.status === 'success' ? state.data : undefined
   return (
     <section aria-label="Transfer player search" className="space-y-3">
       <h2>Player search</h2>
@@ -127,9 +107,9 @@ export function NativeTransferPlayers({
             onReload={onReload}
           />
         </>
-      ) : shown?.error ? (
+      ) : state.status === 'error' ? (
         <>
-          <p role="alert">{shown.error}</p>
+          <p role="alert">{state.error}</p>
           <Button
             onClick={() =>
               setQuery((current) => ({

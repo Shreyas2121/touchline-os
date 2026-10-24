@@ -111,6 +111,34 @@ function roundView(round = 1): MatchdayView {
   }
 }
 describe('native persisted match reports', () => {
+  it('retries a failed fixture read without simulating a match', async () => {
+    const client = {
+      ...createBrowserClient(),
+      matchdayView: vi
+        .fn()
+        .mockRejectedValueOnce({
+          code: 'INTERNAL',
+          message: 'Fixture read failed.',
+        })
+        .mockResolvedValueOnce(roundView()),
+      simMatchday: vi.fn(),
+    }
+    render(<NativeMatches client={client} campaignId="career" />)
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Fixture read failed.',
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Retry fixtures' }))
+    expect(screen.queryByRole('alert')).toBeNull()
+    expect(
+      await screen.findByRole('heading', {
+        name: 'Home club 35 v Away club 35',
+      }),
+    ).toBeInTheDocument()
+    expect(client.matchdayView).toHaveBeenCalledTimes(2)
+    expect(client.matchdayView).toHaveBeenLastCalledWith('career', null)
+    expect(client.simMatchday).not.toHaveBeenCalled()
+  })
+
   it('reads all 36 fixtures, milli-unit xG, events, both squads, and four complete tables', async () => {
     const client = {
       ...createBrowserClient(),

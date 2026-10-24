@@ -45,6 +45,15 @@ fn core_sources_do_not_touch_the_platform() {
         include_str!("../src/management.rs"),
         include_str!("../src/market.rs"),
         include_str!("../src/market_ops.rs"),
+        include_str!("../src/market_ops/types.rs"),
+        include_str!("../src/market_ops/context.rs"),
+        include_str!("../src/market_ops/planning.rs"),
+        include_str!("../src/market_ops/fingerprints.rs"),
+        include_str!("../src/market_ops/window.rs"),
+        include_str!("../src/market_ops/projections.rs"),
+        include_str!("../src/market_ops/commands/mod.rs"),
+        include_str!("../src/market_ops/commands/run.rs"),
+        include_str!("../src/market_ops/commands/approaches.rs"),
         include_str!("../src/settlement.rs"),
     ];
     for source in sources {

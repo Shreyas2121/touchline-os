@@ -52,11 +52,37 @@ pub fn parse_snapshot(bytes: &[u8]) -> Result<CampaignSnapshot, SnapshotError> {
         return Err(SnapshotError::Invalid("snapshot is too large".into()));
     }
     let value: serde_json::Value = serde_json::from_slice(bytes).map_err(classify)?;
+    decode_snapshot(value)
+}
+
+/// Validate a decoded envelope. Byte-oriented callers must use `parse_snapshot`
+/// to enforce the transport ceiling before allocating the JSON value.
+pub fn decode_snapshot(value: serde_json::Value) -> Result<CampaignSnapshot, SnapshotError> {
     walk_json(&value, 0)?;
     reject_null_attributes(&value)?;
     let snapshot: CampaignSnapshot = serde_json::from_value(value).map_err(classify)?;
     validate_snapshot(&snapshot)?;
     Ok(snapshot)
+}
+
+/// Decode storage tables without an export envelope or a UTF-8 round trip.
+/// Depth starts at one to retain the same limits as tables inside an envelope.
+pub fn decode_campaign_tables(value: serde_json::Value) -> Result<SnapshotTables, SnapshotError> {
+    walk_json(&value, 1)?;
+    crate::validate::reject_null_table_attributes(&value)?;
+    let tables = serde_json::from_value(value).map_err(classify)?;
+    crate::validate::validate_campaign_tables(&tables)?;
+    Ok(tables)
+}
+
+/// Validate domain invariants of an already typed campaign.
+pub fn validate_campaign_tables(tables: &SnapshotTables) -> Result<(), SnapshotError> {
+    crate::validate::validate_campaign_tables(tables)
+}
+
+pub fn validate_campaign_json(value: &serde_json::Value) -> Result<(), SnapshotError> {
+    walk_json(value, 1)?;
+    crate::validate::reject_null_table_attributes(value)
 }
 
 fn classify(error: serde_json::Error) -> SnapshotError {

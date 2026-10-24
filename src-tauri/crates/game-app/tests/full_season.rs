@@ -785,6 +785,11 @@ fn full_season_reopens_replays_reconciles_and_exports_within_limit() {
     )
     .unwrap());
     let bytes = std::fs::read(&target).unwrap();
+    // Optional reusable artifact for comparing internal-read implementations on
+    // this exact certified complete-season save. Normal tests leave no artifact.
+    if let Some(path) = std::env::var_os("TOUCHLINE_SEASON_BENCHMARK_SAVE") {
+        std::fs::write(path, &bytes).unwrap();
+    }
     eprintln!(
         "full-season export: {} bytes; compact snapshot: {} bytes; {} appearances",
         bytes.len(),

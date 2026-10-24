@@ -125,7 +125,7 @@ pub(super) fn market(
         .map_err(StoreError::Command)?;
     if !outcome.replayed {
         let after = serde_json::to_value(&tables)?;
-        snapshots::envelope(after.clone(), "native-market", &now)?;
+        snapshots::validate_state(&tables, &after, "native-market", &now)?;
         write_diff(&tx, &before, &after, &campaign_id)?;
     }
     tx.commit()?;
@@ -144,7 +144,7 @@ pub(super) fn settle(
         .map_err(StoreError::Command)?;
     if !outcome.replayed {
         let after = serde_json::to_value(&tables)?;
-        snapshots::envelope(after.clone(), "native-settlement", &request.now)?;
+        snapshots::validate_state(&tables, &after, "native-settlement", &request.now)?;
         write_diff(&tx, &before, &after, request.campaign_id.as_str())?;
     }
     tx.commit()?;
@@ -163,7 +163,7 @@ pub(super) fn matchday(
         .map_err(StoreError::Command)?;
     if !outcome.replayed {
         let after = serde_json::to_value(&tables)?;
-        snapshots::envelope(after.clone(), "native-matchday", &request.now)?;
+        snapshots::validate_state(&tables, &after, "native-matchday", &request.now)?;
         write_diff(&tx, &before, &after, request.campaign_id.as_str())?;
     }
     tx.commit()?;
@@ -183,7 +183,7 @@ pub(super) fn advance(db: &mut Connection, request: AdvanceRequest) -> Result<Ad
         AdvancePlan::Commit(planned) => {
             let outcome = progression::commit(&mut tables, *planned);
             let after = serde_json::to_value(&tables)?;
-            snapshots::envelope(after.clone(), "native-advance", &request.now)?;
+            snapshots::validate_state(&tables, &after, "native-advance", &request.now)?;
             write_diff(&tx, &before, &after, request.campaign_id.as_str())?;
             outcome
         }
@@ -220,8 +220,8 @@ pub(super) fn manage(db: &mut Connection, command: ManagementCommand) -> Result<
             [command.campaign_id.as_str()],
         )?;
     } else {
-        let after = serde_json::to_value(tables)?;
-        snapshots::envelope(after.clone(), "native-management", &command.now)?;
+        let after = serde_json::to_value(&tables)?;
+        snapshots::validate_state(&tables, &after, "native-management", &command.now)?;
         write_diff(&tx, &before, &after, command.campaign_id.as_str())?;
     }
     tx.commit()?;
@@ -327,7 +327,8 @@ pub(super) fn create(
             .unwrap_or(game_core::SafeInt::new(0).expect("zero")),
     )?;
     tables["auditEvents"][0]["payload"]["creationFingerprint"] = Value::String(signature.into());
-    snapshots::envelope(tables.clone(), "native-create", &request.career.now)?;
+    let typed: SnapshotTables = serde_json::from_value(tables.clone())?;
+    snapshots::validate_state(&typed, &tables, "native-create", &request.career.now)?;
     write_diff(&tx, &empty(), &tables, id)?;
     tx.commit()?;
     Ok(ManagementOutcome {

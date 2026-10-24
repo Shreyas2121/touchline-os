@@ -5,14 +5,9 @@ fn tables(
     store: &NativeStore,
     request: &settlement::SettleTransferRequest,
 ) -> Result<SnapshotTables, CommandError> {
-    Ok(store
-        .export_snapshot(
-            request.campaign_id.as_str(),
-            "settlement-read",
-            &request.now,
-        )
-        .map_err(store_error)?
-        .tables)
+    store
+        .read_campaign(request.campaign_id.as_str())
+        .map_err(store_error)
 }
 pub fn settle_transfer(
     store: &NativeStore,

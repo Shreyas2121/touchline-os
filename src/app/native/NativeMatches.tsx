@@ -1,8 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
 import type { GameClient } from '../../platform/game-client'
-import type { MatchdayView } from '../../platform/generated/MatchdayView'
 import type { SimulatedAppearanceRow } from '../../platform/generated/SimulatedAppearanceRow'
-import { mapInvokeError } from '../../platform/errors'
+import { useNativeRead } from './useNativeRead'
 import { formatXg } from '../../domain/matches/xg'
 import { Button } from '../../components/ui/Button'
 
@@ -82,38 +81,22 @@ export function NativeMatches({
   campaignId: string
 }) {
   const [round, setRound] = useState<number | null>(null)
-  const [retry, setRetry] = useState(0)
-  const key = `${campaignId}:${round}:${retry}`
-  const [state, setState] = useState<{
-    key: string
-    data?: MatchdayView
-    error?: string
-  }>()
-  useEffect(() => {
-    let active = true
-    client.matchdayView(campaignId, round).then(
-      (data) => {
-        if (active) setState({ key, data })
-      },
-      (error) => {
-        if (active) setState({ key, error: mapInvokeError(error).message })
-      },
-    )
-    return () => {
-      active = false
-    }
-  }, [client, campaignId, round, key])
-  if (state?.key !== key)
+  const key = JSON.stringify([campaignId, round])
+  const load = useCallback(
+    () => client.matchdayView(campaignId, round),
+    [client, campaignId, round],
+  )
+  const { state, retry } = useNativeRead(key, load)
+  if (state.status === 'loading')
     return <p role="status">Loading fixtures and results.</p>
-  if (state.error)
+  if (state.status === 'error')
     return (
       <>
         <p role="alert">{state.error}</p>
-        <Button onClick={() => setRetry((v) => v + 1)}>Retry fixtures</Button>
+        <Button onClick={retry}>Retry fixtures</Button>
       </>
     )
   const data = state.data
-  if (!data) return null
   const name = (id: string) => data.labels[id] ?? 'Unknown club'
   return (
     <section aria-label="Fixtures and results" className="space-y-6">

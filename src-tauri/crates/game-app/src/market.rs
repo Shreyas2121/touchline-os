@@ -9,13 +9,8 @@ use game_core::{
     EntityId, SnapshotTables,
 };
 
-const PREVIEW_STAMP: &str = "2026-01-01T00:00:00.000Z";
-
 fn tables(store: &NativeStore, campaign_id: &str) -> Result<SnapshotTables, CommandError> {
-    Ok(store
-        .export_snapshot(campaign_id, "market-preview", PREVIEW_STAMP)
-        .map_err(store_error)?
-        .tables)
+    store.read_campaign(campaign_id).map_err(store_error)
 }
 
 pub fn preview_market(

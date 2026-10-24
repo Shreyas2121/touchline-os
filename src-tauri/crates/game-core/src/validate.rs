@@ -39,11 +39,11 @@ const ATTRIBUTE_KEYS: &[&str] = &[
 ];
 
 pub fn reject_null_attributes(value: &Value) -> Result<(), SnapshotError> {
-    let Some(players) = value
-        .get("tables")
-        .and_then(|tables| tables.get("players"))
-        .and_then(Value::as_array)
-    else {
+    reject_null_table_attributes(&value["tables"])
+}
+
+pub fn reject_null_table_attributes(tables: &Value) -> Result<(), SnapshotError> {
+    let Some(players) = tables.get("players").and_then(Value::as_array) else {
         return Ok(());
     };
     for player in players {
@@ -71,7 +71,11 @@ pub fn validate_snapshot(snapshot: &CampaignSnapshot) -> Result<(), SnapshotErro
         return Err(SnapshotError::Invalid("campaign revision".into()));
     }
     require_timestamp(&snapshot.exported_at, "exportedAt")?;
-    let tables = &snapshot.tables;
+    validate_campaign_tables(&snapshot.tables)
+}
+
+/// Domain invariants shared by internal campaign reads and snapshot transport.
+pub fn validate_campaign_tables(tables: &SnapshotTables) -> Result<(), SnapshotError> {
     require_len(tables.campaigns.len(), 1, 1, "campaigns")?;
     require_len(tables.seasons.len(), 1, 64, "seasons")?;
     require_len(tables.leagues.len(), 0, 32, "leagues")?;

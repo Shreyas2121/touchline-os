@@ -382,6 +382,12 @@ impl Store {
         snapshots::envelope(tables, export_id, exported_at)
     }
 
+    /// Validated domain tables from one read transaction, without snapshot transport.
+    pub fn read_campaign(&self, campaign_id: &str) -> Result<game_core::SnapshotTables> {
+        let tables = self.call(|reply| Request::Read(campaign_id.to_owned(), reply))?;
+        snapshots::decode_tables(tables)
+    }
+
     pub fn backup(&self, target: impl AsRef<Path>) -> Result<()> {
         self.call(|reply| Request::Backup(target.as_ref().to_owned(), reply))
     }

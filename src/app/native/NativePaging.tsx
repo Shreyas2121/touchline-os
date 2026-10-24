@@ -1,3 +1,4 @@
+import { NATIVE_PAGE_SIZE } from './native-pagination'
 import { Button } from '../../components/ui/Button'
 
 export function Paging({
@@ -20,7 +21,7 @@ export function Paging({
         Page {page + 1} · {total} records
       </span>
       <Button
-        disabled={(page + 1) * 50 >= total}
+        disabled={(page + 1) * NATIVE_PAGE_SIZE >= total}
         onClick={() => onPage(page + 1)}
       >
         Next page
