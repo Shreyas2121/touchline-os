@@ -107,6 +107,9 @@ fn capacity_is_scoped_reversals_do_not_count_and_totals_cannot_overflow() {
     let mut original = fixture().tables.ledger_entries.remove(0);
     original.reverses_entry_id = None;
     let row = |name: &str, kind, amount| LedgerEntryRow {
+        earning_season_id: None,
+        settlement_id: None,
+        award_kind: None,
         id: id(name),
         kind,
         amount_cents: m(amount),

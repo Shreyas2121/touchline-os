@@ -110,6 +110,9 @@ fn validate_relationships(tables: &Value) -> Result<()> {
                 ("toClubId", "clubs"),
                 ("playerId", "players"),
                 ("seasonId", "seasons"),
+                ("nextSeasonId", "seasons"),
+                ("earningSeasonId", "seasons"),
+                ("settlementId", "seasonSettlements"),
                 ("activeSeasonId", "seasons"),
                 ("reversesEntryId", "ledgerEntries"),
             ] {
@@ -162,6 +165,10 @@ fn validate_relationships(tables: &Value) -> Result<()> {
                 Some("negotiation") => "negotiations",
                 Some("offer") => "offers",
                 Some("transfer") => "transfers",
+                Some("ledger") => "ledgerEntries",
+                Some("settlement") => "seasonSettlements",
+                Some("objective") => "boardObjectives",
+                Some("development") => "developmentSnapshots",
                 _ => continue,
             };
             reference(target, &outcome["id"])?;
@@ -185,6 +192,9 @@ fn validate_relationships(tables: &Value) -> Result<()> {
 }
 
 const UNIQUE_KEYS: &[(&str, &[&str])] = &[
+    ("boardObjectives", &["seasonId", "kind"]),
+    ("seasonSettlements", &["seasonId"]),
+    ("developmentSnapshots", &["seasonId", "playerId", "period"]),
     ("fixtures", &["fixtureKey"]),
     ("fixtures", &["seasonId", "round", "homeClubId"]),
     ("simulatedMatches", &["fixtureId"]),
@@ -285,7 +295,7 @@ pub(super) fn envelope(
     validate_relationships(&tables)?;
     let value = json!({
         "format": "touchline-campaign", "formatVersion": 1,
-        "sourceStorage": "sqlite", "sourceSchemaVersion": 4,
+        "sourceStorage": "sqlite", "sourceSchemaVersion": 5,
         "exportId": export_id, "exportedAt": exported_at,
         "campaignRevision": tables["campaigns"][0]["revision"], "tables": tables,
     });
@@ -326,7 +336,7 @@ pub(super) fn validate_state(
         format: "touchline-campaign",
         format_version: 1,
         source_storage: "sqlite",
-        source_schema_version: 4,
+        source_schema_version: 5,
         export_id,
         exported_at,
         campaign_revision: tables.campaigns[0].revision,

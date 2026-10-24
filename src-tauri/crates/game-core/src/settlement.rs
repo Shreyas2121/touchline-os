@@ -813,6 +813,9 @@ pub fn apply_movement(
             .ok_or_else(|| invalid("Seller balance is missing."))?
             .transfer_balance_cents = seller_balance;
         tables.ledger_entries.push(LedgerEntryRow {
+            earning_season_id: None,
+            settlement_id: None,
+            award_kind: None,
             id: ids.ledger_ids[0].clone(),
             campaign_id: campaign_id.clone(),
             season_id: season_id.clone(),
@@ -825,6 +828,9 @@ pub fn apply_movement(
             note: None,
         });
         tables.ledger_entries.push(LedgerEntryRow {
+            earning_season_id: None,
+            settlement_id: None,
+            award_kind: None,
             id: ids.ledger_ids[1].clone(),
             campaign_id: campaign_id.clone(),
             season_id: season_id.clone(),

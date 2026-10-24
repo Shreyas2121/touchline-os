@@ -66,10 +66,11 @@ use std::sync::mpsc::{self, SyncSender};
 use std::thread::{self, JoinHandle};
 use std::time::Duration;
 
-pub const SCHEMA_VERSION: i64 = 4;
+pub const SCHEMA_VERSION: i64 = 5;
 pub const INITIAL_MIGRATION: &str = include_str!("../../../migrations/0002_standalone.sql");
 pub const MATCHDAY_MIGRATION: &str = include_str!("../../../migrations/0003_matchday.sql");
 pub const MARKET_MIGRATION: &str = include_str!("../../../migrations/0004_market.sql");
+pub const LIFECYCLE_MIGRATION: &str = include_str!("../../../migrations/0005_lifecycle.sql");
 pub type Result<T> = std::result::Result<T, StoreError>;
 
 #[derive(Debug)]
@@ -439,12 +440,20 @@ fn migrate(connection: &mut Connection) -> Result<()> {
             transaction.execute_batch(INITIAL_MIGRATION)?;
             transaction.execute_batch(MATCHDAY_MIGRATION)?;
             transaction.execute_batch(MARKET_MIGRATION)?;
+            transaction.execute_batch(LIFECYCLE_MIGRATION)?;
             check_database(&transaction)?;
             transaction.commit()?;
         }
         3 => {
             let transaction = connection.transaction()?;
             transaction.execute_batch(MARKET_MIGRATION)?;
+            transaction.execute_batch(LIFECYCLE_MIGRATION)?;
+            check_database(&transaction)?;
+            transaction.commit()?;
+        }
+        4 => {
+            let transaction = connection.transaction()?;
+            transaction.execute_batch(LIFECYCLE_MIGRATION)?;
             check_database(&transaction)?;
             transaction.commit()?;
         }
@@ -463,6 +472,7 @@ fn check_database(connection: &Connection) -> Result<()> {
         (2, "0002_standalone"),
         (3, "0003_matchday"),
         (4, "0004_market"),
+        (5, "0005_lifecycle"),
     ] {
         let migration: Option<String> = connection
             .query_row(

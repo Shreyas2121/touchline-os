@@ -51,6 +51,197 @@ impl Table {
 }
 pub(super) const TABLES: &[Table] = &[
     Table {
+        name: "boardObjectives",
+        columns: &[
+            Column {
+                name: "id",
+                kind: Kind::Text,
+            },
+            Column {
+                name: "campaignId",
+                kind: Kind::Text,
+            },
+            Column {
+                name: "seasonId",
+                kind: Kind::Text,
+            },
+            Column {
+                name: "clubId",
+                kind: Kind::Text,
+            },
+            Column {
+                name: "kind",
+                kind: Kind::Text,
+            },
+            Column {
+                name: "targetPosition",
+                kind: Kind::Integer,
+            },
+            Column {
+                name: "rewardCents",
+                kind: Kind::Integer,
+            },
+            Column {
+                name: "outcome",
+                kind: Kind::Text,
+            },
+            Column {
+                name: "engineVersion",
+                kind: Kind::Text,
+            },
+        ],
+    },
+    Table {
+        name: "seasonSettlements",
+        columns: &[
+            Column {
+                name: "id",
+                kind: Kind::Text,
+            },
+            Column {
+                name: "campaignId",
+                kind: Kind::Text,
+            },
+            Column {
+                name: "seasonId",
+                kind: Kind::Text,
+            },
+            Column {
+                name: "nextSeasonId",
+                kind: Kind::Text,
+            },
+            Column {
+                name: "engineVersion",
+                kind: Kind::Text,
+            },
+            Column {
+                name: "settledOn",
+                kind: Kind::Text,
+            },
+            Column {
+                name: "managedPosition",
+                kind: Kind::Integer,
+            },
+            Column {
+                name: "prizeCents",
+                kind: Kind::Integer,
+            },
+            Column {
+                name: "objectiveBonusCents",
+                kind: Kind::Integer,
+            },
+            Column {
+                name: "carryoverCents",
+                kind: Kind::Integer,
+            },
+            Column {
+                name: "allocationCents",
+                kind: Kind::Integer,
+            },
+            Column {
+                name: "tableJson",
+                kind: Kind::Text,
+            },
+        ],
+    },
+    Table {
+        name: "developmentSnapshots",
+        columns: &[
+            Column {
+                name: "id",
+                kind: Kind::Text,
+            },
+            Column {
+                name: "campaignId",
+                kind: Kind::Text,
+            },
+            Column {
+                name: "seasonId",
+                kind: Kind::Text,
+            },
+            Column {
+                name: "playerId",
+                kind: Kind::Text,
+            },
+            Column {
+                name: "period",
+                kind: Kind::Text,
+            },
+            Column {
+                name: "beforePace",
+                kind: Kind::Integer,
+            },
+            Column {
+                name: "beforeFinishing",
+                kind: Kind::Integer,
+            },
+            Column {
+                name: "beforePassing",
+                kind: Kind::Integer,
+            },
+            Column {
+                name: "beforeDribbling",
+                kind: Kind::Integer,
+            },
+            Column {
+                name: "beforeDefending",
+                kind: Kind::Integer,
+            },
+            Column {
+                name: "beforePhysical",
+                kind: Kind::Integer,
+            },
+            Column {
+                name: "afterPace",
+                kind: Kind::Integer,
+            },
+            Column {
+                name: "afterFinishing",
+                kind: Kind::Integer,
+            },
+            Column {
+                name: "afterPassing",
+                kind: Kind::Integer,
+            },
+            Column {
+                name: "afterDribbling",
+                kind: Kind::Integer,
+            },
+            Column {
+                name: "afterDefending",
+                kind: Kind::Integer,
+            },
+            Column {
+                name: "afterPhysical",
+                kind: Kind::Integer,
+            },
+            Column {
+                name: "beforeValueCents",
+                kind: Kind::Integer,
+            },
+            Column {
+                name: "afterValueCents",
+                kind: Kind::Integer,
+            },
+            Column {
+                name: "beforeStatus",
+                kind: Kind::Text,
+            },
+            Column {
+                name: "afterStatus",
+                kind: Kind::Text,
+            },
+            Column {
+                name: "points",
+                kind: Kind::Integer,
+            },
+            Column {
+                name: "engineVersion",
+                kind: Kind::Text,
+            },
+        ],
+    },
+    Table {
         name: "campaigns",
         columns: &[
             Column {
@@ -356,6 +547,18 @@ pub(super) const TABLES: &[Table] = &[
     Table {
         name: "ledgerEntries",
         columns: &[
+            Column {
+                name: "earningSeasonId",
+                kind: Kind::Text,
+            },
+            Column {
+                name: "settlementId",
+                kind: Kind::Text,
+            },
+            Column {
+                name: "awardKind",
+                kind: Kind::Text,
+            },
             Column {
                 name: "id",
                 kind: Kind::Text,

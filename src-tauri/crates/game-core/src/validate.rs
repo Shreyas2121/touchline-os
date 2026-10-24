@@ -64,7 +64,7 @@ pub fn validate_snapshot(snapshot: &CampaignSnapshot) -> Result<(), SnapshotErro
         snapshot.source_storage,
         snapshot.source_schema_version.get(),
     ) {
-        (crate::enums::SourceStorage::Sqlite, 2..=4) => {}
+        (crate::enums::SourceStorage::Sqlite, 2..=5) => {}
         _ => return Err(SnapshotError::UnsupportedVersion("source schema".into())),
     }
     if snapshot.campaign_revision.get() < 0 {
@@ -78,6 +78,14 @@ pub fn validate_snapshot(snapshot: &CampaignSnapshot) -> Result<(), SnapshotErro
 pub fn validate_campaign_tables(tables: &SnapshotTables) -> Result<(), SnapshotError> {
     require_len(tables.campaigns.len(), 1, 1, "campaigns")?;
     require_len(tables.seasons.len(), 1, 64, "seasons")?;
+    require_len(tables.board_objectives.len(), 0, 256, "boardObjectives")?;
+    require_len(tables.season_settlements.len(), 0, 64, "seasonSettlements")?;
+    require_len(
+        tables.development_snapshots.len(),
+        0,
+        16_000,
+        "developmentSnapshots",
+    )?;
     require_len(tables.leagues.len(), 0, 32, "leagues")?;
     require_len(tables.clubs.len(), 0, 256, "clubs")?;
     require_len(tables.players.len(), 0, 8_000, "players")?;
@@ -125,6 +133,56 @@ pub fn validate_campaign_tables(tables: &SnapshotTables) -> Result<(), SnapshotE
 }
 
 fn validate_tables(tables: &SnapshotTables) -> Result<(), SnapshotError> {
+    let mut objectives = BTreeSet::new();
+    for row in &tables.board_objectives {
+        require_range(row.target_position.get(), 1, 18, "objective position")?;
+        if !objectives.insert((
+            row.campaign_id.as_str(),
+            row.season_id.as_str(),
+            format!("{:?}", row.kind),
+        )) {
+            return Err(SnapshotError::Invalid("duplicate objective".into()));
+        }
+    }
+    let mut settlements = BTreeSet::new();
+    for row in &tables.season_settlements {
+        if !settlements.insert((row.campaign_id.as_str(), row.season_id.as_str())) {
+            return Err(SnapshotError::Invalid("duplicate settlement".into()));
+        }
+        require_date(&row.settled_on, "settled on")?;
+        require_range(row.managed_position.get(), 1, 18, "managed position")?;
+        validate_settlement_table(&row.table_json)?;
+    }
+    let mut development = BTreeSet::new();
+    for row in &tables.development_snapshots {
+        if !development.insert((
+            row.campaign_id.as_str(),
+            row.season_id.as_str(),
+            row.player_id.as_str(),
+            format!("{:?}", row.period),
+        )) {
+            return Err(SnapshotError::Invalid(
+                "duplicate development snapshot".into(),
+            ));
+        }
+        require_range(row.points.get(), -3, 4, "development points")?;
+        for attribute in [
+            row.before_pace,
+            row.before_finishing,
+            row.before_passing,
+            row.before_dribbling,
+            row.before_defending,
+            row.before_physical,
+            row.after_pace,
+            row.after_finishing,
+            row.after_passing,
+            row.after_dribbling,
+            row.after_defending,
+            row.after_physical,
+        ] {
+            require_range(attribute.get(), 0, 100, "development attribute")?;
+        }
+    }
     let mut fixture_keys = BTreeSet::new();
     let mut fixture_rounds = BTreeSet::new();
     for row in &tables.fixtures {
@@ -449,11 +507,58 @@ fn validate_rule(rule: &ConstitutionRule) -> Result<(), SnapshotError> {
 }
 
 fn validate_ledger(row: &crate::rows::LedgerEntryRow) -> Result<(), SnapshotError> {
+    let awards = [
+        row.earning_season_id.is_some(),
+        row.settlement_id.is_some(),
+        row.award_kind.is_some(),
+    ];
+    if awards.iter().any(|v| *v)
+        && (row.kind != LedgerKind::PrizeIncome || !awards.iter().all(|v| *v))
+    {
+        return Err(SnapshotError::Invalid("ledger award fields".into()));
+    }
     require_date(&row.effective_on, "ledger date")?;
     require_optional_bounded(row.note.as_deref(), 1, 4_000, "ledger note")?;
     let reversal = row.kind == LedgerKind::Reversal;
     if reversal != row.reverses_entry_id.is_some() {
         return Err(SnapshotError::Invalid("ledger reversal".into()));
+    }
+    Ok(())
+}
+
+fn validate_settlement_table(text: &str) -> Result<(), SnapshotError> {
+    let invalid = || SnapshotError::Invalid("settlement table".into());
+    let value: Value = serde_json::from_str(text).map_err(|_| invalid())?;
+    let rows = value.as_array().ok_or_else(invalid)?;
+    require_len(rows.len(), 0, 72, "settlement table")?;
+    for row in rows {
+        let object = row.as_object().ok_or_else(invalid)?;
+        let keys = [
+            "clubKey",
+            "leagueTier",
+            "position",
+            "points",
+            "goalDifference",
+            "goalsFor",
+            "prizeCents",
+        ];
+        if object.len() != keys.len() || keys.iter().any(|k| !object.contains_key(*k)) {
+            return Err(invalid());
+        }
+        require_key(
+            row["clubKey"].as_str().ok_or_else(invalid)?,
+            "table club key",
+        )?;
+        for (key, min, max) in [
+            ("leagueTier", 1, 4),
+            ("position", 1, 18),
+            ("points", 0, JS_MAX_SAFE_INTEGER),
+            ("goalDifference", -JS_MAX_SAFE_INTEGER, JS_MAX_SAFE_INTEGER),
+            ("goalsFor", 0, JS_MAX_SAFE_INTEGER),
+            ("prizeCents", 0, JS_MAX_SAFE_INTEGER),
+        ] {
+            require_range(row[key].as_i64().ok_or_else(invalid)?, min, max, key)?;
+        }
     }
     Ok(())
 }

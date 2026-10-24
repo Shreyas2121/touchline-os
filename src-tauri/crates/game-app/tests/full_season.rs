@@ -804,7 +804,7 @@ fn full_season_reopens_replays_reconciles_and_exports_within_limit() {
         bytes.len()
     );
     let exported = parse_snapshot(&bytes).unwrap();
-    assert_eq!(exported.source_schema_version, n(4));
+    assert_eq!(exported.source_schema_version, n(5));
     assert_eq!(exported.tables, finished);
     let restored = NativeStore::open(directory.0.join("restored.sqlite3")).unwrap();
     let session = MigrationSession::default();

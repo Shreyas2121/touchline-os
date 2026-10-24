@@ -249,6 +249,10 @@ pub enum PlayerLife {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
 pub enum AuditAction {
+    #[serde(rename = "development.apply")]
+    DevelopmentApply,
+    #[serde(rename = "season.settle")]
+    SeasonSettle,
     #[serde(rename = "campaign.create")]
     CampaignCreate,
     #[serde(rename = "campaign.rename")]
@@ -294,4 +298,36 @@ pub enum AuditAction {
 pub enum FixtureStatus {
     Scheduled,
     Played,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "snake_case")]
+pub enum ObjectiveKind {
+    LeagueTitle,
+    TopHalf,
+    AvoidLast,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "snake_case")]
+pub enum ObjectiveOutcome {
+    Pending,
+    Met,
+    Missed,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "snake_case")]
+pub enum DevelopmentPeriod {
+    Midseason,
+    SeasonEnd,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "snake_case")]
+pub enum AwardKind {
+    LeaguePrize,
+    LeagueTitle,
+    TopHalf,
+    AvoidLast,
 }

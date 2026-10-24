@@ -4,6 +4,7 @@ use crate::enums::{
     OfferStatus, OpenClosed, PlayerLife, Position, PositionGroup, RecordSource, RegistrationStatus,
     RulesMode, SeasonStatus, SquadTier, TransferKind,
 };
+use crate::enums::{AwardKind, DevelopmentPeriod, ObjectiveKind, ObjectiveOutcome};
 use crate::ids::{EntityId, Euro, VersionOne};
 use crate::nulls::nullable;
 use crate::numbers::{MoneyCents, SafeInt};
@@ -222,6 +223,12 @@ pub struct ConstitutionRow {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct LedgerEntryRow {
+    #[serde(default, deserialize_with = "nullable")]
+    pub earning_season_id: Option<EntityId>,
+    #[serde(default, deserialize_with = "nullable")]
+    pub settlement_id: Option<EntityId>,
+    #[serde(default, deserialize_with = "nullable")]
+    pub award_kind: Option<AwardKind>,
     pub id: EntityId,
     pub campaign_id: EntityId,
     pub season_id: EntityId,
@@ -487,6 +494,12 @@ pub struct PlayerSimulationStateRow {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[serde(tag = "kind", deny_unknown_fields)]
 pub enum OutcomeRef {
+    #[serde(rename = "settlement")]
+    Settlement { id: EntityId },
+    #[serde(rename = "objective")]
+    Objective { id: EntityId },
+    #[serde(rename = "development")]
+    Development { id: EntityId },
     #[serde(rename = "fixture")]
     Fixture { id: EntityId },
     #[serde(rename = "match")]
@@ -579,6 +592,12 @@ pub struct SimulatedAppearanceRow {
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct SnapshotTables {
     #[serde(default)]
+    pub board_objectives: Vec<BoardObjectiveRow>,
+    #[serde(default)]
+    pub season_settlements: Vec<SeasonSettlementRow>,
+    #[serde(default)]
+    pub development_snapshots: Vec<DevelopmentSnapshotRow>,
+    #[serde(default)]
     pub fixtures: Vec<FixtureRow>,
     #[serde(default)]
     pub simulated_matches: Vec<SimulatedMatchRow>,
@@ -608,4 +627,63 @@ pub struct SnapshotTables {
     pub club_simulation_states: Vec<ClubSimulationStateRow>,
     pub player_simulation_states: Vec<PlayerSimulationStateRow>,
     pub simulation_receipts: Vec<SimulationReceiptRow>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct BoardObjectiveRow {
+    pub id: EntityId,
+    pub campaign_id: EntityId,
+    pub season_id: EntityId,
+    pub club_id: EntityId,
+    pub kind: ObjectiveKind,
+    pub target_position: SafeInt,
+    pub reward_cents: MoneyCents,
+    pub outcome: ObjectiveOutcome,
+    pub engine_version: VersionOne,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct SeasonSettlementRow {
+    pub id: EntityId,
+    pub campaign_id: EntityId,
+    pub season_id: EntityId,
+    pub next_season_id: EntityId,
+    pub engine_version: VersionOne,
+    pub settled_on: String,
+    pub managed_position: SafeInt,
+    pub prize_cents: MoneyCents,
+    pub objective_bonus_cents: MoneyCents,
+    pub carryover_cents: MoneyCents,
+    pub allocation_cents: MoneyCents,
+    pub table_json: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct DevelopmentSnapshotRow {
+    pub id: EntityId,
+    pub campaign_id: EntityId,
+    pub season_id: EntityId,
+    pub player_id: EntityId,
+    pub period: DevelopmentPeriod,
+    pub before_pace: SafeInt,
+    pub before_finishing: SafeInt,
+    pub before_passing: SafeInt,
+    pub before_dribbling: SafeInt,
+    pub before_defending: SafeInt,
+    pub before_physical: SafeInt,
+    pub after_pace: SafeInt,
+    pub after_finishing: SafeInt,
+    pub after_passing: SafeInt,
+    pub after_dribbling: SafeInt,
+    pub after_defending: SafeInt,
+    pub after_physical: SafeInt,
+    pub before_value_cents: MoneyCents,
+    pub after_value_cents: MoneyCents,
+    pub before_status: PlayerLife,
+    pub after_status: PlayerLife,
+    pub points: SafeInt,
+    pub engine_version: VersionOne,
 }

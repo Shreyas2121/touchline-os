@@ -146,9 +146,9 @@ fn schema_three_upgrades_to_empty_negotiations_and_preserves_rows() {
     assert_eq!(
         db.pragma_query_value(None, "user_version", |r| r.get::<_, i64>(0))
             .unwrap(),
-        4
+        5
     );
-    assert_eq!(count(&path, "schemaMigrations"), 3);
+    assert_eq!(count(&path, "schemaMigrations"), 4);
     let compulsory: i64 = db
         .query_row("SELECT compulsory FROM offers", [], |r| r.get(0))
         .unwrap();
@@ -170,7 +170,7 @@ fn legacy_snapshot_exports_explicit_empty_schema_three_collections() {
     let exported = store
         .export_snapshot("save-b", "export", "2026-10-22T12:00:00.000Z")
         .unwrap();
-    assert_eq!(exported.source_schema_version.get(), 4);
+    assert_eq!(exported.source_schema_version.get(), 5);
     let encoded = bytes(&serde_json::to_value(exported).unwrap());
     let parsed: Value = serde_json::from_slice(&encoded).unwrap();
     for table in [
@@ -178,6 +178,9 @@ fn legacy_snapshot_exports_explicit_empty_schema_three_collections() {
         "simulatedMatches",
         "simulatedAppearances",
         "negotiations",
+        "boardObjectives",
+        "seasonSettlements",
+        "developmentSnapshots",
     ] {
         assert_eq!(parsed["tables"][table], json!([]));
     }
@@ -199,7 +202,7 @@ fn matchday_rows_round_trip_and_sql_enforces_identities_and_scope() {
     let export = store
         .export_snapshot("save-b", "export", "2026-10-22T12:00:00.000Z")
         .unwrap();
-    assert_eq!(export.source_schema_version.get(), 4);
+    assert_eq!(export.source_schema_version.get(), 5);
     assert!(export.tables.negotiations.is_empty());
     assert!(!export.tables.offers[0].compulsory);
     assert!(export.tables.offers[0].negotiation_id.is_none());
@@ -255,7 +258,7 @@ fn agreed_negotiation_and_offer_snapshot_round_trip() {
     let export = store
         .export_snapshot("save-b", "export", "2026-10-22T12:00:00.000Z")
         .unwrap();
-    assert_eq!(export.source_schema_version.get(), 4);
+    assert_eq!(export.source_schema_version.get(), 5);
     assert_eq!(export.tables.negotiations.len(), 1);
     assert_eq!(
         export.tables.negotiations[0].status,
@@ -388,7 +391,7 @@ fn invalid_matchday_values_and_duplicate_players_fail_before_import() {
 #[test]
 fn unsupported_versions_leave_database_bytes_unchanged() {
     let dir = Directory::new();
-    for version in [1, 2, 5, 99, -1] {
+    for version in [1, 2, 6, 99, -1] {
         let path = dir.file(&format!("unsupported-{version}.sqlite3"));
         let db = Connection::open(&path).unwrap();
         db.execute_batch(
@@ -727,7 +730,7 @@ fn invalid_scope_references_keys_numbers_and_versions_never_promote() {
             json!(9_007_199_254_740_992_i64),
         ),
         ("/campaignRevision", json!(999)),
-        ("/sourceSchemaVersion", json!(5)),
+        ("/sourceSchemaVersion", json!(6)),
         ("/formatVersion", json!(2)),
     ] {
         let mut source = value("save-b");
@@ -766,9 +769,9 @@ fn fresh_and_version_zero_upgrade_are_transactional_and_future_versions_refuse()
     assert_eq!(
         db.query_row("PRAGMA user_version", [], |r| r.get::<_, i64>(0))
             .unwrap(),
-        4
+        5
     );
-    assert_eq!(count(&path, "schemaMigrations"), 3);
+    assert_eq!(count(&path, "schemaMigrations"), 4);
     drop(store);
     drop(db);
     drop(Store::open(&path).unwrap());
@@ -1052,4 +1055,231 @@ fn concurrent_retries_share_one_commit_and_reads_use_committed_wal_state() {
         after["campaigns"][0]["revision"].as_i64().unwrap(),
         before["campaigns"][0]["revision"].as_i64().unwrap() + 1
     );
+}
+
+#[test]
+fn schema_four_upgrades_preserving_market_and_match_rows() {
+    let dir = Directory::new();
+    let path = dir.file("schema-four.sqlite3");
+    let mut db = Connection::open(&path).unwrap();
+    db.execute_batch(INITIAL_MIGRATION).unwrap();
+    db.execute_batch(MATCHDAY_MIGRATION).unwrap();
+    db.execute_batch(game_store::MARKET_MIGRATION).unwrap();
+    let source = market_source();
+    insert_rows(&mut db, &source);
+    drop(db);
+    let store = Store::open(&path).unwrap();
+    assert_eq!(tables(&store, "save-b"), sorted_tables(&bytes(&source)));
+    for table in [
+        "boardObjectives",
+        "seasonSettlements",
+        "developmentSnapshots",
+    ] {
+        assert_eq!(count(&path, table), 0);
+    }
+    assert_eq!(count(&path, "negotiations"), 1);
+    assert_eq!(count(&path, "simulatedMatches"), 1);
+    assert_eq!(count(&path, "campaigns"), 1);
+    assert_eq!(count(&path, "schemaMigrations"), 4);
+    let exported = store
+        .export_snapshot("save-b", "export", "2026-10-24T12:00:00.000Z")
+        .unwrap();
+    assert_eq!(exported.source_schema_version.get(), 5);
+    assert!(exported.tables.board_objectives.is_empty());
+    assert!(exported.tables.season_settlements.is_empty());
+    assert!(exported.tables.development_snapshots.is_empty());
+    assert_eq!(
+        Connection::open(path)
+            .unwrap()
+            .pragma_query_value(None, "user_version", |r| r.get::<_, i64>(0))
+            .unwrap(),
+        5
+    );
+}
+
+fn lifecycle_source() -> Value {
+    let mut source = market_source();
+    source["sourceSchemaVersion"] = json!(5);
+    let t = &mut source["tables"];
+    let campaign = t["campaigns"][0]["id"].clone();
+    let season = t["seasons"][0]["id"].clone();
+    let club = t["clubs"][0]["id"].clone();
+    let player = t["players"][0]["id"].clone();
+    t["boardObjectives"] = json!([{"id":"objective-1", "campaignId":campaign, "seasonId":season,
+        "clubId":club, "kind":"top_half", "targetPosition":9, "rewardCents":1000,
+        "outcome":"pending", "engineVersion":"1"}]);
+    t["seasonSettlements"] = json!([{"id":"settlement-1", "campaignId":campaign, "seasonId":season,
+        "nextSeasonId":season, "engineVersion":"1", "settledOn":"2027-06-30",
+        "managedPosition":9, "prizeCents":1000, "objectiveBonusCents":1000,
+        "carryoverCents":0, "allocationCents":0, "tableJson":"[]"}]);
+    let mut development = json!({"id":"development-1", "campaignId":campaign, "seasonId":season,
+        "playerId":player, "period":"midseason", "beforeValueCents":1000, "afterValueCents":1100,
+        "beforeStatus":"active", "afterStatus":"active", "points":1, "engineVersion":"1"});
+    for prefix in ["before", "after"] {
+        for attribute in [
+            "Pace",
+            "Finishing",
+            "Passing",
+            "Dribbling",
+            "Defending",
+            "Physical",
+        ] {
+            development[format!("{prefix}{attribute}")] = json!(50);
+        }
+    }
+    t["developmentSnapshots"] = json!([development]);
+    let mut ledger = t["ledgerEntries"][0].clone();
+    ledger["id"] = json!("award-1");
+    ledger["kind"] = json!("prize_income");
+    ledger["earningSeasonId"] = season;
+    ledger["settlementId"] = json!("settlement-1");
+    ledger["awardKind"] = json!("top_half");
+    t["ledgerEntries"].as_array_mut().unwrap().push(ledger);
+    t["simulationReceipts"][0]["outcomeRefs"] = json!([
+        {"kind":"settlement", "id":"settlement-1"}, {"kind":"objective", "id":"objective-1"},
+        {"kind":"development", "id":"development-1"}]);
+    t["auditEvents"][0]["actionType"] = json!("season.settle");
+    source
+}
+
+#[test]
+fn lifecycle_rows_round_trip_reopen_and_enforce_sql_contracts() {
+    let dir = Directory::new();
+    let path = dir.file("lifecycle.sqlite3");
+    let source = lifecycle_source();
+    let store = Store::open(&path).unwrap();
+    store.import_snapshot(&bytes(&source)).unwrap();
+    drop(store);
+    let store = Store::open(&path).unwrap();
+    let export = store
+        .export_snapshot("save-b", "export", "2026-10-24T12:00:00.000Z")
+        .unwrap();
+    assert_eq!(export.source_schema_version.get(), 5);
+    assert_eq!(export.tables.board_objectives.len(), 1);
+    assert_eq!(export.tables.season_settlements[0].table_json, "[]");
+    assert_eq!(export.tables.development_snapshots[0].points.get(), 1);
+    let other = Store::open(dir.file("reimport.sqlite3")).unwrap();
+    other
+        .import_snapshot(&serde_json::to_vec(&export).unwrap())
+        .unwrap();
+    assert_eq!(tables(&other, "save-b"), sorted_tables(&bytes(&source)));
+    let db = Connection::open(&path).unwrap();
+    db.pragma_update(None, "foreign_keys", true).unwrap();
+    for table in [
+        "boardObjectives",
+        "seasonSettlements",
+        "developmentSnapshots",
+    ] {
+        let columns = db
+            .prepare(&format!("PRAGMA table_info({table})"))
+            .unwrap()
+            .query_map([], |r| r.get::<_, String>(1))
+            .unwrap()
+            .collect::<Result<Vec<_>, _>>()
+            .unwrap();
+        let selection = columns
+            .iter()
+            .map(|c| if c == "id" { "'duplicate'" } else { c })
+            .collect::<Vec<_>>()
+            .join(",");
+        assert!(db
+            .execute(
+                &format!("INSERT INTO {table} SELECT {selection} FROM {table}"),
+                []
+            )
+            .is_err());
+    }
+    for sql in [
+        "UPDATE developmentSnapshots SET points=5",
+        "UPDATE developmentSnapshots SET engineVersion='2'",
+        "UPDATE developmentSnapshots SET afterPace=101",
+        "UPDATE boardObjectives SET rewardCents=-1",
+        "UPDATE seasonSettlements SET nextSeasonId='missing'",
+        "UPDATE auditEvents SET actionType='development.apply'",
+    ] {
+        let result = db.execute(sql, []);
+        if sql.contains("development.apply") {
+            assert!(result.is_ok());
+        } else {
+            assert!(result.is_err(), "accepted {sql}");
+        }
+    }
+}
+
+#[test]
+fn invalid_lifecycle_data_is_rejected_before_import() {
+    let dir = Directory::new();
+    let path = dir.file("invalid-lifecycle.sqlite3");
+    let store = Store::open(&path).unwrap();
+    for (pointer, bad) in [
+        ("/tables/developmentSnapshots/0/points", json!(5)),
+        ("/tables/developmentSnapshots/0/engineVersion", json!("2")),
+        ("/tables/developmentSnapshots/0/beforePace", json!(-1)),
+        ("/tables/boardObjectives/0/rewardCents", json!(-1)),
+        ("/tables/ledgerEntries/1/kind", json!("player_sale")),
+        ("/tables/ledgerEntries/1/awardKind", json!(null)),
+        (
+            "/tables/seasonSettlements/0/tableJson",
+            json!("[{\"unexpected\":1}]"),
+        ),
+        ("/tables/seasonSettlements/0/nextSeasonId", json!("missing")),
+        (
+            "/tables/simulationReceipts/0/outcomeRefs/0/id",
+            json!("missing"),
+        ),
+    ] {
+        let mut source = lifecycle_source();
+        *source.pointer_mut(pointer).unwrap() = bad;
+        assert!(
+            store.import_snapshot(&bytes(&source)).is_err(),
+            "accepted {pointer}"
+        );
+    }
+    let mut partial = lifecycle_source();
+    partial["tables"]["ledgerEntries"][1]
+        .as_object_mut()
+        .unwrap()
+        .remove("settlementId");
+    partial["tables"]["ledgerEntries"][1]
+        .as_object_mut()
+        .unwrap()
+        .remove("awardKind");
+    assert!(store.import_snapshot(&bytes(&partial)).is_err());
+    for table in [
+        "boardObjectives",
+        "seasonSettlements",
+        "developmentSnapshots",
+    ] {
+        let mut source = lifecycle_source();
+        let mut row = source["tables"][table][0].clone();
+        row["id"] = json!("duplicate");
+        source["tables"][table].as_array_mut().unwrap().push(row);
+        assert!(store.import_snapshot(&bytes(&source)).is_err());
+    }
+    assert_eq!(count(&path, "campaigns"), 0);
+}
+
+#[test]
+fn settlement_table_json_requires_the_bounded_compact_shape() {
+    let mut source = lifecycle_source();
+    let row = json!({"clubKey":"club:one", "leagueTier":1, "position":1,
+        "points":80, "goalDifference":42, "goalsFor":65, "prizeCents":1000});
+    source["tables"]["seasonSettlements"][0]["tableJson"] =
+        json!(Value::Array(vec![row.clone(); 72]).to_string());
+    assert!(parse_snapshot(&bytes(&source)).is_ok());
+    source["tables"]["seasonSettlements"][0]["tableJson"] =
+        json!(Value::Array(vec![row.clone(); 73]).to_string());
+    assert!(parse_snapshot(&bytes(&source)).is_err());
+    for (key, bad) in [
+        ("extra", json!(true)),
+        ("points", json!(null)),
+        ("prizeCents", json!(-1)),
+        ("leagueTier", json!(5)),
+    ] {
+        let mut malformed = row.clone();
+        malformed[key] = bad;
+        source["tables"]["seasonSettlements"][0]["tableJson"] =
+            json!(json!([malformed]).to_string());
+        assert!(parse_snapshot(&bytes(&source)).is_err());
+    }
 }
