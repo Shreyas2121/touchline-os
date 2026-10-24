@@ -298,7 +298,7 @@ fn summer_window_conserves_balances_and_replays_ticks() {
         .unwrap()
         .query_row("PRAGMA user_version", [], |row| row.get(0))
         .unwrap();
-    assert_eq!(version, 4);
+    assert_eq!(version, 5);
     let campaign = career(&store, 1);
     let original = balance_sum(&tables(&store, &campaign), &campaign);
     let start = DateOnly::parse("2026-07-01").unwrap();
