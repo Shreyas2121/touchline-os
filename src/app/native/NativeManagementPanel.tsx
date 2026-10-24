@@ -66,7 +66,7 @@ export function NativeManagementPanel({
       const result = await client.manage(pending.current)
       pending.current = null
       onSaved(result)
-      if (result.deleted) navigate('/')
+      if (result.deleted) await navigate('/')
     } catch (error) {
       setError(mapInvokeError(error).message)
     } finally {

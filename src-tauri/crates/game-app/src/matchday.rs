@@ -1,10 +1,10 @@
-use crate::{store_error, CommandError, EntityId, NativeStore, SafeInt};
+use crate::{CommandError, EntityId, NativeStore, SafeInt};
 use game_core::{matchday, progression::AdvanceOutcome, SnapshotTables};
 
 fn tables(store: &NativeStore, campaign_id: &EntityId) -> Result<SnapshotTables, CommandError> {
     store
         .read_campaign(campaign_id.as_str())
-        .map_err(store_error)
+        .map_err(|error| crate::reads::store_error_at("matchday.tables", error))
 }
 pub fn preview_matchday(
     store: &NativeStore,
@@ -17,7 +17,9 @@ pub fn sim_matchday(
     request: matchday::SimMatchdayRequest,
 ) -> Result<AdvanceOutcome, CommandError> {
     let prepared = matchday::prepare(&tables(store, &request.campaign_id)?, &request)?;
-    store.matchday(request, prepared).map_err(store_error)
+    store
+        .matchday(request, prepared)
+        .map_err(|error| crate::reads::store_error_at("sim_matchday", error))
 }
 pub fn matchday_view(
     store: &NativeStore,

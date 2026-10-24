@@ -1,4 +1,4 @@
-use crate::{settlement::settle_transfer, store_error, CommandError, NativeStore};
+use crate::{settlement::settle_transfer, CommandError, NativeStore};
 use game_core::{
     market_ops::{
         self, CloseWindowRequest, MarketCommand, MarketPreview, OfferDecision,
@@ -10,7 +10,9 @@ use game_core::{
 };
 
 fn tables(store: &NativeStore, campaign_id: &str) -> Result<SnapshotTables, CommandError> {
-    store.read_campaign(campaign_id).map_err(store_error)
+    store
+        .read_campaign(campaign_id)
+        .map_err(|error| crate::reads::store_error_at("market.tables", error))
 }
 
 pub fn preview_market(
@@ -33,7 +35,7 @@ pub fn run_market(
 ) -> Result<AdvanceOutcome, CommandError> {
     store
         .market(MarketCommand::Run(request))
-        .map_err(store_error)
+        .map_err(|error| crate::reads::store_error_at("run_market", error))
 }
 
 pub fn close_window(
@@ -42,7 +44,7 @@ pub fn close_window(
 ) -> Result<AdvanceOutcome, CommandError> {
     store
         .market(MarketCommand::Close(request))
-        .map_err(store_error)
+        .map_err(|error| crate::reads::store_error_at("close_window", error))
 }
 
 pub fn propose_transfer(
@@ -51,7 +53,7 @@ pub fn propose_transfer(
 ) -> Result<AdvanceOutcome, CommandError> {
     store
         .market(MarketCommand::Propose(request))
-        .map_err(store_error)
+        .map_err(|error| crate::reads::store_error_at("propose_transfer", error))
 }
 
 pub fn respond_negotiation(
@@ -60,7 +62,7 @@ pub fn respond_negotiation(
 ) -> Result<AdvanceOutcome, CommandError> {
     store
         .market(MarketCommand::RespondNegotiation(request))
-        .map_err(store_error)
+        .map_err(|error| crate::reads::store_error_at("respond_negotiation", error))
 }
 
 pub fn respond_offer(
@@ -76,5 +78,5 @@ pub fn respond_offer(
     }
     store
         .market(MarketCommand::RejectOffer(request))
-        .map_err(store_error)
+        .map_err(|error| crate::reads::store_error_at("respond_offer", error))
 }

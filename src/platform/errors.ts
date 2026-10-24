@@ -1,3 +1,5 @@
+import { reportDiagnostic } from './diagnostics'
+
 export const gameClientErrorCodes = [
   'UNAVAILABLE',
   'VALIDATION',
@@ -37,13 +39,17 @@ function readStructured(value: unknown): GameClientError | null {
   return null
 }
 
-export function mapInvokeError(error: unknown): GameClientError {
+export function mapInvokeError(
+  error: unknown,
+  operation = 'native.invoke',
+): GameClientError {
   const direct = readStructured(error)
   if (direct) return direct
   if (typeof error === 'string') {
     const parsed = readStructured(tryParse(error))
     if (parsed) return parsed
   }
+  reportDiagnostic(operation, 'unexpected-invoke', error)
   return {
     code: 'INTERNAL',
     message: 'The native shell returned an unexpected error.',

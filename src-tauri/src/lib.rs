@@ -13,7 +13,10 @@ async fn preview_matchday(
     campaign_id: game_app::EntityId,
 ) -> Result<game_app::MatchdayPreview, CommandError> {
     let store = store.inner().clone();
-    blocking(move || game_app::preview_matchday(&store, campaign_id)).await
+    blocking("preview_matchday", move || {
+        game_app::preview_matchday(&store, campaign_id)
+    })
+    .await
 }
 #[tauri::command]
 async fn preview_market(
@@ -21,7 +24,10 @@ async fn preview_market(
     campaign_id: game_app::EntityId,
 ) -> Result<game_app::MarketPreview, CommandError> {
     let store = store.inner().clone();
-    blocking(move || game_app::preview_market(&store, campaign_id)).await
+    blocking("preview_market", move || {
+        game_app::preview_market(&store, campaign_id)
+    })
+    .await
 }
 #[tauri::command]
 async fn transfer_board(
@@ -29,7 +35,10 @@ async fn transfer_board(
     campaign_id: game_app::EntityId,
 ) -> Result<game_app::TransferBoard, CommandError> {
     let store = store.inner().clone();
-    blocking(move || game_app::transfer_board(&store, campaign_id)).await
+    blocking("transfer_board", move || {
+        game_app::transfer_board(&store, campaign_id)
+    })
+    .await
 }
 #[tauri::command]
 async fn run_market(
@@ -37,7 +46,7 @@ async fn run_market(
     request: game_app::RunMarketRequest,
 ) -> Result<game_app::AdvanceOutcome, CommandError> {
     let store = store.inner().clone();
-    blocking(move || game_app::run_market(&store, request)).await
+    blocking("run_market", move || game_app::run_market(&store, request)).await
 }
 #[tauri::command]
 async fn close_window(
@@ -45,7 +54,10 @@ async fn close_window(
     request: game_app::CloseWindowRequest,
 ) -> Result<game_app::AdvanceOutcome, CommandError> {
     let store = store.inner().clone();
-    blocking(move || game_app::close_window(&store, request)).await
+    blocking("close_window", move || {
+        game_app::close_window(&store, request)
+    })
+    .await
 }
 #[tauri::command]
 async fn propose_transfer(
@@ -53,7 +65,10 @@ async fn propose_transfer(
     request: game_app::ProposeTransferRequest,
 ) -> Result<game_app::AdvanceOutcome, CommandError> {
     let store = store.inner().clone();
-    blocking(move || game_app::propose_transfer(&store, request)).await
+    blocking("propose_transfer", move || {
+        game_app::propose_transfer(&store, request)
+    })
+    .await
 }
 #[tauri::command]
 async fn respond_negotiation(
@@ -61,7 +76,10 @@ async fn respond_negotiation(
     request: game_app::RespondNegotiationRequest,
 ) -> Result<game_app::AdvanceOutcome, CommandError> {
     let store = store.inner().clone();
-    blocking(move || game_app::respond_negotiation(&store, request)).await
+    blocking("respond_negotiation", move || {
+        game_app::respond_negotiation(&store, request)
+    })
+    .await
 }
 #[tauri::command]
 async fn respond_offer(
@@ -69,7 +87,10 @@ async fn respond_offer(
     request: game_app::RespondOfferRequest,
 ) -> Result<game_app::AdvanceOutcome, CommandError> {
     let store = store.inner().clone();
-    blocking(move || game_app::respond_offer(&store, request)).await
+    blocking("respond_offer", move || {
+        game_app::respond_offer(&store, request)
+    })
+    .await
 }
 #[tauri::command]
 async fn settle_transfer(
@@ -77,7 +98,10 @@ async fn settle_transfer(
     request: game_app::SettleTransferRequest,
 ) -> Result<game_app::AdvanceOutcome, CommandError> {
     let store = store.inner().clone();
-    blocking(move || game_app::settle_transfer(&store, request)).await
+    blocking("settle_transfer", move || {
+        game_app::settle_transfer(&store, request)
+    })
+    .await
 }
 #[tauri::command]
 async fn sim_matchday(
@@ -85,7 +109,10 @@ async fn sim_matchday(
     request: game_app::SimMatchdayRequest,
 ) -> Result<game_app::AdvanceOutcome, CommandError> {
     let store = store.inner().clone();
-    blocking(move || game_app::sim_matchday(&store, request)).await
+    blocking("sim_matchday", move || {
+        game_app::sim_matchday(&store, request)
+    })
+    .await
 }
 #[tauri::command]
 async fn matchday_view(
@@ -94,7 +121,10 @@ async fn matchday_view(
     round: Option<game_app::SafeInt>,
 ) -> Result<game_app::MatchdayView, CommandError> {
     let store = store.inner().clone();
-    blocking(move || game_app::matchday_view(&store, campaign_id, round)).await
+    blocking("matchday_view", move || {
+        game_app::matchday_view(&store, campaign_id, round)
+    })
+    .await
 }
 #[tauri::command]
 async fn player_planning(
@@ -103,10 +133,10 @@ async fn player_planning(
     player_id: game_app::EntityId,
 ) -> Result<game_app::PlayerPlanning, CommandError> {
     let store = store.inner().clone();
-    blocking(move || {
+    blocking("player_planning", move || {
         store
             .planning(campaign_id, player_id)
-            .map_err(game_app::store_error)
+            .map_err(|error| game_app::store_error_at("player_planning", error))
     })
     .await
 }
@@ -114,7 +144,10 @@ async fn player_planning(
 async fn preview_creation(
     request: game_app::CreationRequest,
 ) -> Result<game_app::ClubChoices, CommandError> {
-    blocking(move || game_app::preview_creation(request)).await
+    blocking("preview_creation", move || {
+        game_app::preview_creation(request)
+    })
+    .await
 }
 #[tauri::command]
 async fn preview_time(
@@ -122,7 +155,10 @@ async fn preview_time(
     campaign_id: game_app::EntityId,
 ) -> Result<game_app::TimePreview, CommandError> {
     let store = store.inner().clone();
-    blocking(move || game_app::preview_time(&store, campaign_id)).await
+    blocking("preview_time", move || {
+        game_app::preview_time(&store, campaign_id)
+    })
+    .await
 }
 #[tauri::command]
 async fn advance_time(
@@ -130,7 +166,10 @@ async fn advance_time(
     request: game_app::AdvanceRequest,
 ) -> Result<game_app::AdvanceOutcome, CommandError> {
     let store = store.inner().clone();
-    blocking(move || game_app::advance_time(&store, request)).await
+    blocking("advance_time", move || {
+        game_app::advance_time(&store, request)
+    })
+    .await
 }
 #[tauri::command]
 async fn manage_campaign(
@@ -138,7 +177,7 @@ async fn manage_campaign(
     command: game_app::ManagementCommand,
 ) -> Result<game_app::ManagementOutcome, CommandError> {
     let store = store.inner().clone();
-    blocking(move || game_app::manage(&store, command)).await
+    blocking("manage_campaign", move || game_app::manage(&store, command)).await
 }
 #[tauri::command]
 async fn create_career(
@@ -146,15 +185,30 @@ async fn create_career(
     request: game_app::CreationRequest,
 ) -> Result<game_app::ManagementOutcome, CommandError> {
     let store = store.inner().clone();
-    blocking(move || game_app::create_career(&store, request)).await
+    blocking("create_career", move || {
+        game_app::create_career(&store, request)
+    })
+    .await
 }
 async fn blocking<T: Send + 'static>(
+    operation: &'static str,
     work: impl FnOnce() -> Result<T, CommandError> + Send + 'static,
+) -> Result<T, CommandError> {
+    blocking_with(operation, work, game_app::diagnostics::local).await
+}
+
+async fn blocking_with<T: Send + 'static>(
+    operation: &'static str,
+    work: impl FnOnce() -> Result<T, CommandError> + Send + 'static,
+    sink: impl FnOnce(game_app::diagnostics::Diagnostic<'_, tauri::Error>),
 ) -> Result<T, CommandError> {
     tauri::async_runtime::spawn_blocking(work)
         .await
-        .map_err(|_| CommandError::Internal {
-            message: "The native operation could not finish.".into(),
+        .map_err(|cause| {
+            game_app::diagnostics::emit(operation, "blocking-join", &cause, sink);
+            CommandError::Internal {
+                message: "The native operation could not finish.".into(),
+            }
         })?
 }
 
@@ -164,7 +218,12 @@ async fn list_campaigns(
     page: game_app::SafeInt,
 ) -> Result<game_app::CampaignPage, CommandError> {
     let store = store.inner().clone();
-    blocking(move || store.campaigns(page.get()).map_err(game_app::store_error)).await
+    blocking("list_campaigns", move || {
+        store
+            .campaigns(page.get())
+            .map_err(|error| game_app::store_error_at("list_campaigns", error))
+    })
+    .await
 }
 #[tauri::command]
 async fn read_screen(
@@ -172,7 +231,7 @@ async fn read_screen(
     query: game_app::ScreenQuery,
 ) -> Result<game_app::ScreenModel, CommandError> {
     let store = store.inner().clone();
-    blocking(move || game_app::read_screen(&store, query)).await
+    blocking("read_screen", move || game_app::read_screen(&store, query)).await
 }
 #[tauri::command]
 async fn read_player(
@@ -181,10 +240,10 @@ async fn read_player(
     player_id: game_app::EntityId,
 ) -> Result<game_app::PlayerRow, CommandError> {
     let store = store.inner().clone();
-    blocking(move || {
+    blocking("read_player", move || {
         store
             .player(campaign_id, player_id)
-            .map_err(game_app::store_error)
+            .map_err(|error| game_app::store_error_at("read_player", error))
     })
     .await
 }
@@ -194,7 +253,7 @@ async fn preview_policy(
     query: game_app::PreviewQuery,
 ) -> Result<game_app::NativePreview, CommandError> {
     let store = store.inner().clone();
-    blocking(move || game_app::preview(&store, query)).await
+    blocking("preview_policy", move || game_app::preview(&store, query)).await
 }
 #[tauri::command]
 async fn select_import(
@@ -202,7 +261,7 @@ async fn select_import(
     session: tauri::State<'_, Imports>,
 ) -> Result<Option<game_app::MigrationSummary>, CommandError> {
     let session = session.inner().clone();
-    blocking(move || {
+    blocking("select_import", move || {
         session.clear()?;
         let selected = app
             .dialog()
@@ -227,7 +286,7 @@ async fn confirm_import(
 ) -> Result<game_app::MigrationResult, CommandError> {
     let store = store.inner().clone();
     let session = session.inner().clone();
-    blocking(move || session.confirm(&store, &token)).await
+    blocking("confirm_import", move || session.confirm(&store, &token)).await
 }
 #[tauri::command]
 fn cancel_import(session: tauri::State<'_, Imports>) -> Result<(), CommandError> {
@@ -242,7 +301,7 @@ async fn export_campaign(
     exported_at: String,
 ) -> Result<bool, CommandError> {
     let store = store.inner().clone();
-    blocking(move || {
+    blocking("export_campaign", move || {
         let selected = app
             .dialog()
             .file()
@@ -271,7 +330,7 @@ async fn backup_database(
     store: tauri::State<'_, Store>,
 ) -> Result<bool, CommandError> {
     let store = store.inner().clone();
-    blocking(move || {
+    blocking("backup_database", move || {
         let selected = app
             .dialog()
             .file()
@@ -296,15 +355,22 @@ pub fn isolated_data_dir(app_data_dir: &Path, profile: &str) -> PathBuf {
 fn prepare_profile_dir(app: &tauri::AppHandle) -> Result<Profile, CommandError> {
     let override_profile = std::env::var("TOUCHLINE_PROFILE").ok();
     let profile = Profile::resolve(cfg!(debug_assertions), override_profile.as_deref())?;
-    let root = app
-        .path()
-        .app_local_data_dir()
-        .map_err(|_| CommandError::Internal {
+    let root = app.path().app_local_data_dir().map_err(|cause| {
+        game_app::diagnostics::report("prepare_profile_dir", "app-data-directory", &cause);
+        CommandError::Internal {
             message: "The app data directory is unavailable.".into(),
-        })?;
+        }
+    })?;
     let directory = isolated_data_dir(&root, profile.as_str());
-    std::fs::create_dir_all(&directory).map_err(|_| CommandError::Internal {
-        message: "The app data directory could not be prepared.".into(),
+    std::fs::create_dir_all(&directory).map_err(|cause| {
+        game_app::diagnostics::report(
+            "prepare_profile_dir",
+            &format!("io:{:?}", cause.kind()),
+            &cause,
+        );
+        CommandError::Internal {
+            message: "The app data directory could not be prepared.".into(),
+        }
     })?;
     Ok(profile)
 }
@@ -363,6 +429,40 @@ pub fn run() {
 mod tests {
     use super::isolated_data_dir;
     use std::path::Path;
+
+    #[test]
+    fn join_failure_reports_once_and_keeps_the_public_error_safe() {
+        let mut reports = 0;
+        let result = tauri::async_runtime::block_on(super::blocking_with::<()>(
+            "read_screen",
+            || panic!("private panic details"),
+            |event| {
+                reports += 1;
+                assert_eq!(event.operation, "read_screen");
+                assert_eq!(event.category, "blocking-join");
+                assert!(event.correlation_id > 0);
+                assert!(matches!(event.cause, tauri::Error::JoinError(_)));
+            },
+        ));
+        assert_eq!(reports, 1);
+        assert!(
+            matches!(result, Err(game_app::CommandError::Internal { message })
+            if message == "The native operation could not finish.")
+        );
+    }
+
+    #[test]
+    fn returned_command_errors_are_not_reported_again_by_the_shell() {
+        let result = tauri::async_runtime::block_on(super::blocking_with::<()>(
+            "manage_campaign",
+            || Err(game_app::validation("Expected validation")),
+            |_| panic!("returned errors are already translated"),
+        ));
+        assert!(matches!(
+            result,
+            Err(game_app::CommandError::Validation { .. })
+        ));
+    }
 
     #[test]
     fn dev_and_test_data_directories_differ() {

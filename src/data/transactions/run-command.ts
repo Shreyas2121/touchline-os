@@ -1,4 +1,5 @@
 import Dexie from 'dexie'
+import { reportDiagnostic } from '../../platform/diagnostics'
 import { ZodError } from 'zod'
 import type { Table } from 'dexie'
 import type { CommandResult } from '../../domain/commands/result'
@@ -37,7 +38,7 @@ function causeOf(error: unknown): unknown {
   return error
 }
 
-function failed(error: unknown): CommandResult<never> {
+function failed(error: unknown, operation: string): CommandResult<never> {
   const cause = causeOf(error)
   if (cause instanceof CommandFailure) {
     return { ok: false, code: cause.code, message: cause.message }
@@ -62,6 +63,7 @@ function failed(error: unknown): CommandResult<never> {
       message: 'A row with this id already exists.',
     }
   }
+  reportDiagnostic(operation, 'unexpected-command', cause)
   return { ok: false, code: 'ABORTED', message: 'Command did not finish.' }
 }
 
@@ -89,6 +91,9 @@ export async function runCommand<T>(
     })
     return { ok: true, revision: outcome.revision, value: outcome.value }
   } catch (error) {
-    return failed(error)
+    return failed(
+      error,
+      `command.${options.kind}:${tables.map((table) => table.name).join(',')}`,
+    )
   }
 }

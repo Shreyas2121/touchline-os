@@ -52,7 +52,9 @@ export type GameClient = {
   runMarket(request: RunMarketRequest): Promise<AdvanceOutcome>
   closeWindow(request: CloseWindowRequest): Promise<AdvanceOutcome>
   proposeTransfer(request: ProposeTransferRequest): Promise<AdvanceOutcome>
-  respondNegotiation(request: RespondNegotiationRequest): Promise<AdvanceOutcome>
+  respondNegotiation(
+    request: RespondNegotiationRequest,
+  ): Promise<AdvanceOutcome>
   respondOffer(request: RespondOfferRequest): Promise<AdvanceOutcome>
 }
 

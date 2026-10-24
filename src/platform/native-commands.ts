@@ -86,6 +86,6 @@ export async function call<K extends keyof NativeCommands>(
   try {
     return await invoke<NativeCommands[K]['result']>(command, args[0])
   } catch (error) {
-    throw mapInvokeError(error)
+    throw mapInvokeError(error, command)
   }
 }

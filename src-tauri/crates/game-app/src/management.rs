@@ -1,4 +1,4 @@
-use crate::{store_error, validation, CommandError, NativeStore};
+use crate::{validation, CommandError, NativeStore};
 use game_core::{career::*, generation::*, management::*};
 
 pub fn preview_creation(request: CreationRequest) -> Result<ClubChoices, CommandError> {
@@ -37,7 +37,7 @@ pub fn create_career(
     let fingerprint = signature(&request)?;
     if let Some(result) = store
         .creation_probe(request.clone(), fingerprint.clone())
-        .map_err(store_error)?
+        .map_err(|error| crate::reads::store_error_at("create_career", error))?
     {
         return Ok(result);
     }
@@ -45,12 +45,14 @@ pub fn create_career(
         prepare_standalone_career(&request.career).map_err(|e| validation(&e.to_string()))?;
     store
         .create(request, prepared.into_tables(), fingerprint)
-        .map_err(store_error)
+        .map_err(|error| crate::reads::store_error_at("create_career", error))
 }
 pub fn manage(
     store: &NativeStore,
     command: ManagementCommand,
 ) -> Result<ManagementOutcome, CommandError> {
     game_core::management::fingerprint(&command)?;
-    store.manage(command).map_err(store_error)
+    store
+        .manage(command)
+        .map_err(|error| crate::reads::store_error_at("manage", error))
 }

@@ -392,7 +392,9 @@ describe('native continue', () => {
     expect(
       await screen.findByText('Run the transfer market before this matchday.'),
     ).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Run Market' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Run Market' }),
+    ).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Sim Matchday' })).toBeNull()
     api.previewMarket = vi.fn().mockResolvedValue({
       campaignId: campaign.id,

@@ -8,6 +8,29 @@ use game_core::{
 use game_store::{ScreenRead, Store, StoreError};
 
 pub fn store_error(error: StoreError) -> CommandError {
+    store_error_at("store.translate", error)
+}
+pub fn store_error_at(operation: &str, error: StoreError) -> CommandError {
+    store_error_with(operation, error, crate::diagnostics::local)
+}
+fn store_error_with(
+    operation: &str,
+    error: StoreError,
+    sink: impl FnOnce(crate::diagnostics::Diagnostic<'_, StoreError>),
+) -> CommandError {
+    let category = match &error {
+        StoreError::Sqlite(error) => Some(match error.sqlite_error() {
+            Some(code) => format!("sqlite:{:?}:{}", code.code, code.extended_code),
+            None => "sqlite:conversion-or-query".into(),
+        }),
+        StoreError::Io(error) => Some(format!("io:{:?}", error.kind())),
+        StoreError::WorkerStopped => Some("worker-stopped".into()),
+        StoreError::Invalid(_) => Some("invalid-state-or-input".into()),
+        _ => None,
+    };
+    if let Some(category) = category {
+        crate::diagnostics::emit(operation, &category, &error, sink);
+    }
     match error {
         StoreError::Command(error) => error,
         StoreError::NotFound => validation("This campaign or record was not found."),
@@ -31,6 +54,7 @@ pub fn validation(message: &str) -> CommandError {
 fn core_error(error: CoreError) -> CommandError {
     validation(&error.to_string())
 }
+
 fn report(label: &str, result: RuleReport) -> NativeReport {
     NativeReport {
         label: label.into(),
@@ -114,7 +138,9 @@ fn finance(read: &ScreenRead) -> CoreResult<(NativeFinance, PolicySnapshot, Wage
     ))
 }
 pub fn read_screen(store: &Store, query: ScreenQuery) -> Result<ScreenModel, CommandError> {
-    let read = store.screen(query).map_err(store_error)?;
+    let read = store
+        .screen(query)
+        .map_err(|error| crate::reads::store_error_at("read_screen", error))?;
     let (finance, snapshot, _) = finance(&read).map_err(core_error)?;
     let mut model = read.model;
     model.finance = Some(finance);
@@ -316,7 +342,7 @@ pub fn preview(store: &Store, query: PreviewQuery) -> Result<NativePreview, Comm
             search: String::new(),
             all_players: false,
         })
-        .map_err(store_error)?;
+        .map_err(|error| crate::reads::store_error_at("preview", error))?;
     if read.model.revision != query.expected_revision {
         return Err(validation("This preview is stale. Reload the campaign."));
     }
@@ -345,4 +371,54 @@ pub fn preview(store: &Store, query: PreviewQuery) -> Result<NativePreview, Comm
         before_wages: result.before_wages,
         after_wages: result.after_wages,
     })
+}
+
+#[cfg(test)]
+mod diagnostic_tests {
+    use super::*;
+
+    #[test]
+    fn sqlite_and_worker_failures_report_original_causes_once() {
+        let connection = rusqlite::Connection::open_in_memory().expect("database");
+        let sqlite = connection
+            .execute("SELECT * FROM missing_table", [])
+            .unwrap_err();
+        for (error, category) in [
+            (StoreError::Sqlite(sqlite), "sqlite:"),
+            (StoreError::WorkerStopped, "worker-stopped"),
+        ] {
+            let mut reports = 0;
+            let public = store_error_with("read_screen", error, |event| {
+                reports += 1;
+                assert_eq!(event.operation, "read_screen");
+                assert!(event.category.starts_with(category));
+                assert!(event.correlation_id > 0);
+                assert!(matches!(
+                    event.cause,
+                    StoreError::Sqlite(_) | StoreError::WorkerStopped
+                ));
+            });
+            assert_eq!(reports, 1);
+            assert!(matches!(public, CommandError::Internal { message }
+                if message == "The native storage operation failed. Your existing saves were preserved."));
+        }
+    }
+
+    #[test]
+    fn expected_errors_keep_their_codes_without_unexpected_reports() {
+        for error in [
+            CommandError::Validation {
+                message: "invalid".into(),
+            },
+            CommandError::Conflict {
+                message: "stale".into(),
+            },
+        ] {
+            let expected = error.clone();
+            let public = store_error_with("manage", StoreError::Command(error), |_| {
+                panic!("expected error should not be reported");
+            });
+            assert_eq!(public, expected);
+        }
+    }
 }

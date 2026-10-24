@@ -1,4 +1,4 @@
-use crate::{store_error, CommandError, NativeStore};
+use crate::{CommandError, NativeStore};
 use game_core::{
     progression::{
         critical_material, evaluate, preview_saved, AdvanceOutcome, AdvanceRequest, TimePreview,
@@ -13,7 +13,7 @@ fn tables(
 ) -> Result<game_core::SnapshotTables, CommandError> {
     store
         .read_campaign(campaign_id.as_str())
-        .map_err(store_error)
+        .map_err(|error| crate::reads::store_error_at("progression.tables", error))
 }
 
 pub fn preview_time(
@@ -31,5 +31,7 @@ pub fn advance_time(
     let fingerprint = advance_fingerprint(&critical_material(&saved, &request)?);
     // Plan against the current read, then let the write transaction recheck.
     evaluate(&saved, &request, &fingerprint)?;
-    store.advance(request).map_err(store_error)
+    store
+        .advance(request)
+        .map_err(|error| crate::reads::store_error_at("advance_time", error))
 }

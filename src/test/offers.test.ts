@@ -5,7 +5,11 @@ import {
   waitFor,
   within,
 } from '@testing-library/react'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { saveFailed } from '../app/copy'
+import * as recordCommands from '../data/commands/record-offer'
+import * as rejectCommands from '../data/commands/reject-offer'
+import * as acceptCommands from '../data/commands/accept-offer'
 import { acceptOffer } from '../data/commands/accept-offer'
 import { addPlayer } from '../data/commands/add-player'
 import { createCampaign } from '../data/commands/create-campaign'
@@ -44,6 +48,7 @@ const qualifyingMessage =
 
 afterEach(async () => {
   cleanup()
+  vi.restoreAllMocks()
   await deleteDatabaseForTests(databaseName)
 })
 
@@ -165,6 +170,61 @@ function acceptInput(revision: number, fields: Record<string, unknown> = {}) {
 }
 
 describe('external transfer offers', () => {
+  it.each(['record', 'reject', 'accept'] as const)(
+    'handles an unexpected %s rejection and enables retry',
+    async (action) => {
+      const revision = await addManaged(
+        await balanced(),
+        'player-home',
+        'Mara Hale',
+        10_000_000,
+      )
+      if (action !== 'record') {
+        const result = await recordOffer(database(), offerInput(revision))
+        expect(result.ok).toBe(true)
+      }
+      const command =
+        action === 'record'
+          ? vi.spyOn(recordCommands, 'recordOffer')
+          : action === 'reject'
+            ? vi.spyOn(rejectCommands, 'rejectOffer')
+            : vi.spyOn(acceptCommands, 'acceptOffer')
+      command.mockRejectedValue(new Error('Unexpected command failure'))
+      renderAt('/app/campaign-a/transfers')
+      const offers = await screen.findByRole('region', { name: 'Offers' })
+      if (action === 'record') {
+        for (const [label, value] of [
+          ['Player', 'player-home'],
+          ['Bidding club', 'club-b'],
+          ['Fee', '100'],
+          ['Received on', '2026-10-19'],
+        ]) {
+          fireEvent.change(within(offers).getByLabelText(label), {
+            target: { value },
+          })
+        }
+      }
+      const button = within(offers).getByRole('button', {
+        name:
+          action === 'record'
+            ? 'Record offer'
+            : action === 'reject'
+              ? 'Reject offer'
+              : 'Accept offer',
+      })
+      fireEvent.click(button)
+      expect(await within(offers).findByRole('alert')).toHaveTextContent(
+        saveFailed,
+      )
+      expect(button).toBeEnabled()
+      fireEvent.click(button)
+      await waitFor(() => expect(command).toHaveBeenCalledTimes(2))
+      expect(
+        await listTransfers(database(), id('campaign-a'), id('season-a')),
+      ).toEqual([])
+    },
+  )
+
   it('keeps a qualifying bid open and rejects a bid under the fee ratio', async () => {
     const revision = await addManaged(
       await balanced(),

@@ -7,7 +7,9 @@
   "scripts": {
     "dev": "vite",
     "build": "pnpm typecheck && vite build",
+    "build:browser": "pnpm typecheck && vite build --config vite.browser.config.ts",
     "preview": "vite preview",
+    "preview:browser": "vite preview --config vite.browser.config.ts",
     "lint": "eslint .",
     "typecheck": "tsc -b --pretty false",
     "format": "prettier --write .",

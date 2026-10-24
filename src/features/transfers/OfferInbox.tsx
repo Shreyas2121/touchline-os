@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router'
-import { staleSave } from '../../app/copy'
+import { saveFailed, staleSave } from '../../app/copy'
 import { useDatabase } from '../../app/providers/database'
 import { Button } from '../../components/ui/Button'
 import { StatusPill } from '../../components/ui/StatusPill'
@@ -156,6 +156,8 @@ export function OfferInbox({
       setPlayerId('')
       setBidderId('')
       succeed('Recorded the offer.', outcome.revision)
+    } catch {
+      fail(saveFailed)
     } finally {
       setPending(false)
     }
@@ -181,6 +183,8 @@ export function OfferInbox({
         return
       }
       succeed('Rejected the offer.', outcome.revision)
+    } catch {
+      fail(saveFailed)
     } finally {
       setPending(false)
     }
@@ -208,6 +212,8 @@ export function OfferInbox({
         return
       }
       succeed('Accepted the offer.', outcome.revision)
+    } catch {
+      fail(saveFailed)
     } finally {
       setPending(false)
     }

@@ -1,6 +1,7 @@
 //! Native queries, migration and guarded career management use cases.
 
 #![forbid(unsafe_code)]
+pub mod diagnostics;
 mod management;
 mod market;
 mod matchday;
@@ -26,7 +27,7 @@ pub use market::{
 pub use matchday::{matchday_view, preview_matchday, sim_matchday};
 pub use migration::{backup_file, export_file, MigrationSession};
 pub use progression::{advance_time, preview_time};
-pub use reads::{preview, read_screen, store_error, validation};
+pub use reads::{preview, read_screen, store_error, store_error_at, validation};
 pub use settlement::settle_transfer;
 
 pub use game_core::{CommandError, HealthReport};

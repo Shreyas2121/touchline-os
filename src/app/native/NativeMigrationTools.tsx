@@ -88,7 +88,7 @@ export function MigrationTools({
                 const result = await client.confirmImport(summary.token)
                 setSummary(null)
                 onImported()
-                navigate(`/app/${result.campaignId}/command-center`)
+                await navigate(`/app/${result.campaignId}/command-center`)
                 setMessage('Save imported. Loaded the persisted campaign.')
               })
             }}

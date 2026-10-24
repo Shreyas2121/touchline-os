@@ -89,7 +89,7 @@ export function CampaignManager() {
 
   async function perform(
     action: () => Promise<CommandResult<unknown>>,
-    onSuccess?: () => void,
+    onSuccess?: () => void | Promise<void>,
   ) {
     if (busy) return
     setBusy(true)
@@ -108,7 +108,7 @@ export function CampaignManager() {
       }
       setPanel(null)
       await reload()
-      onSuccess?.()
+      await onSuccess?.()
     } catch {
       setMessage(copy.saveFailed)
     } finally {
@@ -172,7 +172,7 @@ export function CampaignManager() {
       setMessage(copy.seedReady)
       setPanel(null)
       await reload()
-      navigate('/app/demo/command-center')
+      await navigate('/app/demo/command-center')
     } catch {
       setMessage(copy.seedFailed)
       setRetry(true)
@@ -236,9 +236,9 @@ export function CampaignManager() {
             ...common,
             archived: panel.kind === 'archive',
           }),
-        () => {
+        async () => {
           setShowArchivedDemo(false)
-          if (panel.kind === 'archive') navigate('/')
+          if (panel.kind === 'archive') await navigate('/')
         },
       )
     }

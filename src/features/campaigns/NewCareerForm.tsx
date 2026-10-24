@@ -116,13 +116,13 @@ export function NewCareerForm({
     setStatus(careerProgress('ready'))
     try {
       await onStarted()
+      await navigate(`/app/${campaignId}/command-center`)
     } catch {
       setError(careerRefreshFailed)
       return
     } finally {
       setBusy(false)
     }
-    navigate(`/app/${campaignId}/command-center`)
   }
 
   async function startCareer() {

@@ -63,7 +63,7 @@ export function ChooseClubPage() {
         setMessage(result.code === 'CONFLICT' ? staleSave : saveFailed)
         return
       }
-      navigate(`/app/${data.campaign.id}/command-center`)
+      await navigate(`/app/${data.campaign.id}/command-center`)
     } catch {
       setMessage(saveFailed)
     } finally {

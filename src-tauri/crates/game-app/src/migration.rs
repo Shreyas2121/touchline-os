@@ -1,7 +1,5 @@
 //! File paths originate from a native dialog, never from invoke arguments.
-use crate::{
-    store_error, validation, CommandError, MigrationResult, MigrationSummary, NativeStore, SafeInt,
-};
+use crate::{validation, CommandError, MigrationResult, MigrationSummary, NativeStore, SafeInt};
 use std::{
     fs::{File, OpenOptions},
     io::{Read, Write},
@@ -34,7 +32,8 @@ impl MigrationSession {
         if bytes.len() as u64 > MAX_FILE_BYTES {
             return Err(validation("The snapshot exceeds the 32 MiB limit."));
         }
-        let summary = game_store::inspect_snapshot(&bytes).map_err(store_error)?;
+        let summary = game_store::inspect_snapshot(&bytes)
+            .map_err(|error| crate::reads::store_error_at("select", error))?;
         *self
             .0
             .lock()
@@ -57,7 +56,9 @@ impl MigrationSession {
             .ok_or_else(|| validation("Select and review this file before importing."))?;
         let _ = expected;
         // Validate again at commit; the retained bytes cannot be changed by replacing the file.
-        let result = store.import_snapshot(bytes).map_err(store_error)?;
+        let result = store
+            .import_snapshot(bytes)
+            .map_err(|error| crate::reads::store_error_at("confirm", error))?;
         Ok(MigrationResult {
             campaign_id: result.campaign_id,
             revision: SafeInt::new(result.imported_revision)
@@ -77,7 +78,7 @@ pub fn export_file(
     };
     let snapshot = store
         .export_snapshot(campaign_id, export_id, exported_at)
-        .map_err(store_error)?;
+        .map_err(|error| crate::reads::store_error_at("export_file", error))?;
     // Use the same compact encoding budget enforced by the snapshot parser.
     // Indentation alone can push a complete season over the import ceiling.
     let bytes = serde_json::to_vec(&snapshot)
@@ -106,6 +107,8 @@ pub fn backup_file(store: &NativeStore, target: Option<&Path>) -> Result<bool, C
     let Some(target) = target else {
         return Ok(false);
     };
-    store.backup(target).map_err(store_error)?;
+    store
+        .backup(target)
+        .map_err(|error| crate::reads::store_error_at("backup_file", error))?;
     Ok(true)
 }

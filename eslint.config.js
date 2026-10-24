@@ -9,6 +9,7 @@ export default defineConfig(
   {
     ignores: [
       'dist',
+      'dist-browser',
       'node_modules',
       'src/platform/generated',
       'src-tauri',
@@ -26,6 +27,32 @@ export default defineConfig(
       reactHooks.configs.flat.recommended,
       reactRefresh.configs.vite(),
     ],
+  },
+  {
+    files: ['src/**/*.{ts,tsx}'],
+    languageOptions: {
+      parserOptions: {
+        project: './tsconfig.app.json',
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+    rules: {
+      '@typescript-eslint/no-floating-promises': 'error',
+      '@typescript-eslint/no-misused-promises': 'error',
+    },
+  },
+  {
+    files: ['*.config.ts', 'e2e/**/*.ts'],
+    languageOptions: {
+      parserOptions: {
+        project: './tsconfig.node.json',
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+    rules: {
+      '@typescript-eslint/no-floating-promises': 'error',
+      '@typescript-eslint/no-misused-promises': 'error',
+    },
   },
   {
     files: ['src/domain/**/*.ts'],

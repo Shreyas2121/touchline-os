@@ -27,7 +27,7 @@ export function NativeCareerForm({ client }: { client: GameClient }) {
     try {
       if (create) {
         const result = await client.createCareer(request)
-        navigate(`/app/${result.campaignId}/command-center`)
+        await navigate(`/app/${result.campaignId}/command-center`)
         setOpen(false)
       } else setChoices(await client.previewCreation(request))
     } catch (error) {
