@@ -506,6 +506,10 @@ plans/archive/native-migration/native-migration/guide1.md ... guide9.md
 plans/phase7/guide6.md; guide7a.md; guide7.md
 plans/phase8.md
 plans/phase8/guide1.md ... guide6.md
+plans/phase9.md
+plans/phase9/guide1.md ... guide6.md
+plans/phase10.md
+plans/phase10/guide1.md ... guide6.md
 ```
 
 New directories are planned, not present at the P07-G05 checkpoint. Preserve the frontend build and established styling/routing.
@@ -633,7 +637,7 @@ Completed G01–G05 retain their original subjects and implementation evidence:
 - `P07-G04` — playable generator v2; `feat(p07-g04): generate playable club worlds`.
 - `P07-G05` — web career creation/guards; `feat(p07-g05): start standalone careers safely`.
 
-**Current execution:** Phase 7 and Phase 8 are closed. Active work is [Phase 9](plans/phase9.md), starting at `plans/phase9/guide1.md`. Recorded P07-G07 evidence stays in `plans/phase7.md`. Recorded P08-G06 evidence stays in `plans/phase8.md`. Writing the Phase 9 plans does not claim a new native-check run and does not implement the market.
+**Current execution:** Phases 7, 8, and 9 are closed. Active work is [Phase 10](plans/phase10.md), starting at `plans/phase10/guide1.md`. Recorded P07-G07 evidence stays in `plans/phase7.md`. Recorded P08-G06 evidence stays in `plans/phase8.md`. Recorded P09-G06 evidence stays in `plans/phase9.md`. Writing the Phase 10 plans does not claim a new native-check run and does not implement lifecycle settlement.
 
 The native migration prerequisite is complete through NM-G09. Its plan, nine guides, actual SHAs, service audit and passed unit/integration cutover gate are preserved under `plans/archive/native-migration/`. It is no longer an active work stage. Continue and later gameplay were not added by the bridge.
 
@@ -656,7 +660,7 @@ The native migration prerequisite is complete through NM-G09. Its plan, nine gui
 - `P08-G05` — Atomic round simulation, reports, tables and squad performance adapters. Commit: `feat(p08-g05): commit matchday results`.
 - `P08-G06` — Full-round/full-season Rust/SQLite integration tests and native matchday journey. Commit: `test(p08-g06): verify a full simulated season`.
 
-Future phase plans must assign one imperative commit subject per guide before execution. Phase 8 subjects are assigned above and in `plans/phase8.md`. Phase 9 subjects are assigned above and in `plans/phase9.md`.
+Future phase plans must assign one imperative commit subject per guide before execution. Phase 8 subjects are assigned above and in `plans/phase8.md`. Phase 9 subjects are assigned above and in `plans/phase9.md`. Phase 10 subjects are assigned above and in `plans/phase10.md`.
 
 ### PHASE 9 — Autonomous market and club/player negotiation
 
@@ -673,12 +677,12 @@ Future phase plans must assign one imperative commit subject per guide before ex
 
 **Outcome:** Complete settlement and start a second season without duplicate awards, depleted world squads or expired ownership.
 
-- `P10-G01` — Objectives, award tables, settlement/development receipts and contracts.
-- `P10-G02` — Bounded midseason/annual growth, decline and value recalculation.
-- `P10-G03` — Renewal, expiry, retirement and academy replenishment for all clubs.
-- `P10-G04` — Atomic season settlement, next-season allocation/prizes/carryover and fixtures.
-- `P10-G05` — Review/preview/confirm UI, objective outcomes and development history.
-- `P10-G06` — Multi-season deterministic, financial-boundary and roster-sustainability tests.
+- `P10-G01` — Objectives, award tables, settlement/development receipts and contracts. Commit: `feat(p10-g01): add lifecycle storage contracts`.
+- `P10-G02` — Bounded midseason/annual growth, decline and value recalculation. Commit: `feat(p10-g02): plan bounded player development`.
+- `P10-G03` — Renewal, expiry, retirement and academy replenishment for all clubs. Commit: `feat(p10-g03): plan renewals retirements and intake`.
+- `P10-G04` — Atomic season settlement, next-season allocation/prizes/carryover and fixtures. Commit: `feat(p10-g04): settle a season atomically`.
+- `P10-G05` — Review/preview/confirm UI, objective outcomes and development history. Commit: `feat(p10-g05): review and confirm the next season`.
+- `P10-G06` — Multi-season deterministic, financial-boundary and roster-sustainability tests. Commit: `test(p10-g06): verify multi-season squads and awards`.
 
 ### PHASE 11 — Scouting, comparisons and Moneyball insights
 
@@ -1026,7 +1030,7 @@ Material changes require a master version update, a DECISIONS entry, affected pe
 - Keep standalone game design and Phases 8–12 outcomes. Insert a separate migration bridge before pending Phase 7 G06/G07; update release Phase 13 and preserve completed work.
 - Historical browser code is optional reference only. Desktop standalone is the product; no old-save compatibility or second playable edition is required (DEC-006).
 
-**Next execution:** `plans/phase9/guide1.md`, after master 3.0.4 and `plans/phase9.md`. Implement the six guides in order. Do not start Phase 10 until P09-G06 records its checks.
+**Next execution:** `plans/phase10/guide1.md`, after master 3.0.4 and `plans/phase10.md`. Implement the six guides in order. Do not start Phase 11 until P10-G06 records its checks.
 
 ---
 
