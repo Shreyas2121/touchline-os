@@ -1,15 +1,9 @@
-﻿import { useEffect, useState } from 'react'
+import { loadSquadScreen } from '../../data/queries/squad-screen'
+import { useEffect, useState } from 'react'
 import { Navigate, useParams } from 'react-router'
 import { loadingSquad, squadFailed } from '../../app/copy'
 import { SectionPage } from '../../app/pages/SectionPage'
 import { useDatabase } from '../../app/providers/database'
-import { getCampaign } from '../../data/repositories/campaigns'
-import { getClub } from '../../data/repositories/clubs'
-import { listAuditEvents } from '../../data/repositories/audit-events'
-import { awaitsClubChoice } from '../../domain/simulation/career'
-import { listContractsByClub } from '../../data/repositories/contracts'
-import { listPlayersByClub } from '../../data/repositories/players'
-import { getActiveSeason } from '../../data/repositories/seasons'
 import {
   entityIdSchema,
   type Contract,
@@ -30,6 +24,7 @@ type SquadState = {
   chooseClub?: string
   revision?: number
   readOnly?: boolean
+  refreshing?: boolean
   club?: Club
 }
 export function SquadPage() {
@@ -37,10 +32,10 @@ export function SquadPage() {
   const { campaignId } = useParams()
   const [state, setState] = useState<SquadState | null>(null)
   const [reload, setReload] = useState(0)
-  function onSaved(revision: number) {
+  function onSaved() {
     setState((current) =>
       current && current.campaignId === campaignId
-        ? { ...current, revision }
+        ? { ...current, refreshing: true }
         : current,
     )
     setReload((current) => current + 1)
@@ -51,32 +46,8 @@ export function SquadPage() {
       const id = entityIdSchema.safeParse(campaignId)
       if (!id.success) return
       try {
-        const campaign = await getCampaign(database, id.data)
-        if (!campaign) {
-          if (active) setState({ campaignId, missing: true })
-          return
-        }
-        const audits = await listAuditEvents(database, campaign.id)
-        if (awaitsClubChoice(campaign, audits)) {
-          if (active) setState({ campaignId, chooseClub: campaign.id })
-          return
-        }
-        const [club, season, players, contracts] = await Promise.all([
-          getClub(database, campaign.id, campaign.managedClubId),
-          getActiveSeason(database, campaign.id),
-          listPlayersByClub(database, campaign.id, campaign.managedClubId),
-          listContractsByClub(database, campaign.id, campaign.managedClubId),
-        ])
-        if (active)
-          setState({
-            campaignId,
-            season,
-            players: club ? players : [],
-            contracts,
-            revision: campaign.revision,
-            readOnly: campaign.mode === 'standalone',
-            club,
-          })
+        const snapshot = await loadSquadScreen(database, id.data)
+        if (active) setState({ campaignId, ...snapshot })
       } catch {
         if (active) setState({ campaignId, failed: true })
       }
@@ -111,6 +82,7 @@ export function SquadPage() {
         season={state.season}
         revision={state.revision ?? 0}
         readOnly={state.readOnly === true}
+        refreshing={state.refreshing === true}
         onSaved={onSaved}
       />
     </>

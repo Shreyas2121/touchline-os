@@ -29,6 +29,8 @@ export const archiveHelp =
   'Archive hides this save. You can restore it. This does not delete the save.'
 export const deleteHelp = 'Delete removes this save. This cannot be undone.'
 export const saveFailed = 'The campaign could not be saved. Try again.'
+export const careerRefreshFailed =
+  'The career was saved, but the saved campaigns list could not be refreshed. Retry the refresh or open your saved career.'
 export function careerProgress(stage: 'generate' | 'save' | 'ready'): string {
   if (stage === 'generate') return 'Building the world.'
   if (stage === 'save') return 'Saving the career.'

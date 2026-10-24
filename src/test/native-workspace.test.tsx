@@ -1,4 +1,5 @@
 import {
+  act,
   fireEvent,
   render,
   screen,
@@ -7,6 +8,8 @@ import {
 } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import { describe, expect, it, vi } from 'vitest'
+import { PolicyPreview } from '../app/native/PolicyPreview'
+import type { NativePreview } from '../platform/generated/NativePreview'
 import { NativeRoutes } from '../app/native/NativeWorkspace'
 import { createBrowserClient } from '../platform/browser-client'
 import type { GameClient } from '../platform/game-client'
@@ -340,5 +343,355 @@ describe('native read and migration UI', () => {
     expect(screen.getByRole('button', { name: 'Accept' })).toBeEnabled()
     expect(screen.getByRole('button', { name: 'Withdraw' })).toBeEnabled()
     expect(screen.getByRole('button', { name: 'Settle' })).toBeEnabled()
+  })
+})
+
+function deferredPreview() {
+  let resolve!: (result: NativePreview) => void
+  let reject!: (error: unknown) => void
+  const promise = new Promise<NativePreview>((done, fail) => {
+    resolve = done
+    reject = fail
+  })
+  return { promise, resolve, reject }
+}
+const allowedPreview: NativePreview = {
+  revision: campaign.revision,
+  report: { label: 'Action', allowed: true, verdicts: [] },
+  beforeCapacity: '100',
+  afterCapacity: '90',
+  beforeWages: '10',
+  afterWages: '20',
+}
+function submitPolicy() {
+  fireEvent.click(screen.getByRole('button', { name: 'Preview action' }))
+}
+function editPolicy(label: string, value: string) {
+  fireEvent.change(screen.getByLabelText(label), { target: { value } })
+}
+
+describe('native policy preview submitted inputs', () => {
+  it.each([
+    ['Fee (cents)', '10'],
+    ['Weekly wage (cents)', '20'],
+    ['Age (blank means unknown)', '25'],
+    ['Tier', 'key'],
+    ['Effective date', '2026-08-01'],
+  ])('hides a result after editing %s', async (label, value) => {
+    const api = client()
+    api.previewPolicy = vi.fn().mockResolvedValue(allowedPreview)
+    render(
+      <PolicyPreview client={api} model={model()} campaignId={campaign.id} />,
+    )
+    submitPolicy()
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'Allowed by saved rules',
+    )
+    editPolicy(label, value)
+    expect(screen.queryByRole('status')).toBeNull()
+    submitPolicy()
+    expect(await screen.findByRole('status')).toBeInTheDocument()
+  })
+
+  it('ignores completion after an edit, including when the draft returns to the submitted values', async () => {
+    const api = client(),
+      pending = deferredPreview()
+    api.previewPolicy = vi.fn().mockReturnValue(pending.promise)
+    render(
+      <PolicyPreview client={api} model={model()} campaignId={campaign.id} />,
+    )
+    submitPolicy()
+    editPolicy('Fee (cents)', '10')
+    editPolicy('Fee (cents)', '0')
+    await act(async () => pending.resolve(allowedPreview))
+    expect(screen.queryByRole('status')).toBeNull()
+    expect(screen.getByRole('button', { name: 'Preview action' })).toBeEnabled()
+  })
+
+  it.each(['resolve', 'reject'] as const)(
+    'ignores an older request that finishes with %s after a newer result',
+    async (completion) => {
+      const api = client(),
+        first = deferredPreview(),
+        second = deferredPreview()
+      api.previewPolicy = vi
+        .fn()
+        .mockReturnValueOnce(first.promise)
+        .mockReturnValueOnce(second.promise)
+      render(
+        <PolicyPreview client={api} model={model()} campaignId={campaign.id} />,
+      )
+      submitPolicy()
+      editPolicy('Fee (cents)', '10')
+      submitPolicy()
+      await act(async () =>
+        second.resolve({ ...allowedPreview, afterCapacity: 'new result' }),
+      )
+      await act(async () => {
+        if (completion === 'resolve')
+          first.resolve({ ...allowedPreview, afterCapacity: 'obsolete result' })
+        else first.reject({ code: 'VALIDATION', message: 'Obsolete error' })
+      })
+      expect(screen.getByRole('status')).toHaveTextContent('new result')
+      expect(screen.queryByText(/obsolete result/)).toBeNull()
+      expect(screen.queryByRole('alert')).toBeNull()
+    },
+  )
+
+  it('hides success and ignores pending responses when the campaign or revision changes', async () => {
+    const api = client(),
+      pending = deferredPreview()
+    api.previewPolicy = vi
+      .fn()
+      .mockResolvedValueOnce(allowedPreview)
+      .mockReturnValueOnce(pending.promise)
+    const props = { client: api, model: model(), campaignId: campaign.id }
+    const view = render(<PolicyPreview {...props} />)
+    submitPolicy()
+    await screen.findByRole('status')
+    view.rerender(
+      <PolicyPreview
+        {...props}
+        model={{ ...props.model, revision: props.model.revision + 1 }}
+      />,
+    )
+    expect(screen.queryByRole('status')).toBeNull()
+    submitPolicy()
+    view.rerender(<PolicyPreview {...props} campaignId="another-campaign" />)
+    await act(async () => pending.resolve(allowedPreview))
+    expect(screen.queryByRole('status')).toBeNull()
+  })
+
+  it('clears a previous success when a repeated preview fails', async () => {
+    const api = client()
+    api.previewPolicy = vi
+      .fn()
+      .mockResolvedValueOnce(allowedPreview)
+      .mockRejectedValueOnce({ code: 'VALIDATION', message: 'Preview failed' })
+    render(
+      <PolicyPreview client={api} model={model()} campaignId={campaign.id} />,
+    )
+    submitPolicy()
+    await screen.findByRole('status')
+    submitPolicy()
+    expect(await screen.findByRole('alert')).toHaveTextContent('Preview failed')
+    expect(screen.queryByRole('status')).toBeNull()
+  })
+})
+
+const pagedRoster = Array.from({ length: 51 }, (_, index) => ({
+  ...snapshot.tables.players[0]!,
+  id: 'paged-player-' + (index + 1),
+  name: 'Paged player ' + (index + 1),
+}))
+function transferPage(page: number, players = pagedRoster): ScreenModel {
+  const base = model()
+  return {
+    ...base,
+    page,
+    rows: { ...base.rows, players: players.slice(page * 50, page * 50 + 50) },
+    totals: { players: players.length, offers: 9999 },
+  }
+}
+function pagedTransferClient() {
+  const api = client()
+  api.screen = vi.fn<GameClient['screen']>(async (query) =>
+    transferPage(query.page),
+  )
+  api.transferBoard = vi
+    .fn()
+    .mockResolvedValue({ incoming: [], outgoing: [], completed: [] })
+  api.planning = vi.fn<GameClient['planning']>(
+    async (_campaignId, playerId) => {
+      const player = pagedRoster.find((p) => p.id === playerId)!
+      return {
+        player,
+        revision: campaign.revision,
+        shortlist: null,
+        note: {
+          id: 'note-' + playerId,
+          campaignId: campaign.id,
+          seasonId: campaign.activeSeasonId,
+          playerId,
+          targetRole: null,
+          notes: 'Planning for ' + player.name,
+          status: 'open',
+        },
+      }
+    },
+  )
+  return api
+}
+function playerPager() {
+  return within(
+    screen.getByRole('navigation', { name: 'Player search pagination' }),
+  )
+}
+function deferredScreen() {
+  let resolve!: (value: ScreenModel) => void
+  let reject!: (error: unknown) => void
+  const promise = new Promise<ScreenModel>((done, fail) => {
+    resolve = done
+    reject = fail
+  })
+  return { promise, resolve, reject }
+}
+
+describe('native transfer player pagination', () => {
+  it('loads planning for player 51 on the second page while preserving the transfer board', async () => {
+    const api = pagedTransferClient()
+    show(api, '/app/' + campaign.id + '/transfers')
+    await screen.findByLabelText('Planning player')
+    await screen.findByText('No incoming offers.')
+    const board = screen.getByRole('region', { name: 'Transfer board' })
+    expect(
+      within(screen.getByLabelText('Planning player')).getAllByRole('option'),
+    ).toHaveLength(50)
+    expect(playerPager().getByText(/Page 1.*51 records/)).toBeInTheDocument()
+    fireEvent.click(playerPager().getByRole('button', { name: 'Next page' }))
+    await waitFor(() =>
+      expect(api.screen).toHaveBeenLastCalledWith({
+        campaignId: campaign.id,
+        screen: 'transfers',
+        page: 1,
+        search: '',
+        allPlayers: false,
+      }),
+    )
+    expect(await screen.findByLabelText('Planning player')).toHaveValue(
+      pagedRoster[50]!.id,
+    )
+    expect(
+      within(screen.getByLabelText('Planning player')).getByRole('option', {
+        name: 'Paged player 51',
+      }),
+    ).toBeInTheDocument()
+    await waitFor(() =>
+      expect(screen.getByLabelText('Development notes')).toHaveValue(
+        'Planning for Paged player 51',
+      ),
+    )
+    expect(api.planning).toHaveBeenLastCalledWith(
+      campaign.id,
+      pagedRoster[50]!.id,
+    )
+    expect(
+      playerPager().getByRole('button', { name: 'Next page' }),
+    ).toBeDisabled()
+    expect(screen.getByRole('region', { name: 'Transfer board' })).toBe(board)
+    expect(api.transferBoard).toHaveBeenCalledOnce()
+    expect(api.previewTime).toHaveBeenCalledOnce()
+    fireEvent.click(
+      playerPager().getByRole('button', { name: 'Previous page' }),
+    )
+    expect(await screen.findByLabelText('Planning player')).toHaveValue(
+      pagedRoster[0]!.id,
+    )
+    expect(api.screen).toHaveBeenLastCalledWith(
+      expect.objectContaining({ page: 0 }),
+    )
+  })
+
+  it('resets player paging when either search text or the all-clubs filter changes', async () => {
+    const api = pagedTransferClient()
+    show(api, '/app/' + campaign.id + '/transfers')
+    await screen.findByLabelText('Planning player')
+    fireEvent.click(playerPager().getByRole('button', { name: 'Next page' }))
+    await waitFor(() =>
+      expect(screen.getByLabelText('Planning player')).toHaveValue(
+        pagedRoster[50]!.id,
+      ),
+    )
+    fireEvent.change(
+      screen.getByRole('searchbox', { name: 'Search players' }),
+      { target: { value: 'Paged' } },
+    )
+    expect(await screen.findByLabelText('Planning player')).toHaveValue(
+      pagedRoster[0]!.id,
+    )
+    expect(api.screen).toHaveBeenLastCalledWith(
+      expect.objectContaining({ page: 0, search: 'Paged', allPlayers: false }),
+    )
+    fireEvent.click(playerPager().getByRole('button', { name: 'Next page' }))
+    await waitFor(() =>
+      expect(screen.getByLabelText('Planning player')).toHaveValue(
+        pagedRoster[50]!.id,
+      ),
+    )
+    fireEvent.click(screen.getByLabelText('Search all clubs and free agents'))
+    expect(await screen.findByLabelText('Planning player')).toHaveValue(
+      pagedRoster[0]!.id,
+    )
+    expect(api.screen).toHaveBeenLastCalledWith(
+      expect.objectContaining({ page: 0, search: 'Paged', allPlayers: true }),
+    )
+    expect(api.transferBoard).toHaveBeenCalledOnce()
+  })
+
+  it.each(['resolve', 'reject'] as const)(
+    'ignores an obsolete page response that finishes with %s after a new search',
+    async (completion) => {
+      const api = pagedTransferClient(),
+        oldPage = deferredScreen(),
+        latest = deferredScreen()
+      api.screen = vi.fn<GameClient['screen']>((query) => {
+        if (query.search === 'latest') return latest.promise
+        if (query.page === 1) return oldPage.promise
+        return Promise.resolve(transferPage(0))
+      })
+      show(api, '/app/' + campaign.id + '/transfers')
+      await screen.findByLabelText('Planning player')
+      fireEvent.click(playerPager().getByRole('button', { name: 'Next page' }))
+      expect(screen.getByText('Loading player search.')).toBeInTheDocument()
+      expect(
+        screen.getByRole('region', { name: 'Transfer board' }),
+      ).toBeInTheDocument()
+      fireEvent.change(
+        screen.getByRole('searchbox', { name: 'Search players' }),
+        { target: { value: 'latest' } },
+      )
+      await act(async () => latest.resolve(transferPage(0, [pagedRoster[10]!])))
+      expect(screen.getByLabelText('Planning player')).toHaveValue(
+        pagedRoster[10]!.id,
+      )
+      await act(async () => {
+        if (completion === 'resolve') oldPage.resolve(transferPage(1))
+        else
+          oldPage.reject({ code: 'INTERNAL', message: 'Obsolete page failure' })
+      })
+      expect(screen.getByLabelText('Planning player')).toHaveValue(
+        pagedRoster[10]!.id,
+      )
+      expect(
+        screen.getByRole('searchbox', { name: 'Search players' }),
+      ).toHaveValue('latest')
+      expect(screen.queryByText('Obsolete page failure')).toBeNull()
+      expect(playerPager().getByText(/Page 1.*1 records/)).toBeInTheDocument()
+      expect(api.transferBoard).toHaveBeenCalledOnce()
+    },
+  )
+
+  it('asks for a reload when a player page belongs to a different campaign revision', async () => {
+    const api = pagedTransferClient()
+    api.screen = vi.fn<GameClient['screen']>(async (query) => ({
+      ...transferPage(query.page),
+      revision: campaign.revision + (query.page === 1 ? 1 : 0),
+    }))
+    show(api, '/app/' + campaign.id + '/transfers')
+    await screen.findByLabelText('Planning player')
+    fireEvent.click(playerPager().getByRole('button', { name: 'Next page' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'The campaign changed. Reload before editing player planning.',
+    )
+    expect(screen.queryByLabelText('Planning player')).toBeNull()
+    expect(
+      screen.getByRole('button', {
+        name: 'Reload saved campaign (discard drafts)',
+      }),
+    ).toBeEnabled()
+    expect(
+      screen.getByRole('region', { name: 'Transfer board' }),
+    ).toBeInTheDocument()
+    expect(api.transferBoard).toHaveBeenCalledOnce()
   })
 })

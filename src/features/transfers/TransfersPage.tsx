@@ -1,23 +1,10 @@
+import { loadTransfersScreen } from '../../data/queries/transfers-screen'
 import { useEffect, useState } from 'react'
 import { Navigate, useParams } from 'react-router'
 import { SectionPage } from '../../app/pages/SectionPage'
 import { useDatabase } from '../../app/providers/database'
 import { systemClock } from '../../data/clock'
-import { listAuditEvents } from '../../data/repositories/audit-events'
-import {
-  awaitsClubChoice,
-  negotiationUnavailable,
-} from '../../domain/simulation/career'
-import { getCampaign } from '../../data/repositories/campaigns'
-import { getClub, listClubs } from '../../data/repositories/clubs'
-import { getActiveConstitution } from '../../data/repositories/constitutions'
-import { listContractsByClub } from '../../data/repositories/contracts'
-import { listLedgerEntries } from '../../data/repositories/ledger-entries'
-import { listOffers } from '../../data/repositories/offers'
-import { listPlayers } from '../../data/repositories/players'
-import { getActiveSeason } from '../../data/repositories/seasons'
-import { listShortlist } from '../../data/repositories/shortlist'
-import { listTransfers } from '../../data/repositories/transfers'
+import { negotiationUnavailable } from '../../domain/simulation/career'
 import { transferCapacity } from '../../domain/finance/capacity'
 import { wageCommitment } from '../../domain/finance/wages'
 import { dateOnlySchema, type DateOnly } from '../../domain/models/dates'
@@ -74,59 +61,8 @@ export function TransfersPage() {
       const id = entityIdSchema.safeParse(campaignId)
       if (!id.success) return
       try {
-        const campaign = await getCampaign(database, id.data)
-        if (!campaign) {
-          if (active) setState({ campaignId, missing: true })
-          return
-        }
-        const audits = await listAuditEvents(database, campaign.id)
-        if (awaitsClubChoice(campaign, audits)) {
-          if (active) setState({ campaignId, chooseClub: campaign.id })
-          return
-        }
-        const season = await getActiveSeason(database, campaign.id)
-        if (!season) throw new Error('Missing active season')
-        const [
-          club,
-          clubs,
-          players,
-          shortlist,
-          contracts,
-          constitution,
-          entries,
-          offers,
-          transfers,
-        ] = await Promise.all([
-          getClub(database, campaign.id, campaign.managedClubId),
-          listClubs(database, campaign.id),
-          listPlayers(database, campaign.id),
-          listShortlist(database, campaign.id),
-          listContractsByClub(database, campaign.id, campaign.managedClubId),
-          getActiveConstitution(database, campaign.id),
-          listLedgerEntries(
-            database,
-            campaign.id,
-            season.id,
-            campaign.managedClubId,
-          ),
-          listOffers(database, campaign.id, season.id),
-          listTransfers(database, campaign.id, season.id),
-        ])
-        if (active)
-          setState({
-            campaignId,
-            campaign,
-            club,
-            clubs,
-            season,
-            players,
-            shortlist,
-            contracts,
-            constitution,
-            entries,
-            offers,
-            transfers,
-          })
+        const snapshot = await loadTransfersScreen(database, id.data)
+        if (active) setState({ campaignId, ...snapshot })
       } catch {
         if (active) setState({ campaignId, failed: true })
       }

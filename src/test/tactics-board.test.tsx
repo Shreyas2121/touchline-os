@@ -213,6 +213,7 @@ describe('tactical planning board', () => {
           players={players}
           campaignId={entityIdSchema.parse('campaign-a')}
           initialRevision={0}
+          initialLineups={[]}
         />
       </DatabaseProvider>,
     )

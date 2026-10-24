@@ -4,7 +4,6 @@ import {
   lineupRosterMismatch,
   lineupSaved,
   lineupDeleted,
-  loadingLineups,
   lineupsFailed,
   staleSave,
 } from '../../app/copy'
@@ -13,7 +12,7 @@ import { systemClock } from '../../data/clock'
 import { createEntityId } from '../../data/ids'
 import { saveLineup } from '../../data/commands/save-lineup'
 import { deleteLineup } from '../../data/commands/delete-lineup'
-import { listLineups } from '../../data/repositories/lineups'
+import { loadLineupsAtRevision } from '../../data/queries/lineups'
 import { PitchSvg } from '../../components/graphics/PitchSvg'
 import { Button } from '../../components/ui/Button'
 import {
@@ -60,16 +59,22 @@ export function TacticsBoard({
   season,
   campaignId,
   initialRevision,
+  initialLineups,
 }: {
   players: readonly Player[]
   season?: Season
   campaignId: EntityId
+  initialLineups: Lineup[]
   initialRevision: number
 }) {
   const database = useDatabase()
-  const [draft, setDraft] = useState(emptyDraft)
-  const [lineupId, setLineupId] = useState(createEntityId)
-  const [lineups, setLineups] = useState<Lineup[] | null>(null)
+  const [draft, setDraft] = useState(() =>
+    initialLineups[0] ? draftFromLineup(initialLineups[0]) : emptyDraft(),
+  )
+  const [lineupId, setLineupId] = useState(
+    () => initialLineups[0]?.id ?? createEntityId(),
+  )
+  const [lineups, setLineups] = useState(initialLineups)
   const [revision, setRevision] = useState(initialRevision)
   const [busy, setBusy] = useState(false)
   const [loadFailed, setLoadFailed] = useState(false)
@@ -100,29 +105,6 @@ export function TacticsBoard({
   const slots = formationSlots(draft.formation)
   const problems = lineupProblems(draft, rosterIds)
   const savedLineup = lineups?.find((lineup) => lineup.id === lineupId)
-
-  useEffect(() => {
-    let active = true
-    async function load() {
-      try {
-        const saved = seasonId
-          ? await listLineups(database, campaignId, seasonId)
-          : []
-        if (!active) return
-        setLineups(saved)
-        if (saved[0]) {
-          setDraft(draftFromLineup(saved[0]))
-          setLineupId(saved[0].id)
-        }
-      } catch {
-        if (active) setLoadFailed(true)
-      }
-    }
-    void load()
-    return () => {
-      active = false
-    }
-  }, [database, campaignId, seasonId])
 
   useEffect(() => {
     function dropHold(event: KeyboardEvent) {
@@ -186,7 +168,14 @@ export function TacticsBoard({
       setLineupId(result.value.id)
       setNotice(lineupSaved(result.value.name))
       try {
-        setLineups(await listLineups(database, campaignId, seasonId))
+        setLineups(
+          await loadLineupsAtRevision(
+            database,
+            campaignId,
+            seasonId,
+            result.revision,
+          ),
+        )
       } catch {
         setLoadFailed(true)
       }
@@ -217,7 +206,12 @@ export function TacticsBoard({
       }
       setRevision(result.revision)
       try {
-        const remaining = await listLineups(database, campaignId, seasonId)
+        const remaining = await loadLineupsAtRevision(
+          database,
+          campaignId,
+          seasonId,
+          result.revision,
+        )
         setLineups(remaining)
         chooseLineup(remaining[0])
         setNotice(lineupDeleted(savedLineup.name))
@@ -232,7 +226,6 @@ export function TacticsBoard({
   }
 
   if (loadFailed) return <p role="alert">{lineupsFailed}</p>
-  if (!lineups) return <p>{loadingLineups}</p>
 
   return (
     <section aria-label="Tactical planning">

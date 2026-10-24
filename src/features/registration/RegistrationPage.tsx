@@ -1,16 +1,9 @@
+import { loadRegistrationScreen } from '../../data/queries/registration-screen'
 import { useEffect, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router'
 import { loadingCampaign } from '../../app/copy'
 import { SectionPage } from '../../app/pages/SectionPage'
 import { useDatabase } from '../../app/providers/database'
-import { listAuditEvents } from '../../data/repositories/audit-events'
-import { awaitsClubChoice } from '../../domain/simulation/career'
-import { getCampaign } from '../../data/repositories/campaigns'
-import { getActiveConstitution } from '../../data/repositories/constitutions'
-import { listPlayersByClub } from '../../data/repositories/players'
-import { listRegistrations } from '../../data/repositories/registrations'
-import { getActiveSeason } from '../../data/repositories/seasons'
-import { listPlayerSimulationStates } from '../../data/repositories/simulation'
 import {
   entityIdSchema,
   type Constitution,
@@ -50,56 +43,8 @@ export function RegistrationPage() {
       const id = entityIdSchema.safeParse(campaignId)
       if (!id.success) return
       try {
-        const campaign = await getCampaign(database, id.data)
-        if (!campaign) {
-          if (active) setState({ campaignId, missing: true })
-          return
-        }
-        const audits = await listAuditEvents(database, campaign.id)
-        if (awaitsClubChoice(campaign, audits)) {
-          if (active) setState({ campaignId, chooseClub: campaign.id })
-          return
-        }
-        const [season, constitution, players, profiles] = await Promise.all([
-          getActiveSeason(database, campaign.id),
-          getActiveConstitution(database, campaign.id),
-          listPlayersByClub(database, campaign.id, campaign.managedClubId),
-          listPlayerSimulationStates(database, campaign.id),
-        ])
-        const rule = constitution?.rules.find(
-          (item) => item.id === 'REGISTRATION_QUOTA',
-        )
-        const registrations =
-          season && rule?.id === 'REGISTRATION_QUOTA'
-            ? await listRegistrations(
-                database,
-                campaign.id,
-                season.id,
-                rule.competitionKey,
-              )
-            : []
-        if (active)
-          setState({
-            campaignId,
-            revision: campaign.revision,
-            season,
-            players,
-            constitution,
-            registrations,
-            eligibility: new Map(
-              profiles
-                .filter((profile) =>
-                  players.some((player) => player.id === profile.playerId),
-                )
-                .map((profile) => [
-                  profile.playerId,
-                  {
-                    homegrownClub: profile.homegrownClub,
-                    homegrownNation: profile.homegrownNation,
-                  },
-                ]),
-            ),
-          })
+        const snapshot = await loadRegistrationScreen(database, id.data)
+        if (active) setState({ campaignId, ...snapshot })
       } catch {
         if (active) setState({ campaignId, failed: true })
       }

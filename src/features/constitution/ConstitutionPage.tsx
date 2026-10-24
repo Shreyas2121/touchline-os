@@ -1,3 +1,4 @@
+import { loadConstitutionScreen } from '../../data/queries/constitution-screen'
 import { useEffect, useState } from 'react'
 import { Navigate, useParams } from 'react-router'
 import {
@@ -11,14 +12,7 @@ import { Button } from '../../components/ui/Button'
 import { systemClock } from '../../data/clock'
 import { createEntityId } from '../../data/ids'
 import { saveConstitution } from '../../data/commands/save-constitution'
-import { getCampaign } from '../../data/repositories/campaigns'
-import { listAuditEvents } from '../../data/repositories/audit-events'
-import {
-  awaitsClubChoice,
-  challengeRulesLocked,
-} from '../../domain/simulation/career'
-import { getActiveConstitution } from '../../data/repositories/constitutions'
-import { getActiveSeason } from '../../data/repositories/seasons'
+import { challengeRulesLocked } from '../../domain/simulation/career'
 import {
   constitutionPreset,
   type ConstitutionPresetName,
@@ -314,22 +308,8 @@ export function ConstitutionPage() {
       const id = entityIdSchema.safeParse(campaignId)
       if (!id.success) return
       try {
-        const campaign = await getCampaign(database, id.data)
-        if (!campaign) {
-          if (active) setState({ campaignId, missing: true })
-          return
-        }
-        const audits = await listAuditEvents(database, campaign.id)
-        if (awaitsClubChoice(campaign, audits)) {
-          if (active) setState({ campaignId, chooseClub: campaign.id })
-          return
-        }
-        const [season, constitution] = await Promise.all([
-          getActiveSeason(database, campaign.id),
-          getActiveConstitution(database, campaign.id),
-        ])
-        if (!season) throw new Error('Missing active season')
-        if (active) setState({ campaignId, campaign, constitution })
+        const snapshot = await loadConstitutionScreen(database, id.data)
+        if (active) setState({ campaignId, ...snapshot })
       } catch {
         if (active) setState({ campaignId, failed: true })
       }

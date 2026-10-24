@@ -1,16 +1,10 @@
+import { loadMatchJournalScreen } from '../../data/queries/match-journal-screen'
 import { useEffect, useState } from 'react'
 import { Navigate, useParams } from 'react-router'
 import { loadingCampaign } from '../../app/copy'
 import { SectionPage } from '../../app/pages/SectionPage'
 import { useDatabase } from '../../app/providers/database'
-import { listAuditEvents } from '../../data/repositories/audit-events'
-import { awaitsClubChoice } from '../../domain/simulation/career'
 import { matchSimulationUnavailable } from '../../domain/simulation/calendar'
-import { getCampaign } from '../../data/repositories/campaigns'
-import { listLineups } from '../../data/repositories/lineups'
-import { listMatches } from '../../data/repositories/matches'
-import { listPlayersByClub } from '../../data/repositories/players'
-import { getActiveSeason } from '../../data/repositories/seasons'
 import { matchResult } from '../../domain/matches/result'
 import {
   entityIdSchema,
@@ -46,36 +40,8 @@ export function MatchJournalPage() {
       const id = entityIdSchema.safeParse(campaignId)
       if (!id.success) return
       try {
-        const campaign = await getCampaign(database, id.data)
-        if (!campaign) {
-          if (active) setState({ campaignId, missing: true })
-          return
-        }
-        const audits = await listAuditEvents(database, campaign.id)
-        if (awaitsClubChoice(campaign, audits)) {
-          if (active) setState({ campaignId, chooseClub: campaign.id })
-          return
-        }
-        const season = await getActiveSeason(database, campaign.id)
-        const [players, lineups, matches] = await Promise.all([
-          listPlayersByClub(database, campaign.id, campaign.managedClubId),
-          season
-            ? listLineups(database, campaign.id, season.id)
-            : Promise.resolve([]),
-          season
-            ? listMatches(database, campaign.id, season.id)
-            : Promise.resolve([]),
-        ])
-        if (active)
-          setState({
-            campaignId,
-            revision: campaign.revision,
-            season,
-            players,
-            lineups,
-            matches,
-            standalone: campaign.mode === 'standalone',
-          })
+        const snapshot = await loadMatchJournalScreen(database, id.data)
+        if (active) setState({ campaignId, ...snapshot })
       } catch {
         if (active) setState({ campaignId, failed: true })
       }

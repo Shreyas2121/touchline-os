@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useState } from 'react'
 import {
   HashRouter,
   Link,
@@ -13,7 +13,6 @@ import type { CampaignPage } from '../../platform/generated/CampaignPage'
 import type { MigrationSummary } from '../../platform/generated/MigrationSummary'
 import type { ScreenModel } from '../../platform/generated/ScreenModel'
 import type { Screen } from '../../platform/generated/Screen'
-import type { NativePreview } from '../../platform/generated/NativePreview'
 import { mapInvokeError } from '../../platform/errors'
 import { workspaceSections as sharedSections } from '../routes'
 const workspaceSections = sharedSections.map((section) =>
@@ -22,6 +21,7 @@ const workspaceSections = sharedSections.map((section) =>
     : section,
 )
 import { CrestSvg } from '../../components/graphics/CrestSvg'
+import { PolicyPreview } from './PolicyPreview'
 import { NativeTactics } from './NativeTactics'
 import { Button } from '../../components/ui/Button'
 import { NativeScreenTables } from './NativeScreenTables'
@@ -30,6 +30,8 @@ import { NativeCareerForm } from './NativeCareerForm'
 import { NativeManagementPanel } from './NativeManagementPanel'
 import { NativeProgression } from './NativeProgression'
 import { NativeTransfers } from './NativeTransfers'
+import { NativeTransferPlayers } from './NativeTransferPlayers'
+import { Paging } from './NativePaging'
 
 const readOnly =
   'Standalone career management is available. Continue on the Command Center advances the foundation calendar. Match simulation and negotiations arrive in later phases.'
@@ -287,33 +289,6 @@ function Campaigns({ client }: { client: GameClient }) {
   )
 }
 
-function Paging({
-  page,
-  total,
-  onPage,
-}: {
-  page: number
-  total: number
-  onPage: (page: number) => void
-}) {
-  return (
-    <nav aria-label="Pagination" className="flex gap-3">
-      <Button disabled={page === 0} onClick={() => onPage(page - 1)}>
-        Previous page
-      </Button>
-      <span>
-        Page {page + 1} · {total} records
-      </span>
-      <Button
-        disabled={(page + 1) * 50 >= total}
-        onClick={() => onPage(page + 1)}
-      >
-        Next page
-      </Button>
-    </nav>
-  )
-}
-
 function ScreenPage({ client }: { client: GameClient }) {
   const { campaignId = '', section = '' } = useParams()
   const screen = workspaceSections.find((s) => s.id === section)?.id
@@ -344,16 +319,8 @@ function ScreenContent({
 }) {
   const [page, setPage] = useState(0)
   const [search, setSearch] = useState('')
-  const [allPlayers, setAllPlayers] = useState(false)
   const [retry, setRetry] = useState(0)
-  const key = JSON.stringify([
-    campaignId,
-    screen,
-    page,
-    search,
-    allPlayers,
-    retry,
-  ])
+  const key = JSON.stringify([campaignId, screen, page, search, retry])
   const [state, setState] = useState<{
     key: string
     data?: ScreenModel
@@ -362,7 +329,7 @@ function ScreenContent({
   const [notice, setNotice] = useState('')
   useEffect(() => {
     let active = true
-    client.screen({ campaignId, screen, page, search, allPlayers }).then(
+    client.screen({ campaignId, screen, page, search, allPlayers: false }).then(
       (data) => {
         if (active) setState({ key, data })
       },
@@ -373,7 +340,7 @@ function ScreenContent({
     return () => {
       active = false
     }
-  }, [client, campaignId, screen, page, search, allPlayers, key])
+  }, [client, campaignId, screen, page, search, key])
   const data = state?.key === key ? state.data : undefined
   const campaign = data?.rows.campaigns[0]
   const club = data?.rows.clubs.find((c) => c.id === campaign?.managedClubId)
@@ -382,12 +349,7 @@ function ScreenContent({
   )
   const title =
     workspaceSections.find((s) => s.id === screen)?.label ?? 'Campaign'
-  const playerScreen = [
-    'squad',
-    'transfers',
-    'registration',
-    'scouting',
-  ].includes(screen)
+  const playerScreen = ['squad', 'registration', 'scouting'].includes(screen)
   async function exportSave() {
     setNotice('')
     try {
@@ -501,19 +463,6 @@ function ScreenContent({
                     maxLength={120}
                   />
                 </label>
-                {screen === 'transfers' && (
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={allPlayers}
-                      onChange={(e) => {
-                        setAllPlayers(e.target.checked)
-                        setPage(0)
-                      }}
-                    />
-                    Search all clubs and free agents
-                  </label>
-                )}
               </div>
             )}
             {screen === 'tactics' && <NativeTactics model={data} />}
@@ -535,17 +484,29 @@ function ScreenContent({
             {screen === 'matches' && (
               <NativeMatches client={client} campaignId={campaignId} />
             )}
-            <NativeManagementPanel
-              key={data.revision}
-              client={client}
-              model={data}
-              screen={screen}
-              onSaved={() => {
-                setNotice('Saved native campaign change.')
-                setRetry((value) => value + 1)
-              }}
-              onReload={() => setRetry((value) => value + 1)}
-            />
+            {screen === 'transfers' ? (
+              <NativeTransferPlayers
+                client={client}
+                initialModel={data}
+                onSaved={() => {
+                  setNotice('Saved native campaign change.')
+                  setRetry((value) => value + 1)
+                }}
+                onReload={() => setRetry((value) => value + 1)}
+              />
+            ) : (
+              <NativeManagementPanel
+                key={data.revision}
+                client={client}
+                model={data}
+                screen={screen}
+                onSaved={() => {
+                  setNotice('Saved native campaign change.')
+                  setRetry((value) => value + 1)
+                }}
+                onReload={() => setRetry((value) => value + 1)}
+              />
+            )}
             {data.reports.map((report, i) => (
               <section key={i}>
                 <h3>
@@ -577,159 +538,5 @@ function ScreenContent({
         )
       )}
     </div>
-  )
-}
-function PolicyPreview({
-  client,
-  model,
-  campaignId,
-}: {
-  client: GameClient
-  model: ScreenModel
-  campaignId: string
-}) {
-  const [fee, setFee] = useState('0')
-  const [wage, setWage] = useState('0')
-  const [age, setAge] = useState('')
-  const [date, setDate] = useState(
-    model.rows.simulationStates[0]?.currentDate ??
-      model.rows.seasons[0]?.startDate ??
-      '',
-  )
-  const [tier, setTier] = useState<'key' | 'rotation' | 'youth'>('rotation')
-  const [state, setState] = useState<NativePreview | string | null>(null)
-  const [busy, setBusy] = useState(false)
-  async function submit() {
-    setBusy(true)
-    setState(null)
-    try {
-      setState(
-        await client.previewPolicy({
-          campaignId,
-          expectedRevision: model.revision,
-          effectiveDate: date,
-          action: {
-            type: 'incoming-transfer',
-            feeCents: Number(fee),
-            weeklyWageCents: wage === '' ? null : Number(wage),
-            age: age === '' ? null : Number(age),
-            isFree: Number(fee) === 0,
-            squadTier: tier,
-          },
-        }),
-      )
-    } catch (error) {
-      setState(mapInvokeError(error).message)
-    } finally {
-      setBusy(false)
-    }
-  }
-  const field = (label: string, node: ReactNode) => (
-    <label className="flex flex-col gap-1">
-      {label}
-      {node}
-    </label>
-  )
-  return (
-    <section className="space-y-3">
-      <h2>Action preview</h2>
-      <p>
-        Checks the saved constitution in Rust. This preview does not record a
-        transfer.
-      </p>
-      <form
-        className="flex flex-wrap items-end gap-3"
-        onSubmit={(e) => {
-          e.preventDefault()
-          void submit()
-        }}
-      >
-        {field(
-          'Fee (cents)',
-          <input
-            type="number"
-            min="0"
-            max={Number.MAX_SAFE_INTEGER}
-            step="1"
-            required
-            value={fee}
-            onChange={(e) => setFee(e.target.value)}
-          />,
-        )}
-        {field(
-          'Weekly wage (cents)',
-          <input
-            type="number"
-            min="0"
-            max={Number.MAX_SAFE_INTEGER}
-            step="1"
-            value={wage}
-            onChange={(e) => setWage(e.target.value)}
-          />,
-        )}
-        {field(
-          'Age (blank means unknown)',
-          <input
-            type="number"
-            min="0"
-            max="99"
-            step="1"
-            value={age}
-            onChange={(e) => setAge(e.target.value)}
-          />,
-        )}
-        {field(
-          'Tier',
-          <select
-            value={tier}
-            onChange={(e) => setTier(e.target.value as typeof tier)}
-          >
-            <option value="key">Key</option>
-            <option value="rotation">Rotation</option>
-            <option value="youth">Youth</option>
-          </select>,
-        )}
-        {field(
-          'Effective date',
-          <input
-            type="date"
-            required
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-          />,
-        )}
-        <Button
-          type="submit"
-          disabled={busy || !model.rows.constitutions.length}
-        >
-          Preview action
-        </Button>
-      </form>
-      {typeof state === 'string' ? (
-        <p role="alert">{state}</p>
-      ) : (
-        state && (
-          <div role="status">
-            <p>
-              {state.report.allowed
-                ? 'Allowed by saved rules'
-                : 'Blocked by saved rules'}{' '}
-              · revision {state.revision}
-            </p>
-            <p>
-              Capacity: {state.beforeCapacity} → {state.afterCapacity}
-            </p>
-            <p>
-              Wages: {state.beforeWages} → {state.afterWages}
-            </p>
-            {state.report.verdicts.map((v, i) => (
-              <p key={i}>
-                {v.message} {v.remedy}
-              </p>
-            ))}
-          </div>
-        )
-      )}
-    </section>
   )
 }

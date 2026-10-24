@@ -1,3 +1,4 @@
+import { loadFinanceScreen } from '../../data/queries/finance-screen'
 import { useEffect, useState } from 'react'
 import { Navigate, useParams } from 'react-router'
 import { financeFailed, loadingFinance, staleSave } from '../../app/copy'
@@ -8,17 +9,7 @@ import { KpiRibbon } from '../../components/ui/KpiRibbon'
 import { systemClock } from '../../data/clock'
 import { createEntityId } from '../../data/ids'
 import { postLedgerEntry } from '../../data/commands/post-ledger-entry'
-import { getCampaign } from '../../data/repositories/campaigns'
-import { getClub } from '../../data/repositories/clubs'
-import { listAuditEvents } from '../../data/repositories/audit-events'
-import {
-  awaitsClubChoice,
-  manualLedgerUnavailable,
-} from '../../domain/simulation/career'
-import { getActiveConstitution } from '../../data/repositories/constitutions'
-import { listContractsByClub } from '../../data/repositories/contracts'
-import { listLedgerEntries } from '../../data/repositories/ledger-entries'
-import { getActiveSeason } from '../../data/repositories/seasons'
+import { manualLedgerUnavailable } from '../../domain/simulation/career'
 import { formatCapacity, transferCapacity } from '../../domain/finance/capacity'
 import {
   formatWageCommitment,
@@ -172,39 +163,8 @@ export function FinancePage() {
       const id = entityIdSchema.safeParse(campaignId)
       if (!id.success) return
       try {
-        const campaign = await getCampaign(database, id.data)
-        if (!campaign) {
-          if (active) setState({ campaignId, missing: true })
-          return
-        }
-        const audits = await listAuditEvents(database, campaign.id)
-        if (awaitsClubChoice(campaign, audits)) {
-          if (active) setState({ campaignId, chooseClub: campaign.id })
-          return
-        }
-        const season = await getActiveSeason(database, campaign.id)
-        if (!season) throw new Error('Missing active season')
-        const [club, constitution, contracts, entries] = await Promise.all([
-          getClub(database, campaign.id, campaign.managedClubId),
-          getActiveConstitution(database, campaign.id),
-          listContractsByClub(database, campaign.id, campaign.managedClubId),
-          listLedgerEntries(
-            database,
-            campaign.id,
-            season.id,
-            campaign.managedClubId,
-          ),
-        ])
-        if (active)
-          setState({
-            campaignId,
-            campaign,
-            club,
-            season,
-            constitution,
-            contracts,
-            entries,
-          })
+        const snapshot = await loadFinanceScreen(database, id.data)
+        if (active) setState({ campaignId, ...snapshot })
       } catch {
         if (active) setState({ campaignId, failed: true })
       }

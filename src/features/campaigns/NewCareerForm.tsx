@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router'
-import { careerProgress, saveFailed } from '../../app/copy'
+import { Link, useNavigate } from 'react-router'
+import { careerProgress, careerRefreshFailed, saveFailed } from '../../app/copy'
 import { useDatabase } from '../../app/providers/database'
 import { Button } from '../../components/ui/Button'
 import { systemClock } from '../../data/clock'
@@ -25,7 +25,11 @@ type ClubOption = { key: string; label: string }
 const fieldClass =
   'touchline-focus rounded border border-[var(--border)] bg-[var(--surface-1)] px-2 py-1'
 
-export function NewCareerForm({ onStarted }: { onStarted: () => void }) {
+export function NewCareerForm({
+  onStarted,
+}: {
+  onStarted: () => Promise<void>
+}) {
   const database = useDatabase()
   const navigate = useNavigate()
   const [name, setName] = useState('')
@@ -42,6 +46,7 @@ export function NewCareerForm({ onStarted }: { onStarted: () => void }) {
   const [busy, setBusy] = useState(false)
   const [status, setStatus] = useState('')
   const [error, setError] = useState('')
+  const [savedCampaignId, setSavedCampaignId] = useState<string | null>(null)
 
   useEffect(() => {
     let active = true
@@ -104,7 +109,24 @@ export function NewCareerForm({ onStarted }: { onStarted: () => void }) {
     }
   }
 
+  async function openSavedCareer(campaignId: string) {
+    setSavedCampaignId(campaignId)
+    setBusy(true)
+    setError('')
+    setStatus(careerProgress('ready'))
+    try {
+      await onStarted()
+    } catch {
+      setError(careerRefreshFailed)
+      return
+    } finally {
+      setBusy(false)
+    }
+    navigate(`/app/${campaignId}/command-center`)
+  }
+
   async function startCareer() {
+    if (busy || savedCampaignId) return
     if (!clubKey) {
       setError('Choose a club from this world.')
       return
@@ -140,8 +162,7 @@ export function NewCareerForm({ onStarted }: { onStarted: () => void }) {
         setStatus('')
         return
       }
-      onStarted()
-      navigate(`/app/${result.value.id}/command-center`)
+      await openSavedCareer(result.value.id)
     } catch {
       setError(saveFailed)
       setStatus('')
@@ -151,6 +172,7 @@ export function NewCareerForm({ onStarted }: { onStarted: () => void }) {
   }
 
   async function openDemo() {
+    if (busy || savedCampaignId) return
     setBusy(true)
     setError('')
     setStatus(careerProgress('generate'))
@@ -167,8 +189,7 @@ export function NewCareerForm({ onStarted }: { onStarted: () => void }) {
         return
       }
       setDemo(result.value)
-      onStarted()
-      navigate(`/app/${result.value.id}/command-center`)
+      await openSavedCareer(result.value.id)
     } catch {
       setError(saveFailed)
       setStatus('')
@@ -178,7 +199,8 @@ export function NewCareerForm({ onStarted }: { onStarted: () => void }) {
   }
 
   async function resetDemo() {
-    if (!demo || phrase !== resetPlayablePhrase) return
+    if (busy || savedCampaignId || !demo || phrase !== resetPlayablePhrase)
+      return
     setBusy(true)
     setError('')
     setStatus(careerProgress('generate'))
@@ -202,8 +224,7 @@ export function NewCareerForm({ onStarted }: { onStarted: () => void }) {
       }
       setDemo(result.value)
       setPhrase('')
-      onStarted()
-      navigate(`/app/${result.value.id}/command-center`)
+      await openSavedCareer(result.value.id)
     } catch {
       setError(saveFailed)
       setStatus('')
@@ -301,7 +322,7 @@ export function NewCareerForm({ onStarted }: { onStarted: () => void }) {
           </select>
         </div>
         <Button
-          disabled={busy || !seed.trim()}
+          disabled={busy || !!savedCampaignId || !seed.trim()}
           onClick={() => void listClubs()}
         >
           List clubs
@@ -326,12 +347,21 @@ export function NewCareerForm({ onStarted }: { onStarted: () => void }) {
         <Button
           type="submit"
           variant="primary"
-          disabled={busy || !name.trim() || !seed.trim() || !clubKey}
+          disabled={
+            busy ||
+            !!savedCampaignId ||
+            !name.trim() ||
+            !seed.trim() ||
+            !clubKey
+          }
         >
           Start career
         </Button>
       </form>
-      <Button disabled={busy} onClick={() => void openDemo()}>
+      <Button
+        disabled={busy || !!savedCampaignId}
+        onClick={() => void openDemo()}
+      >
         Open playable demo
       </Button>
       {demo ? (
@@ -353,7 +383,9 @@ export function NewCareerForm({ onStarted }: { onStarted: () => void }) {
           />
           <Button
             type="submit"
-            disabled={busy || phrase !== resetPlayablePhrase}
+            disabled={
+              busy || !!savedCampaignId || phrase !== resetPlayablePhrase
+            }
           >
             Reset playable demo
           </Button>
@@ -361,6 +393,22 @@ export function NewCareerForm({ onStarted }: { onStarted: () => void }) {
       ) : null}
       {status ? <p role="status">{status}</p> : null}
       {error ? <p role="alert">{error}</p> : null}
+      {savedCampaignId ? (
+        <div className="flex flex-wrap items-center gap-3">
+          <Button
+            disabled={busy}
+            onClick={() => void openSavedCareer(savedCampaignId)}
+          >
+            Retry refresh
+          </Button>
+          <Link
+            className="touchline-focus"
+            to={`/app/${savedCampaignId}/command-center`}
+          >
+            Open saved career
+          </Link>
+        </div>
+      ) : null}
     </section>
   )
 }

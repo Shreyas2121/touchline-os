@@ -1,21 +1,10 @@
+import { loadCommandCenterScreen } from '../../data/queries/command-center-screen'
 import { useEffect, useState } from 'react'
 import { Navigate, useParams } from 'react-router'
 import { loadingCampaign } from '../../app/copy'
 import { SectionPage } from '../../app/pages/SectionPage'
 import { useDatabase } from '../../app/providers/database'
 import { KpiRibbon } from '../../components/ui/KpiRibbon'
-import { getCampaign } from '../../data/repositories/campaigns'
-import { getClub } from '../../data/repositories/clubs'
-import { listPlayersByClub } from '../../data/repositories/players'
-import { listAuditEvents } from '../../data/repositories/audit-events'
-import { awaitsClubChoice } from '../../domain/simulation/career'
-import { getActiveConstitution } from '../../data/repositories/constitutions'
-import { listContractsByClub } from '../../data/repositories/contracts'
-import { listLedgerEntries } from '../../data/repositories/ledger-entries'
-import { listOffers } from '../../data/repositories/offers'
-import { listRegistrations } from '../../data/repositories/registrations'
-import { getActiveSeason } from '../../data/repositories/seasons'
-import { getSimulationState } from '../../data/repositories/simulation'
 import { matchSimulationUnavailable } from '../../domain/simulation/calendar'
 import { formatCapacity, transferCapacity } from '../../domain/finance/capacity'
 import {
@@ -52,35 +41,24 @@ export function CommandCenterPage() {
       const id = entityIdSchema.safeParse(campaignId)
       if (!id.success) return
       try {
-        const campaign = await getCampaign(database, id.data)
-        if (!campaign) {
-          if (active) setSummary({ campaignId, missing: true })
+        const snapshot = await loadCommandCenterScreen(database, id.data)
+        if (snapshot.status !== 'ready') {
+          if (active) setSummary({ campaignId, ...snapshot })
           return
         }
-        const audits = await listAuditEvents(database, campaign.id)
-        if (awaitsClubChoice(campaign, audits)) {
-          if (active) setSummary({ campaignId, chooseClub: campaign.id })
-          return
-        }
-        const season = await getActiveSeason(database, campaign.id)
-        const [club, players, constitution, contracts, entries, offers] =
-          await Promise.all([
-            getClub(database, campaign.id, campaign.managedClubId),
-            listPlayersByClub(database, campaign.id, campaign.managedClubId),
-            getActiveConstitution(database, campaign.id),
-            listContractsByClub(database, campaign.id, campaign.managedClubId),
-            season
-              ? listLedgerEntries(
-                  database,
-                  campaign.id,
-                  season.id,
-                  campaign.managedClubId,
-                )
-              : Promise.resolve([]),
-            season
-              ? listOffers(database, campaign.id, season.id)
-              : Promise.resolve([]),
-          ])
+        const {
+          campaign,
+          audits,
+          season,
+          club,
+          players,
+          constitution,
+          contracts,
+          entries,
+          offers,
+          registrations,
+          clock,
+        } = snapshot
         const managedPlayerIds = new Set(players.map((player) => player.id))
         const activeBids = offers.filter(
           (offer) =>
@@ -99,13 +77,7 @@ export function CommandCenterPage() {
           registrationRule.enabled &&
           season
         ) {
-          const rows = await listRegistrations(
-            database,
-            campaign.id,
-            season.id,
-            registrationRule.competitionKey,
-          )
-          const count = rows.filter(
+          const count = registrations.filter(
             (row) =>
               row.status === 'registered' && managedPlayerIds.has(row.playerId),
           ).length
@@ -121,10 +93,6 @@ export function CommandCenterPage() {
                 prizeReinvestmentPct: rule?.prizeReinvestmentPct ?? 0,
               }).remainingCents
             : null
-        const clock =
-          campaign.mode === 'standalone'
-            ? await getSimulationState(database, campaign.id)
-            : undefined
         if (active)
           setSummary({
             campaignId,

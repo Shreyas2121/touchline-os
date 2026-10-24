@@ -274,7 +274,7 @@ export function CampaignManager() {
 
   return (
     <div className="space-y-4">
-      <NewCareerForm onStarted={() => void reload()} />
+      <NewCareerForm onStarted={reload} />
       <div className="flex flex-wrap gap-2">
         <Button
           disabled={busy || campaigns === null}

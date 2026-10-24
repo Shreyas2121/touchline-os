@@ -1,3 +1,4 @@
+import { loadClubChoiceScreen } from '../../data/queries/club-choice-screen'
 import { useEffect, useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router'
 import { loadingCampaign, saveFailed, staleSave } from '../../app/copy'
@@ -7,9 +8,6 @@ import { PageHeader } from '../../components/ui/PageHeader'
 import { systemClock } from '../../data/clock'
 import { createEntityId } from '../../data/ids'
 import { selectManagedClub } from '../../data/commands/select-managed-club'
-import { getCampaign } from '../../data/repositories/campaigns'
-import { listClubs } from '../../data/repositories/clubs'
-import { listLeagues } from '../../data/repositories/leagues'
 import {
   entityIdSchema,
   type Campaign,
@@ -36,21 +34,9 @@ export function ChooseClubPage() {
     const parsed = entityIdSchema.safeParse(campaignId)
     if (!parsed.success) return
     const id = parsed.data
-    Promise.all([
-      getCampaign(database, id),
-      listLeagues(database, id),
-      listClubs(database, id),
-    ])
-      .then(([campaign, leagues, clubs]) => {
-        if (active)
-          setData({
-            id,
-            campaign,
-            leagues: [...leagues].sort(
-              (a, b) => (a.tier ?? Infinity) - (b.tier ?? Infinity),
-            ),
-            clubs,
-          })
+    loadClubChoiceScreen(database, id)
+      .then((snapshot) => {
+        if (active) setData(snapshot)
       })
       .catch(() => {
         if (active) setMessage(saveFailed)

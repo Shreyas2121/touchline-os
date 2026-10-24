@@ -1,4 +1,5 @@
-﻿import { useEffect, useId, useState, type FormEvent } from 'react'
+import { loadPlayerProfile } from '../../data/queries/player-profile'
+import { useEffect, useId, useState, type FormEvent } from 'react'
 import { staleSave } from '../../app/copy'
 import { useDatabase } from '../../app/providers/database'
 import { Button } from '../../components/ui/Button'
@@ -8,10 +9,6 @@ import { saveContract } from '../../data/commands/save-contract'
 import { saveShortlistItem } from '../../data/commands/save-shortlist-item'
 import { updatePlayer } from '../../data/commands/update-player'
 import { saveDevelopmentNote } from '../../data/commands/save-development-note'
-import { getDevelopmentPlan } from '../../data/repositories/development-plans'
-import { listAuditEvents } from '../../data/repositories/audit-events'
-import { listContractsByPlayer } from '../../data/repositories/contracts'
-import { listShortlist } from '../../data/repositories/shortlist'
 import { parseDateOnly } from '../../domain/models/dates'
 import { formatMoneyUnknown, parseMoneyCents } from '../../domain/models/money'
 import { positions } from '../../domain/models/positions'
@@ -62,6 +59,7 @@ type ProfileProps = {
   season?: Season
   revision: number
   readOnly?: boolean
+  refreshing?: boolean
   onSaved: (revision: number) => void
 }
 
@@ -70,6 +68,7 @@ export function PlayerProfile({
   season,
   revision,
   readOnly = false,
+  refreshing = false,
   onSaved,
 }: ProfileProps) {
   const database = useDatabase()
@@ -86,29 +85,14 @@ export function PlayerProfile({
     let active = true
     async function load() {
       try {
-        const [plan, audits, shortlist, contracts] = await Promise.all([
-          season
-            ? getDevelopmentPlan(
-                database,
-                player.campaignId,
-                player.id,
-                season.id,
-              )
-            : Promise.resolve(undefined),
-          listAuditEvents(database, player.campaignId),
-          listShortlist(database, player.campaignId),
-          listContractsByPlayer(database, player.campaignId, player.id),
-        ])
-        if (active)
-          setDetails({
-            revision,
-            plan,
-            contracts,
-            shortlist: shortlist.find((item) => item.playerId === player.id),
-            history: audits
-              .filter((audit) => audit.payload.playerId === player.id)
-              .slice(0, 20),
-          })
+        const snapshot = await loadPlayerProfile(
+          database,
+          player.campaignId,
+          player.id,
+          season?.id,
+          revision,
+        )
+        if (active) setDetails(snapshot)
       } catch {
         if (active)
           setDetails({ revision, history: [], contracts: [], failed: true })
@@ -121,88 +105,90 @@ export function PlayerProfile({
   }, [database, player.campaignId, player.id, season, revision])
   return (
     <section aria-label="Selected player">
-      <h2>{player.name}</h2>
-      <p>{player.positions.join(', ')}</p>
-      <p>{player.nationalityCode ?? 'Unknown'}</p>
-      <p>{player.birthDate ?? 'No birth date recorded.'}</p>
-      <p>
-        {ageText(season ? displayAge(player, season) : { kind: 'unknown' })}
-      </p>
-      <p>{formatMoneyUnknown(player.marketValueCents)}</p>
-      <p>
-        {readOnly
-          ? `${playerEditUnavailable} ${contractEditUnavailable}`
-          : `Source stays ${sourceLabel(player.source)}. This correction is recorded in activity.`}
-      </p>
-      {player.isNewgen && <p>Newgen</p>}
-      <dl aria-label="Attributes">
-        {attributes.map(([key, label]) => (
-          <div key={key}>
-            <dt>{label}</dt>
-            <dd>{player.attributes[key] ?? 'Missing'}</dd>
-          </div>
-        ))}
-      </dl>
-      {details && details.revision === revision && !details.failed && (
-        <ShortlistButton
-          player={player}
-          revision={revision}
-          item={details.shortlist}
-          onSaved={onSaved}
-        />
-      )}
-      {readOnly ? null : (
-        <ContractForm
-          player={player}
-          revision={revision}
-          onSaved={onSaved}
-          setMessage={setMessage}
-        />
-      )}
-      {details && details.revision === revision && !details.failed && (
-        <ContractList contracts={details.contracts} />
-      )}
-      {readOnly ? null : (
-        <CorrectionForm
-          key={JSON.stringify(player)}
-          player={player}
-          revision={revision}
-          onSaved={onSaved}
-          setMessage={setMessage}
-        />
-      )}
-      {message && <p role="status">{message}</p>}
-      {!details || details.revision !== revision ? (
-        <p>Loading player details.</p>
-      ) : details.failed ? (
-        <p role="alert">
-          Player details could not be loaded. Reload and try again.
+      <fieldset disabled={refreshing}>
+        <h2>{player.name}</h2>
+        <p>{player.positions.join(', ')}</p>
+        <p>{player.nationalityCode ?? 'Unknown'}</p>
+        <p>{player.birthDate ?? 'No birth date recorded.'}</p>
+        <p>
+          {ageText(season ? displayAge(player, season) : { kind: 'unknown' })}
         </p>
-      ) : (
-        <>
-          {season ? (
-            <NoteForm
-              key={JSON.stringify(details.plan ?? null)}
-              player={player}
-              season={season}
-              revision={revision}
-              plan={details.plan}
-              onSaved={onSaved}
-              setMessage={setMessage}
-            />
-          ) : (
-            <p>This campaign has no active season.</p>
-          )}
-          <ul aria-label="History">
-            {details.history.map((audit) => (
-              <li key={audit.id}>{audit.summary}</li>
-            ))}
-          </ul>
-          {details.history.length === 0 && (
-            <p>No individual history for this player.</p>
-          )}
-        </>
-      )}
+        <p>{formatMoneyUnknown(player.marketValueCents)}</p>
+        <p>
+          {readOnly
+            ? `${playerEditUnavailable} ${contractEditUnavailable}`
+            : `Source stays ${sourceLabel(player.source)}. This correction is recorded in activity.`}
+        </p>
+        {player.isNewgen && <p>Newgen</p>}
+        <dl aria-label="Attributes">
+          {attributes.map(([key, label]) => (
+            <div key={key}>
+              <dt>{label}</dt>
+              <dd>{player.attributes[key] ?? 'Missing'}</dd>
+            </div>
+          ))}
+        </dl>
+        {details && details.revision === revision && !details.failed && (
+          <ShortlistButton
+            player={player}
+            revision={revision}
+            item={details.shortlist}
+            onSaved={onSaved}
+          />
+        )}
+        {readOnly ? null : (
+          <ContractForm
+            player={player}
+            revision={revision}
+            onSaved={onSaved}
+            setMessage={setMessage}
+          />
+        )}
+        {details && details.revision === revision && !details.failed && (
+          <ContractList contracts={details.contracts} />
+        )}
+        {readOnly ? null : (
+          <CorrectionForm
+            key={JSON.stringify(player)}
+            player={player}
+            revision={revision}
+            onSaved={onSaved}
+            setMessage={setMessage}
+          />
+        )}
+        {message && <p role="status">{message}</p>}
+        {refreshing || !details || details.revision !== revision ? (
+          <p>Loading player details.</p>
+        ) : details.failed ? (
+          <p role="alert">
+            Player details could not be loaded. Reload and try again.
+          </p>
+        ) : (
+          <>
+            {season ? (
+              <NoteForm
+                key={JSON.stringify(details.plan ?? null)}
+                player={player}
+                season={season}
+                revision={revision}
+                plan={details.plan}
+                onSaved={onSaved}
+                setMessage={setMessage}
+              />
+            ) : (
+              <p>This campaign has no active season.</p>
+            )}
+            <ul aria-label="History">
+              {details.history.map((audit) => (
+                <li key={audit.id}>{audit.summary}</li>
+              ))}
+            </ul>
+            {details.history.length === 0 && (
+              <p>No individual history for this player.</p>
+            )}
+          </>
+        )}
+      </fieldset>
     </section>
   )
 }

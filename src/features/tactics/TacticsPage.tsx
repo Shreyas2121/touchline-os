@@ -1,18 +1,14 @@
-﻿import { useEffect, useState } from 'react'
+import { loadTacticsScreen } from '../../data/queries/tactics-screen'
+import { useEffect, useState } from 'react'
 import { Navigate, useParams } from 'react-router'
 import { loadingTactics, tacticsFailed } from '../../app/copy'
 import { SectionPage } from '../../app/pages/SectionPage'
 import { useDatabase } from '../../app/providers/database'
 import { CrestSvg } from '../../components/graphics/CrestSvg'
-import { getCampaign } from '../../data/repositories/campaigns'
-import { getClub } from '../../data/repositories/clubs'
-import { listAuditEvents } from '../../data/repositories/audit-events'
-import { awaitsClubChoice } from '../../domain/simulation/career'
 import { crestSpec } from '../../domain/graphics/crest'
-import { listPlayersByClub } from '../../data/repositories/players'
-import { getActiveSeason } from '../../data/repositories/seasons'
 import {
   entityIdSchema,
+  type Lineup,
   type Club,
   type Player,
   type Season,
@@ -22,6 +18,7 @@ import { TacticsBoard } from './TacticsBoard'
 type TacticsState = {
   campaignId: string | undefined
   club?: Club
+  lineups?: Lineup[]
   players?: Player[]
   season?: Season
   revision?: number
@@ -40,29 +37,8 @@ export function TacticsPage() {
       const id = entityIdSchema.safeParse(campaignId)
       if (!id.success) return
       try {
-        const campaign = await getCampaign(database, id.data)
-        if (!campaign) {
-          if (active) setState({ campaignId, missing: true })
-          return
-        }
-        const audits = await listAuditEvents(database, campaign.id)
-        if (awaitsClubChoice(campaign, audits)) {
-          if (active) setState({ campaignId, chooseClub: campaign.id })
-          return
-        }
-        const [club, season, players] = await Promise.all([
-          getClub(database, campaign.id, campaign.managedClubId),
-          getActiveSeason(database, campaign.id),
-          listPlayersByClub(database, campaign.id, campaign.managedClubId),
-        ])
-        if (active)
-          setState({
-            campaignId,
-            club,
-            season,
-            players: club ? players : [],
-            revision: campaign.revision,
-          })
+        const snapshot = await loadTacticsScreen(database, id.data)
+        if (active) setState({ campaignId, ...snapshot })
       } catch {
         if (active) setState({ campaignId, failed: true })
       }
@@ -94,6 +70,7 @@ export function TacticsPage() {
         key={`${campaignId}:${state.club?.id ?? 'missing'}:${state.season?.id ?? 'missing'}`}
         campaignId={entityIdSchema.parse(campaignId)}
         initialRevision={state.revision ?? 0}
+        initialLineups={state.lineups ?? []}
         players={state.players ?? []}
         season={state.season}
       />

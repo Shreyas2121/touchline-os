@@ -1,4 +1,10 @@
-import { cleanup, fireEvent, screen, within } from '@testing-library/react'
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 import { createCampaign } from '../data/commands/create-campaign'
 import { deleteDatabaseForTests, getDatabase } from '../data/db'
@@ -15,6 +21,7 @@ import {
 } from '../domain/validation/schemas'
 import { harborInput } from './fixtures/campaign'
 import { renderAt } from './render'
+import { ActionPreview } from '../features/finance/ActionPreview'
 
 const constitution = constitutionSchema.parse({
   id: 'constitution-a',
@@ -332,21 +339,21 @@ describe('Finance action preview', () => {
     ['Age', '24.5', 'Enter a whole number of years or leave age blank.'],
     ['Age', '100', 'Enter a whole number of years or leave age blank.'],
   ])(
-    'validates %s=%s without replacing the previous result',
+    'validates %s=%s and clears the previous result',
     async (label, value, message) => {
       await setup()
       fillPaid()
       preview()
-      const previous = screen.getByRole('region', {
-        name: 'Preview result',
-      }).textContent
+      expect(
+        screen.getByRole('region', { name: 'Preview result' }),
+      ).toBeInTheDocument()
       const before = await storedState()
       fill(label, value)
       preview()
       expect(screen.getByRole('alert')).toHaveTextContent(message)
       expect(
-        screen.getByRole('region', { name: 'Preview result' }).textContent,
-      ).toBe(previous)
+        screen.queryByRole('region', { name: 'Preview result' }),
+      ).toBeNull()
       expect(await storedState()).toEqual(before)
     },
   )
@@ -380,5 +387,46 @@ describe('Finance action preview', () => {
     renderAt('/app/campaign-a/finance')
     await screen.findByRole('table', { name: 'Ledger' })
     expect(screen.queryByRole('region', { name: 'Action preview' })).toBeNull()
+  })
+})
+
+describe('action preview submitted inputs', () => {
+  it.each([
+    ['Fee', '1'],
+    ['Age', '25'],
+    ['Weekly wage', '2'],
+    ['Tier', 'key'],
+  ])('hides a successful preview after editing %s', (label, value) => {
+    render(<ActionPreview {...base} prestige={50} />)
+    fillPaid()
+    preview()
+    expect(
+      screen.getByRole('region', { name: 'Preview result' }),
+    ).toBeInTheDocument()
+    fill(label, value)
+    expect(screen.queryByRole('region', { name: 'Preview result' })).toBeNull()
+    preview()
+    expect(
+      screen.getByRole('region', { name: 'Preview result' }),
+    ).toBeInTheDocument()
+  })
+
+  it('hides a result when the policy revision changes and preserves the draft', () => {
+    const view = render(<ActionPreview {...base} prestige={50} />)
+    fillPaid()
+    preview()
+    view.rerender(
+      <ActionPreview
+        {...base}
+        snapshot={{ ...base.snapshot, revision: 5 }}
+        prestige={50}
+      />,
+    )
+    expect(screen.queryByRole('region', { name: 'Preview result' })).toBeNull()
+    expect(screen.getByLabelText('Fee', { exact: true })).toHaveValue('6000000')
+    preview()
+    expect(
+      screen.getByRole('region', { name: 'Preview result' }),
+    ).toBeInTheDocument()
   })
 })

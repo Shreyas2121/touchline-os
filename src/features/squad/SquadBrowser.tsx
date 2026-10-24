@@ -47,6 +47,7 @@ export function SquadBrowser({
   season,
   revision,
   readOnly = false,
+  refreshing = false,
   onSaved,
 }: {
   players: readonly Player[]
@@ -54,6 +55,7 @@ export function SquadBrowser({
   season?: Season
   revision: number
   readOnly?: boolean
+  refreshing?: boolean
   onSaved: (revision: number) => void
 }) {
   const [query, setQuery] = useState('')
@@ -260,6 +262,7 @@ export function SquadBrowser({
           season={season}
           revision={revision}
           readOnly={readOnly}
+          refreshing={refreshing}
           onSaved={onSaved}
         />
       )}

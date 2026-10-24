@@ -8,6 +8,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createCampaign } from '../data/commands/create-campaign'
 import * as correctionCommand from '../data/commands/update-player'
+import * as squadQueries from '../data/queries/squad-screen'
 import { deleteDatabaseForTests, getDatabase } from '../data/db'
 import { playerSchema, entityIdSchema } from '../domain/validation/schemas'
 import { invalidDateMessage } from '../domain/models/dates'
@@ -64,6 +65,45 @@ function attribute(label: string) {
     .nextElementSibling
 }
 describe('player profile', () => {
+  it('waits for the complete squad snapshot before allowing another edit', async () => {
+    await setup()
+    const read = squadQueries.loadSquadScreen
+    let resume!: () => void
+    const pending = new Promise<void>((resolve) => {
+      resume = resolve
+    })
+    vi.spyOn(squadQueries, 'loadSquadScreen').mockImplementationOnce(
+      async (...args) => {
+        await pending
+        return read(...args)
+      },
+    )
+    change('Name', 'Unsaved correction')
+    change('Development notes', 'Keep possession')
+    fireEvent.click(profile().getByRole('button', { name: 'Save note' }))
+    await screen.findByText('Development note saved.')
+    expect(
+      await screen.findByText('Loading player details.'),
+    ).toBeInTheDocument()
+    expect(
+      profile().getByRole('button', { name: 'Save player' }),
+    ).toBeDisabled()
+    expect(
+      profile().getByRole('button', { name: 'Save contract' }),
+    ).toBeDisabled()
+    expect(profile().queryByRole('button', { name: 'Save note' })).toBeNull()
+    resume()
+    await waitFor(() =>
+      expect(profile().getByLabelText('Development notes')).toHaveValue(
+        'Keep possession',
+      ),
+    )
+    expect(profile().getByRole('button', { name: 'Save player' })).toBeEnabled()
+    expect(profile().getByLabelText('Name', { exact: true })).toHaveValue(
+      'Unsaved correction',
+    )
+  })
+
   it('shows identity, missing attributes and honest source and contract copy', async () => {
     await setup()
     expect(

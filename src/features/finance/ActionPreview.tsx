@@ -54,13 +54,33 @@ export function ActionPreview({
   const [value, setValue] = useState('')
   const [bidder, setBidder] = useState('')
   const [error, setError] = useState('')
-  const [result, setResult] = useState<PreviewResult | null>(null)
+  const inputKey = JSON.stringify([
+    choice,
+    fee,
+    age,
+    wage,
+    tier,
+    bid,
+    value,
+    bidder,
+    snapshot,
+    constitution,
+    effectiveDate,
+    wages,
+    prestige,
+  ])
+  const [submitted, setResult] = useState<{
+    key: string
+    value: PreviewResult
+  } | null>(null)
+  const result = submitted?.key === inputKey ? submitted.value : null
   const resultRegion = useRef<HTMLDivElement>(null)
   useEffect(() => {
     if (result) resultRegion.current?.focus()
   }, [result])
   function preview() {
     setError('')
+    setResult(null)
     try {
       let action: PolicyAction
       if (choice === 'reject-offer') {
@@ -94,9 +114,16 @@ export function ActionPreview({
                 squadTier,
               }
       }
-      setResult(
-        previewAction({ action, snapshot, constitution, effectiveDate, wages }),
-      )
+      setResult({
+        key: inputKey,
+        value: previewAction({
+          action,
+          snapshot,
+          constitution,
+          effectiveDate,
+          wages,
+        }),
+      })
     } catch (cause) {
       setError(
         cause instanceof Error
