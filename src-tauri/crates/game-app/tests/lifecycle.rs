@@ -16,6 +16,8 @@ use std::{
         OnceLock,
     },
 };
+#[path = "support/roster_years.rs"]
+mod roster_years;
 const NOW: &str = "2026-10-25T12:00:00.000Z";
 static SEQ: AtomicU64 = AtomicU64::new(0);
 fn n(v: i64) -> SafeInt {
@@ -217,9 +219,12 @@ fn baseline() -> SnapshotTables {
 fn imported(t: SnapshotTables) -> (Dir, NativeStore) {
     let d = Dir::new();
     let store = d.store();
+    import_into(&store, t);
+    (d, store)
+}
+fn import_into(store: &NativeStore, t: SnapshotTables) {
     let bytes=serde_json::to_vec(&json!({"format":"touchline-campaign","formatVersion":1,"sourceStorage":"sqlite","sourceSchemaVersion":5,"exportId":"prepared-lifecycle","exportedAt":NOW,"campaignRevision":t.campaigns[0].revision,"tables":t})).unwrap();
     store.import_snapshot(&bytes).unwrap();
-    (d, store)
 }
 fn read(store: &NativeStore) -> SnapshotTables {
     store.read_campaign("lifecycle-career").unwrap()
@@ -264,6 +269,164 @@ fn request(p: LifecyclePreview) -> LifecycleRequest {
 }
 fn season_request(store: &NativeStore) -> LifecycleRequest {
     request(preview_season(store, id("lifecycle-career")).unwrap())
+}
+
+#[test]
+fn roster_floor_holds_after_rollover_and_two_planned_years() {
+    let (_d, store) = imported(baseline());
+    settle_season(&store, season_request(&store)).unwrap();
+    let settled = read(&store);
+    roster_years::roster_floor_holds_after_rollover_and_two_planned_years(&settled);
+    assert_eq!(
+        read(&store),
+        settled,
+        "two pure continuations never write another season"
+    );
+}
+
+fn second_campaign(t: &SnapshotTables) -> SnapshotTables {
+    use std::collections::BTreeMap;
+    let mut value = serde_json::to_value(t).unwrap();
+    let ids = value
+        .as_object()
+        .unwrap()
+        .values()
+        .flat_map(|v| v.as_array().unwrap())
+        .flat_map(|row| [row["id"].as_str(), row["actionId"].as_str()])
+        .flatten()
+        .map(|id| (id.to_owned(), fresh().as_str().to_owned()))
+        .collect::<BTreeMap<_, _>>();
+    fn remap(value: &mut serde_json::Value, ids: &BTreeMap<String, String>) {
+        match value {
+            serde_json::Value::String(s) => {
+                if let Some(id) = ids.get(s) {
+                    *s = id.clone();
+                } else if let Some(new_season) = ids.get("closing-season") {
+                    *s = s.replace("season:closing-season:", &format!("season:{new_season}:"));
+                }
+            }
+            serde_json::Value::Array(items) => {
+                for item in items {
+                    remap(item, ids);
+                }
+            }
+            serde_json::Value::Object(fields) => {
+                for item in fields.values_mut() {
+                    remap(item, ids);
+                }
+            }
+            _ => {}
+        }
+    }
+    remap(&mut value, &ids);
+    serde_json::from_value(value).unwrap()
+}
+
+#[test]
+fn settlement_replay_isolation_and_rollback() {
+    let (d, store) = imported(baseline());
+    let other = second_campaign(&baseline());
+    let other_id = other.campaigns[0].id.clone();
+    import_into(&store, other);
+    let other_before = store.read_campaign(other_id.as_str()).unwrap();
+    let before = read(&store);
+    let p = preview_season(&store, id("lifecycle-career")).unwrap();
+    let counts = p.id_counts.clone();
+    let left = request(p.clone());
+    let right = request(p);
+    let db = Connection::open(d.file()).unwrap();
+    db.execute_batch("CREATE TRIGGER reject_certified_settle BEFORE INSERT ON auditEvents WHEN new.actionType='season.settle' AND new.campaignId='lifecycle-career' BEGIN SELECT RAISE(ABORT,'injected audit failure'); END;").unwrap();
+    assert!(settle_season(&store, left.clone()).is_err());
+    assert_eq!(read(&store), before);
+    assert_eq!(read(&store).seasons.len(), 1);
+    assert_eq!(
+        store.read_campaign(other_id.as_str()).unwrap(),
+        other_before
+    );
+    db.execute_batch("DROP TRIGGER reject_certified_settle")
+        .unwrap();
+    let mut stale = left.clone();
+    stale.expected_revision = n(before.campaigns[0].revision.get() + 1);
+    assert!(settle_season(&store, stale).is_err());
+    assert_eq!(read(&store), before);
+    let mut conflict = left.clone();
+    conflict.input_fingerprint = "conflicting-preview".into();
+    assert!(settle_season(&store, conflict).is_err());
+    assert_eq!(read(&store), before);
+    // Separate SQLite workers overlap the same logical confirmation. Each
+    // client owns different row IDs, which must not change receipt identity.
+    let peer = d.store();
+    let barrier = std::sync::Barrier::new(2);
+    let (a, b) = std::thread::scope(|scope| {
+        let a = scope.spawn(|| {
+            barrier.wait();
+            settle_season(&store, left.clone())
+        });
+        let b = scope.spawn(|| {
+            barrier.wait();
+            settle_season(&peer, right)
+        });
+        (a.join().unwrap().unwrap(), b.join().unwrap().unwrap())
+    });
+    assert_ne!(a.replayed, b.replayed);
+    assert_eq!(a.receipt_id, b.receipt_id);
+    assert_eq!(a.revision, n(before.campaigns[0].revision.get() + 1));
+    assert_eq!(b.revision, a.revision);
+    let settled = read(&store);
+    assert_eq!(settled.season_settlements.len(), 1);
+    assert_eq!(settled.seasons.len(), 2);
+    assert_eq!(
+        settled.fixtures.len(),
+        before.fixtures.len() + counts.fixtures
+    );
+    assert_eq!(settled.players.len(), before.players.len() + counts.players);
+    assert_eq!(
+        settled.ledger_entries.len(),
+        before.ledger_entries.len() + counts.ledger
+    );
+    assert_eq!(
+        store.read_campaign(other_id.as_str()).unwrap(),
+        other_before
+    );
+    let balance_sum = settled
+        .club_simulation_states
+        .iter()
+        .map(|s| s.transfer_balance_cents.get())
+        .sum::<i64>();
+    let replay = settle_season(&peer, left.clone()).unwrap();
+    assert!(replay.replayed);
+    assert_eq!(replay.revision, a.revision);
+    assert_eq!(read(&store), settled);
+    let mut wrong = left;
+    wrong.input_fingerprint = "conflicting-receipt".into();
+    assert!(settle_season(&store, wrong).is_err());
+    assert_eq!(read(&store), settled);
+    settle_season(
+        &store,
+        request(preview_season(&store, other_id.clone()).unwrap()),
+    )
+    .unwrap();
+    assert_eq!(
+        read(&store),
+        settled,
+        "settling the second campaign preserves every first-campaign row"
+    );
+    assert_eq!(
+        read(&store)
+            .club_simulation_states
+            .iter()
+            .map(|s| s.transfer_balance_cents.get())
+            .sum::<i64>(),
+        balance_sum
+    );
+    assert_eq!(
+        store
+            .read_campaign(other_id.as_str())
+            .unwrap()
+            .season_settlements
+            .len(),
+        1
+    );
 }
 
 #[test]
@@ -667,7 +830,11 @@ fn with_offer(qualifying: bool) -> SnapshotTables {
         player_id: player.clone(),
         buyer_club_id: buyer.clone(),
         seller_club_id: Some(seller.clone()),
-        status: NegotiationStatus::Proposed,
+        status: if qualifying {
+            NegotiationStatus::Agreed
+        } else {
+            NegotiationStatus::Proposed
+        },
         fee_cents: m(10_000),
         reserved_cents: m(10_000),
         wage_cents: m(100),
@@ -732,6 +899,42 @@ fn qualifying_offer_blocks_settlement() {
     let r = season_request(&clean);
     assert!(settle_season(&store, r).is_err());
     assert_eq!(read(&store), before);
+    let clock = &before.simulation_states[0];
+    respond_offer(
+        &store,
+        RespondOfferRequest {
+            campaign_id: id("lifecycle-career"),
+            expected_revision: before.campaigns[0].revision,
+            source_date: clock.current_date.clone(),
+            source_boundary_key: clock.last_boundary_key.clone(),
+            offer_id: id("open-offer"),
+            decision: game_core::market_ops::OfferDecision::Accept,
+            transfer_id: fresh(),
+            contract_id: fresh(),
+            ledger_ids: many(2),
+            registration_id: None,
+            receipt_id: fresh(),
+            audit_id: fresh(),
+            action_id: fresh(),
+            now: NOW.into(),
+        },
+    )
+    .unwrap();
+    let accepted = read(&store);
+    assert_eq!(accepted.offers[0].status, OfferStatus::Accepted);
+    assert_eq!(accepted.negotiations[0].reserved_cents, m(0));
+    assert_eq!(accepted.negotiations[0].reserved_wage_cents, m(0));
+    assert!(
+        preview_season(&store, id("lifecycle-career"))
+            .unwrap()
+            .allowed
+    );
+    let r = season_request(&store);
+    settle_season(&store, r.clone()).unwrap();
+    let settled = read(&store);
+    assert_eq!(settled.simulation_states[0].current_date, "2027-07-01");
+    assert!(settle_season(&store, r).unwrap().replayed);
+    assert_eq!(read(&store), settled);
     let (d, store) = imported(with_offer(false));
     let db = Connection::open(d.file()).unwrap();
     db.execute_batch("CREATE TRIGGER require_expiry_before_intake BEFORE INSERT ON players WHEN EXISTS(SELECT 1 FROM negotiations WHERE reservedCents>0 OR reservedWageCents>0) BEGIN SELECT RAISE(ABORT,'reservation was not released before intake'); END;").unwrap();

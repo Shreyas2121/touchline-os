@@ -14,6 +14,8 @@ use std::{
     sync::atomic::{AtomicU64, Ordering},
     time::Instant,
 };
+#[path = "support/roster_years.rs"]
+mod roster_years;
 
 const NOW: &str = "2026-10-23T12:00:00.000Z";
 const EXPORT_LIMIT: usize = 32 * 1024 * 1024;
@@ -603,6 +605,34 @@ fn full_season_reopens_replays_reconciles_and_exports_within_limit() {
                 },
             )
             .unwrap();
+            let developed = tables(&store, &campaign);
+            let changed = developed
+                .development_snapshots
+                .iter()
+                .find(|s| s.period == DevelopmentPeriod::Midseason)
+                .expect("known changed halfway player")
+                .clone();
+            let attributes = developed
+                .players
+                .iter()
+                .find(|p| p.id == changed.player_id)
+                .unwrap()
+                .attributes
+                .clone();
+            drop(store);
+            store = directory.store();
+            let reopened = tables(&store, &campaign);
+            assert_eq!(reopened, developed);
+            assert_eq!(
+                reopened
+                    .players
+                    .iter()
+                    .find(|p| p.id == changed.player_id)
+                    .unwrap()
+                    .attributes,
+                attributes
+            );
+            assert!(reopened.development_snapshots.contains(&changed));
         }
         if round == 19 || round == 23 {
             let before = tables(&store, &campaign).simulated_matches;
@@ -887,6 +917,44 @@ fn full_season_reopens_replays_reconciles_and_exports_within_limit() {
     // G04 must also export a real complete season plus the opening calendar,
     // after the explicit halfway development call in those 34 rounds.
     let preview = preview_season(&restored, campaign.clone()).unwrap();
+    let closing = &finished.campaigns[0].active_season_id;
+    let managed = &finished.campaigns[0].managed_club_id;
+    let (sales_pct, prize_pct, carry_pct, allocation) = finished.constitutions[0]
+        .rules
+        .iter()
+        .find_map(|r| match r {
+            ConstitutionRule::SellToBuy {
+                enabled: true,
+                sales_reinvestment_pct,
+                prize_reinvestment_pct,
+                carryover_pct,
+                initial_allocation_cents,
+            } => Some((
+                sales_reinvestment_pct.get(),
+                prize_reinvestment_pct.get(),
+                carryover_pct.get(),
+                initial_allocation_cents.get(),
+            )),
+            _ => None,
+        })
+        .unwrap();
+    let closing_capacity = finance::transfer_capacity(
+        &finished.ledger_entries,
+        &campaign,
+        closing,
+        managed,
+        sales_pct,
+        prize_pct,
+    )
+    .unwrap();
+    let carryover = closing_capacity.remaining_cents.max(0) * carry_pct / 100;
+    assert_eq!(preview.carryover_cents.get(), carryover);
+    assert_eq!(preview.allocation_cents.get(), allocation);
+    let before_balances = finished
+        .club_simulation_states
+        .iter()
+        .map(|s| s.transfer_balance_cents.get())
+        .sum::<i64>();
     let counts = &preview.id_counts;
     let rollover = LifecycleRequest {
         campaign_id: campaign.clone(),
@@ -912,8 +980,147 @@ fn full_season_reopens_replays_reconciles_and_exports_within_limit() {
         action_id: fresh(),
         now: NOW.into(),
     };
-    settle_season(&restored, rollover.clone()).unwrap();
+    let outcome = settle_season(&restored, rollover.clone()).unwrap();
+    assert!(!outcome.replayed);
+    assert_eq!(outcome.current_date, "2027-07-01");
+    assert_eq!(outcome.last_boundary_key, None);
     let settled = tables(&restored, &campaign);
+    let next = &settled.campaigns[0].active_season_id;
+    assert_eq!(settled.seasons.len(), 2);
+    assert_eq!(settled.season_settlements.len(), 1);
+    assert_eq!(settled.board_objectives.len(), 6);
+    assert_eq!(
+        settled
+            .fixtures
+            .iter()
+            .filter(|f| &f.season_id == next && f.status == FixtureStatus::Scheduled)
+            .count(),
+        1224
+    );
+    let next_fixtures = settled
+        .fixtures
+        .iter()
+        .filter(|f| &f.season_id == next)
+        .map(|f| f.id.as_str())
+        .collect::<BTreeSet<_>>();
+    assert!(!settled
+        .simulated_matches
+        .iter()
+        .any(|m| next_fixtures.contains(m.fixture_id.as_str())));
+    assert_eq!(
+        settled
+            .ledger_entries
+            .iter()
+            .filter(|l| &l.season_id == closing)
+            .collect::<Vec<_>>(),
+        finished
+            .ledger_entries
+            .iter()
+            .filter(|l| &l.season_id == closing)
+            .collect::<Vec<_>>()
+    );
+    let expected_prizes = 4
+        * (1..=18)
+            .map(|position| (19 - position) * 10_000_000_i64)
+            .sum::<i64>();
+    let bonus = settled
+        .board_objectives
+        .iter()
+        .filter(|o| &o.season_id == closing && o.outcome == ObjectiveOutcome::Met)
+        .map(|o| o.reward_cents.get())
+        .sum::<i64>();
+    let awards = settled
+        .ledger_entries
+        .iter()
+        .filter(|l| &l.season_id == next && l.kind == LedgerKind::PrizeIncome)
+        .collect::<Vec<_>>();
+    assert_eq!(
+        awards.iter().map(|l| l.amount_cents.get()).sum::<i64>(),
+        expected_prizes + bonus
+    );
+    assert_eq!(
+        awards
+            .iter()
+            .filter(|l| l.award_kind == Some(AwardKind::LeaguePrize))
+            .count(),
+        72
+    );
+    for league in &view.leagues {
+        for (index, row) in league.rows.iter().enumerate() {
+            let prize = awards
+                .iter()
+                .find(|l| l.club_id == row.club_id && l.award_kind == Some(AwardKind::LeaguePrize))
+                .unwrap();
+            assert_eq!(prize.amount_cents.get(), (18 - index as i64) * 10_000_000);
+            if row.club_id == *managed {
+                for objective in settled
+                    .board_objectives
+                    .iter()
+                    .filter(|o| &o.season_id == closing)
+                {
+                    assert_eq!(
+                        objective.outcome,
+                        if (index as i64) < objective.target_position.get() {
+                            ObjectiveOutcome::Met
+                        } else {
+                            ObjectiveOutcome::Missed
+                        }
+                    );
+                }
+            }
+        }
+    }
+    assert!(awards
+        .iter()
+        .all(|l| l.earning_season_id.as_ref() == Some(closing)
+            && l.settlement_id.as_ref() == Some(&settled.season_settlements[0].id)
+            && l.source_action_id == settled.season_settlements[0].id
+            && l.effective_on == "2027-07-01"));
+    for old in &finished.club_simulation_states {
+        let club_awards = awards
+            .iter()
+            .filter(|l| l.club_id == old.club_id)
+            .map(|l| l.amount_cents.get())
+            .sum::<i64>();
+        let current = settled
+            .club_simulation_states
+            .iter()
+            .find(|s| s.club_id == old.club_id)
+            .unwrap();
+        assert_eq!(
+            current.transfer_balance_cents.get(),
+            old.transfer_balance_cents.get() + club_awards,
+            "allocation and carryover are capacity, not additional cash"
+        );
+    }
+    let opening = settled
+        .ledger_entries
+        .iter()
+        .filter(|l| &l.season_id == next && l.club_id == *managed)
+        .collect::<Vec<_>>();
+    for (kind, amount) in [
+        (LedgerKind::InitialAllocation, allocation),
+        (LedgerKind::ApprovedCarryover, carryover),
+    ] {
+        let entries = opening
+            .iter()
+            .filter(|l| l.kind == kind)
+            .collect::<Vec<_>>();
+        assert_eq!(entries.len(), usize::from(amount > 0));
+        assert_eq!(
+            entries.iter().map(|l| l.amount_cents.get()).sum::<i64>(),
+            amount
+        );
+    }
+    assert_eq!(
+        settled
+            .club_simulation_states
+            .iter()
+            .map(|s| s.transfer_balance_cents.get())
+            .sum::<i64>(),
+        before_balances + expected_prizes + bonus
+    );
+    roster_years::roster_floor_holds_after_rollover_and_two_planned_years(&settled);
     assert_eq!(settled.fixtures.len(), 2448);
     assert_eq!(settled.simulated_matches, finished.simulated_matches);
     assert_eq!(
@@ -928,11 +1135,45 @@ fn full_season_reopens_replays_reconciles_and_exports_within_limit() {
         .development_snapshots
         .iter()
         .any(|d| d.period == DevelopmentPeriod::SeasonEnd));
+    let replay = settle_season(&restored, rollover.clone()).unwrap();
+    assert!(replay.replayed);
+    assert_eq!(replay.receipt_id, outcome.receipt_id);
+    assert_eq!(replay.revision, outcome.revision);
+    assert_eq!(tables(&restored, &campaign), settled);
+    drop(restored);
+    let restored = NativeStore::open(directory.0.join("restored.sqlite3")).unwrap();
+    assert_eq!(tables(&restored, &campaign), settled);
     assert!(settle_season(&restored, rollover).unwrap().replayed);
+    assert_eq!(tables(&restored, &campaign), settled);
     let settled_export = restored
         .export_snapshot(campaign.as_str(), "settled-season", NOW)
         .unwrap();
     let settled_bytes = serde_json::to_vec(&settled_export).unwrap();
     assert!(settled_bytes.len() <= EXPORT_LIMIT);
-    eprintln!("settled-season export: {} bytes", settled_bytes.len());
+    let rolled_path = directory.0.join("rolled-season.json");
+    assert!(export_file(
+        &restored,
+        campaign.as_str(),
+        Some(&rolled_path),
+        "settled-season",
+        NOW
+    )
+    .unwrap());
+    assert_eq!(std::fs::read(&rolled_path).unwrap(), settled_bytes);
+    let reimported = NativeStore::open(directory.0.join("rolled-reimport.sqlite3")).unwrap();
+    let session = MigrationSession::default();
+    let summary = session.select(Some(&rolled_path)).unwrap().unwrap();
+    session.confirm(&reimported, &summary.token).unwrap();
+    assert_eq!(tables(&reimported, &campaign), settled);
+    assert!(
+        preview_market(&reimported, campaign.clone())
+            .unwrap()
+            .allowed
+    );
+    let profile = if cfg!(debug_assertions) {
+        "debug"
+    } else {
+        "release"
+    };
+    eprintln!("G06 season settlement certification: {} bytes rolled export, {:.2}s {profile} runtime; one played season and two pure roster years",settled_bytes.len(),started.elapsed().as_secs_f64());
 }

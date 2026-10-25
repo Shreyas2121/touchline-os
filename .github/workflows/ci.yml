@@ -89,7 +89,7 @@ jobs:
           if (-not $required) {
             $changed = git diff --name-only $env:SEASON_BASE $env:SEASON_HEAD
             if ($LASTEXITCODE -ne 0) { throw 'Unable to determine season certification scope' }
-            $pattern = '^(src-tauri/(Cargo\.(toml|lock)|rust-toolchain\.toml|\.cargo/|migrations/|crates/(game-(core|app)/Cargo\.toml|game-store/|game-app/src/|game-app/tests/(full_season|market_certification)\.rs|game-core/src/(ability|calendar|career|dates|enums|generation|generation_settings|guards|ids|market|market_ops|match_engine|match_selection|matchday|money|numbers|policy|progression|random|rows|schedule|selection|settlement|snapshot|validate|world_validation)\.rs))|package\.json|scripts/native-(check|season-check)\.mjs|\.github/workflows/ci\.yml)'
+            $pattern = '^(src-tauri/(Cargo\.(toml|lock)|rust-toolchain\.toml|\.cargo/|migrations/|crates/(game-(core|app)/Cargo\.toml|game-store/|game-app/src/|game-app/tests/(full_season|market_certification|lifecycle)\.rs|game-app/tests/support/|game-core/src/(ability|calendar|career|dates|enums|generation|generation_settings|guards|ids|lifecycle|lifecycle_ops|market|market_ops|match_engine|match_selection|matchday|money|numbers|policy|progression|random|rows|schedule|selection|settlement|snapshot|validate|world_validation)\.rs))|package\.json|scripts/native-(check|season-check)\.mjs|\.github/workflows/ci\.yml)'
             $required = [bool]($changed | Where-Object { $_ -match $pattern })
           }
           "required=$($required.ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
