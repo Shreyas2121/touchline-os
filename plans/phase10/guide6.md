@@ -62,6 +62,7 @@ Names may match the module style. The behaviors above are the requirement. Keep 
 ```bash
 pnpm native:bindings:check
 pnpm native:check
+pnpm native:test:season
 pnpm lint
 pnpm typecheck
 pnpm test

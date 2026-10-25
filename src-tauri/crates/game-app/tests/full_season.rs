@@ -70,10 +70,10 @@ fn career(ordinal: i64) -> CreationRequest {
         },
     }
 }
-fn snapshot(store: &NativeStore, campaign: &EntityId) -> CampaignSnapshot {
-    store
-        .export_snapshot(campaign.as_str(), "season-certification", NOW)
-        .unwrap()
+fn tables(store: &NativeStore, campaign: &EntityId) -> SnapshotTables {
+    // Read the same validated tables without serializing an export envelope on
+    // every checkpoint. The desktop export and import are certified at the end.
+    store.read_campaign(campaign.as_str()).unwrap()
 }
 fn fresh() -> EntityId {
     id(0x80600401, SEQUENCE.fetch_add(1, Ordering::Relaxed) as i64)
@@ -298,12 +298,13 @@ fn unchanged_except_matchday(kickoff: &SnapshotTables, finished: &SnapshotTables
     normalized
         .club_simulation_states
         .clone_from(&kickoff.club_simulation_states);
+    let original_players = kickoff
+        .players
+        .iter()
+        .map(|player| (player.id.as_str(), player))
+        .collect::<BTreeMap<_, _>>();
     for player in &mut normalized.players {
-        let before = kickoff
-            .players
-            .iter()
-            .find(|row| row.id == player.id)
-            .unwrap();
+        let before = original_players[player.id.as_str()];
         player.club_id.clone_from(&before.club_id);
     }
     // This includes every player/attribute, contract, ledger, offer, constitution,
@@ -525,6 +526,7 @@ fn reconcile_season(tables: &SnapshotTables) {
 }
 
 #[test]
+#[ignore = "season certification: run pnpm native:test:season"]
 fn full_season_reopens_replays_reconciles_and_exports_within_limit() {
     let started = Instant::now();
     let directory = Directory::new();
@@ -542,20 +544,21 @@ fn full_season_reopens_replays_reconciles_and_exports_within_limit() {
         "2026-08-31"
     );
     reach(&store, &campaign, "2026-09-01");
-    let kickoff = snapshot(&store, &campaign).tables;
+    let kickoff = tables(&store, &campaign);
     assert_eq!(kickoff.simulation_states[0].current_date, "2026-09-01");
     assert!(kickoff.fixtures.is_empty());
     let other_creation = career(2);
     let other_id = other_creation.career.campaign_id.clone();
     create_career(&store, other_creation).unwrap();
-    let other_before = snapshot(&store, &other_id).tables;
+    let other_before = tables(&store, &other_id);
     let mut first_request = None;
     let mut first_receipt = None;
     let mut first_matches = Vec::new();
     let kickoff_date = DateOnly::parse("2026-09-01").unwrap();
     for round in 1..=34 {
+        let round_started = Instant::now();
         if round == 19 || round == 23 {
-            let before = snapshot(&store, &campaign).tables.simulated_matches;
+            let before = tables(&store, &campaign).simulated_matches;
             let blocked = preview_matchday(&store, campaign.clone()).unwrap();
             assert!(!blocked.allowed);
             assert_eq!(
@@ -567,11 +570,16 @@ fn full_season_reopens_replays_reconciles_and_exports_within_limit() {
                 })
             );
             release_market(&store, &campaign);
-            assert_eq!(snapshot(&store, &campaign).tables.simulated_matches, before);
-        } else {
+            assert_eq!(tables(&store, &campaign).simulated_matches, before);
+        } else if (20..=22).contains(&round) {
+            // Only January rounds have market ticks. Matchday preview still
+            // checks the authoritative market gate on every other round.
             release_market(&store, &campaign);
         }
+        let market_elapsed = round_started.elapsed();
+        let preview_started = Instant::now();
         let p = preview_matchday(&store, campaign.clone()).unwrap();
+        let preview_elapsed = preview_started.elapsed();
         // A fresh, unregistered career uses G03's advertised emergency selection.
         // The registered saved-XI/blocker path is certified separately by G05.
         assert!(p.emergency);
@@ -580,7 +588,7 @@ fn full_season_reopens_replays_reconciles_and_exports_within_limit() {
             add_days(&kickoff_date, (round - 1) * 7).unwrap().as_str()
         );
         if round == 19 {
-            let winter = snapshot(&store, &campaign).tables;
+            let winter = tables(&store, &campaign);
             assert_eq!(
                 calendar::active_transfer_window(&winter.simulation_states[0], &winter.seasons[0])
                     .unwrap(),
@@ -589,7 +597,9 @@ fn full_season_reopens_replays_reconciles_and_exports_within_limit() {
         }
         let revision = p.revision.get();
         let req = request(p, round);
+        let commit_started = Instant::now();
         let outcome = sim_matchday(&store, req.clone()).unwrap();
+        let commit_elapsed = commit_started.elapsed();
         assert!(!outcome.replayed);
         assert_eq!(outcome.revision.get(), revision + 1);
         assert_eq!(
@@ -607,21 +617,24 @@ fn full_season_reopens_replays_reconciles_and_exports_within_limit() {
         if round == 1 {
             first_request = Some(req);
             first_receipt = Some(outcome.receipt_id);
-            let saved = snapshot(&store, &campaign).tables;
+            let saved = tables(&store, &campaign);
             first_matches = saved.simulated_matches.clone();
             drop(store);
             store = directory.store();
-            assert_eq!(snapshot(&store, &campaign).tables, saved);
+            assert_eq!(tables(&store, &campaign), saved);
         }
         eprintln!(
-            "full-season round {round}/34 committed ({:.2}s elapsed)",
-            started.elapsed().as_secs_f64()
+            "full-season round {round}/34: market={:.2}s preview={:.2}s commit={:.2}s ({:.2}s elapsed)",
+            market_elapsed.as_secs_f64(),
+            preview_elapsed.as_secs_f64(),
+            commit_elapsed.as_secs_f64(),
+            started.elapsed().as_secs_f64(),
         );
     }
-    let finished = snapshot(&store, &campaign).tables;
+    let finished = tables(&store, &campaign);
     drop(store);
     let store = directory.store();
-    assert_eq!(snapshot(&store, &campaign).tables, finished);
+    assert_eq!(tables(&store, &campaign), finished);
     reconcile_season(&finished);
     unchanged_except_matchday(&kickoff, &finished);
     let market_writes = |rows: &SnapshotTables| {
@@ -658,7 +671,7 @@ fn full_season_reopens_replays_reconciles_and_exports_within_limit() {
     assert!(replay.replayed);
     assert_eq!(replay.receipt_id, first_receipt.unwrap());
     assert_eq!(replay.revision, finished.campaigns[0].revision);
-    assert_eq!(snapshot(&store, &campaign).tables, finished);
+    assert_eq!(tables(&store, &campaign), finished);
     for m in &first_matches {
         assert_eq!(
             finished
@@ -774,7 +787,7 @@ fn full_season_reopens_replays_reconciles_and_exports_within_limit() {
         sim_matchday(&store, refused).unwrap_err().to_string(),
         game_core::matchday::ROLLOVER_UNAVAILABLE
     );
-    assert_eq!(snapshot(&store, &campaign).tables, finished);
+    assert_eq!(tables(&store, &campaign), finished);
     let target = directory.0.join("finished-season.json");
     assert!(export_file(
         &store,
@@ -791,11 +804,8 @@ fn full_season_reopens_replays_reconciles_and_exports_within_limit() {
         std::fs::write(path, &bytes).unwrap();
     }
     eprintln!(
-        "full-season export: {} bytes; compact snapshot: {} bytes; {} appearances",
+        "full-season export: {} bytes; {} appearances",
         bytes.len(),
-        serde_json::to_vec(&snapshot(&store, &campaign))
-            .unwrap()
-            .len(),
         finished.simulated_appearances.len()
     );
     assert!(
@@ -810,14 +820,14 @@ fn full_season_reopens_replays_reconciles_and_exports_within_limit() {
     let session = MigrationSession::default();
     let summary = session.select(Some(&target)).unwrap().unwrap();
     session.confirm(&restored, &summary.token).unwrap();
-    assert_eq!(snapshot(&restored, &campaign).tables, finished);
-    assert_eq!(snapshot(&store, &other_id).tables, other_before);
+    assert_eq!(tables(&restored, &campaign), finished);
+    assert_eq!(tables(&store, &other_id), other_before);
     release_market(&store, &other_id);
     advance(&store, &other_id, 3);
     assert_eq!(
         preview_time(&store, other_id).unwrap().from_date,
         "2026-07-08"
     );
-    assert_eq!(snapshot(&store, &campaign).tables, finished);
+    assert_eq!(tables(&store, &campaign), finished);
     eprintln!("full-season certification passed: 34 rounds, 1,224 matches, {} appearances, {} export bytes, {:.2}s runtime",finished.simulated_appearances.len(),bytes.len(),started.elapsed().as_secs_f64());
 }

@@ -1,6 +1,7 @@
 name: CI
 
 on:
+  workflow_dispatch:
   pull_request:
   push:
     branches:
@@ -57,6 +58,8 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
       - uses: pnpm/action-setup@v6
         with:
           version: 12.9.1
@@ -72,3 +75,25 @@ jobs:
         working-directory: src-tauri
       - run: cargo test --workspace --locked
         working-directory: src-tauri
+      - name: Select season certification
+        id: season
+        shell: pwsh
+        env:
+          SEASON_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+          SEASON_HEAD: ${{ github.sha }}
+          SEASON_EVENT: ${{ github.event_name }}
+        run: |
+          # Diff the entire PR, not just the last commit. Initial pushes and
+          # manual runs certify conservatively when there is no usable base.
+          $required = $env:SEASON_EVENT -eq 'workflow_dispatch' -or -not $env:SEASON_BASE -or $env:SEASON_BASE -match '^0+$'
+          if (-not $required) {
+            $changed = git diff --name-only $env:SEASON_BASE $env:SEASON_HEAD
+            if ($LASTEXITCODE -ne 0) { throw 'Unable to determine season certification scope' }
+            $pattern = '^(src-tauri/(Cargo\.(toml|lock)|rust-toolchain\.toml|\.cargo/|migrations/|crates/(game-(core|app)/Cargo\.toml|game-store/|game-app/src/|game-app/tests/(full_season|market_certification)\.rs|game-core/src/(ability|calendar|career|dates|enums|generation|generation_settings|guards|ids|market|market_ops|match_engine|match_selection|matchday|money|numbers|policy|progression|random|rows|schedule|selection|settlement|snapshot|validate|world_validation)\.rs))|package\.json|scripts/native-(check|season-check)\.mjs|\.github/workflows/ci\.yml)'
+            $required = [bool]($changed | Where-Object { $_ -match $pattern })
+          }
+          "required=$($required.ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
+          Write-Host "Season certification required: $required"
+      - name: Certify full season and winter market (optimized)
+        if: steps.season.outputs.required == 'true'
+        run: pnpm native:test:season

@@ -414,6 +414,8 @@ pnpm tauri build
 
 Run the focused Cargo and Vitest files named in the active guide before the full set. Unit and integration tests plus these checks are sufficient (DEC-005). Native tests use temporary SQLite files. A mocked `invoke` does not replace a store test. No desktop session or manual sign-off is required.
 
+`pnpm native:check` runs the routine suite; full-season and winter-market certification are opt-in optimized tests. Use `pnpm native:test:season` when changing match/selection rules, progression, market/settlement, shared generation/ability, SQLite/schema, or snapshot/export/import behavior. Pure G02/G03 planner changes do not require a season replay unless they also touch those paths. G04–G06 changes to settlement, progression, or persisted season behavior do require it. `pnpm native:check:full` combines the routine and certification gates. See [README verification scope](../README.md#desktop-setup-and-checks). Historical progress rows retain the commands and timings observed at that time.
+
 Failure cases that must be explicit tests by G06: stale revision, fingerprint conflict, injected commit failure, concurrent settlement calls, store close/reopen, a second campaign, unsupported schema, a qualifying bid blocking rollover, a released reservation, and a replay that does not pay twice.
 
 G06 does not replay three full 34-round seasons. It settles one played season through the public commands, checks the next July 1, and uses the pure roster planner for two further years of aging. Phase 8 already certified a full match season.

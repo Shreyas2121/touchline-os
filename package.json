@@ -20,6 +20,8 @@
     "capture:compatibility": "node scripts/capture-compatibility.mjs",
     "tauri": "tauri",
     "native:check": "node scripts/native-check.mjs",
+    "native:check:full": "node scripts/native-check.mjs --full",
+    "native:test:season": "node scripts/native-season-check.mjs",
     "native:bindings": "node scripts/native-bindings.mjs",
     "native:bindings:check": "node scripts/native-bindings.mjs --check"
   },

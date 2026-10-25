@@ -67,6 +67,7 @@ Build the review and round-17 saves through the public services or a schema 5 im
 ```bash
 pnpm native:bindings:check
 pnpm native:check
+pnpm native:test:season
 pnpm lint
 pnpm typecheck
 pnpm test

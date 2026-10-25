@@ -55,7 +55,28 @@ pnpm native:check
 pnpm tauri build
 ```
 
-`native:check` runs Rust formatting, locked Clippy and native workspace tests. Frontend tests do not substitute for Rust/SQLite verification. `tauri build` produces MSI and NSIS installers on Windows; signing and final release certification remain later work.
+`native:check` runs Rust formatting, locked Clippy and native workspace tests, excluding the two opt-in season certifications. Frontend tests do not substitute for Rust/SQLite verification. `tauri build` produces MSI and NSIS installers on Windows; signing and final release certification remain later work.
+
+Use the checks appropriate to the change:
+
+| Change                                                                                                                                                | Native verification                                                                                            |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| Pure development or roster planning                                                                                                                   | Focused tests, then `cargo test -p game-core --locked` from `src-tauri`; `pnpm native:check` before committing |
+| Frontend, copy, documentation, or isolated planning changes                                                                                           | Routine checks; no season replay required                                                                      |
+| Match engine/selection, calendar/progression, market/transfer rules, shared ability/generation rules, SQLite writes/schema, or snapshot/export/import | `pnpm native:check` and `pnpm native:test:season`                                                              |
+| Full certification or release gate                                                                                                                    | `pnpm native:check:full` (routine checks plus season certifications)                                           |
+
+`pnpm native:test:season` runs the complete 34-round SQLite/export/reimport test and the winter-market certification sequentially in **release mode**, with progress visible. Test assertions remain enabled. It does not run the separate save-file benchmark. The first optimized build costs extra compilation; subsequent runs reuse Cargo's release cache. Both tests are marked ignored in ordinary `cargo test` runs, with the command to run them in their ignore reasons. CI selects the optimized certification when a PR or push changes the relevant Rust rules, app services, persistence, schema, certification tests or runner configuration; manual CI runs always include it. When extending certification into a new module, include that module in the CI scope filter.
+
+For just the full-season test, from `src-tauri`:
+
+```bash
+cargo test -p game-app --test full_season --release --locked -- --ignored --nocapture
+```
+
+The test still creates a real career, plays all 1,224 matches through public commands, reopens, retries, reconciles every appearance and standing, exports/reimports, and checks campaign isolation. Checkpoint reads use validated domain tables; the actual desktop export is measured and reimported at the end. Market service calls run during the January rounds rather than loading the growing campaign on every out-of-window date. No production validation, database durability, fixture count, or assertion is disabled.
+
+The measured release test improved from 148.54s to 119.09s (about 20%, excluding compilation); see the [verification record](docs/verification/native-season.md) for scope and evidence.
 
 On desktop, select **Import save**, choose an exported JSON file and review its supported standalone format, revision and table counts before confirming. Supported standalone snapshots preserve saved IDs, rows, clock and receipts. Only SQLite-origin standalone snapshots using source schema 2, 3, or 4 are accepted; exports use schema 4. Import does not generate fixtures. Unsupported modes/formats refuse without conversion. Reimporting identical bytes returns the recorded outcome; different content using an existing campaign ID is refused. Cancellation does nothing. **Export campaign** writes a consistent saved snapshot as compact UTF-8 JSON within the same 32 MiB ceiling used by import; choose a new filename to preserve prior exports. **Back up database** creates and reopens a SQLite online backup containing all native campaigns.
 

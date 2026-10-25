@@ -4,6 +4,11 @@ import { fileURLToPath } from 'node:url'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const manifestDir = path.join(root, 'src-tauri')
+const args = process.argv.slice(2)
+if (args.some((arg) => arg !== '--full')) {
+  console.error('Usage: node scripts/native-check.mjs [--full]')
+  process.exit(1)
+}
 
 function fail(message) {
   console.error(message)
@@ -92,3 +97,10 @@ run('cargo', [
   'warnings',
 ])
 run('cargo', ['test', '--workspace', '--locked'])
+if (args.includes('--full')) {
+  run(process.execPath, [path.join(root, 'scripts/native-season-check.mjs')])
+} else {
+  console.log(
+    'Season certifications are opt-in: pnpm native:test:season (or pnpm native:check:full).',
+  )
+}

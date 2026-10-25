@@ -62,6 +62,7 @@ G04's service commands already persist. Update the full-season test so the round
 ```bash
 pnpm native:bindings:check
 pnpm native:check
+pnpm native:test:season
 pnpm lint
 pnpm typecheck
 pnpm test

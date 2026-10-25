@@ -94,7 +94,7 @@ pnpm test
 pnpm build
 ```
 
-`pnpm native:check` includes rustfmt, Clippy `-D warnings`, and the workspace tests. Bindings and `pnpm tauri build` are not required when no DTO or command changes. No desktop session is required.
+`pnpm native:check` includes rustfmt, Clippy `-D warnings`, and the routine workspace tests. Full-season and winter-market certification are opt-in through `pnpm native:test:season`; a pure planner change does not require them. Run that optimized gate if shared ability/generation, persistence, progression, market, or match behavior also changes. Bindings and `pnpm tauri build` are not required when no DTO or command changes. No desktop session is required.
 
 ## 9. Acceptance coverage
 

@@ -603,6 +603,7 @@ fn qualifying_offer_blocks_close_until_one_accept() {
 }
 
 #[test]
+#[ignore = "season certification: run pnpm native:test:season"]
 fn winter_tick_and_close_leave_played_matches_unchanged() {
     let started = Instant::now();
     let directory = Directory::new();

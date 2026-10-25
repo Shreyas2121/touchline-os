@@ -125,6 +125,8 @@ pnpm test
 pnpm build
 ```
 
+The routine native check excludes opt-in season certification. A pure roster planner change needs its focused/core tests, not another 34-round replay. Run `pnpm native:test:season` if shared generation/ability, persistence, progression, market, or match behavior also changes; see the parent plan's verification scope.
+
 Bindings and `pnpm tauri build` are not required when no DTO or command changes. No desktop session is required.
 
 ## 9. Acceptance coverage
