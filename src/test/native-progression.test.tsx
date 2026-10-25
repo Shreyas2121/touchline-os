@@ -8,6 +8,7 @@ import {
 import { MemoryRouter } from 'react-router'
 import { describe, expect, it, vi } from 'vitest'
 import { NativeRoutes } from '../app/native/NativeWorkspace'
+import { NativeScreenTables } from '../app/native/NativeScreenTables'
 import { staleSave } from '../app/copy'
 import { createBrowserClient } from '../platform/browser-client'
 import type { GameClient } from '../platform/game-client'
@@ -15,6 +16,11 @@ import type { CampaignSnapshot } from '../platform/generated/CampaignSnapshot'
 import type { ScreenModel } from '../platform/generated/ScreenModel'
 import type { TimePreview } from '../platform/generated/TimePreview'
 import type { MatchdayPreview } from '../platform/generated/MatchdayPreview'
+import type { LifecyclePreview } from '../platform/generated/LifecyclePreview'
+import {
+  NativeDevelopmentHistory,
+  developmentHistoryEmpty,
+} from '../app/native/NativeLifecycle'
 import source from '../../src-tauri/fixtures/standalone.json'
 
 const snapshot = {
@@ -90,6 +96,37 @@ function client(preview: TimePreview = july): GameClient {
     ...createBrowserClient(),
     campaigns: vi.fn().mockResolvedValue({ campaigns: [], total: 0, page: 0 }),
     screen: vi.fn().mockResolvedValue(model()),
+    previewSeason: vi.fn().mockResolvedValue(lifecycle()),
+    previewDevelopment: vi.fn().mockResolvedValue(
+      lifecycle({
+        attributes: [
+          {
+            playerId: 'young-player',
+            name: 'Young Player',
+            before: {
+              pace: 50,
+              finishing: 50,
+              passing: 50,
+              dribbling: 50,
+              defending: 50,
+              physical: 50,
+            },
+            after: {
+              pace: 52,
+              finishing: 50,
+              passing: 50,
+              dribbling: 50,
+              defending: 50,
+              physical: 50,
+            },
+            beforeValueCents: 100_000,
+            afterValueCents: 120_000,
+          },
+        ],
+      }),
+    ),
+    applyDevelopment: vi.fn().mockResolvedValue({}),
+    settleSeason: vi.fn().mockResolvedValue({}),
     previewTime: vi.fn().mockResolvedValue(preview),
     previewMarket: vi.fn().mockResolvedValue({
       campaignId: campaign.id,
@@ -127,6 +164,73 @@ function client(preview: TimePreview = july): GameClient {
       phase: 'preseason',
       lastBoundaryKey: 'season:2026:summer-deadline',
     }),
+  }
+}
+function lifecycle(
+  overrides: Partial<LifecyclePreview> = {},
+): LifecyclePreview {
+  return {
+    hasDevelopmentHistory: false,
+    allowed: true,
+    reason: null,
+    settlement: null,
+    campaignId: campaign.id,
+    seasonId: campaign.activeSeasonId,
+    revision: campaign.revision,
+    sourceDate: '2027-04-20',
+    sourceBoundaryKey: 'round-34',
+    inputFingerprint: 'native-lifecycle-test',
+    closingLabel: '2026/27',
+    idCounts: {
+      players: 2,
+      playerStates: 2,
+      contracts: 2,
+      registrations: 2,
+      ledger: 77,
+      fixtures: 1224,
+      seasons: 1,
+      settlements: 1,
+      objectives: 6,
+      snapshots: 1,
+    },
+    attributes: [],
+    roster: [],
+    clubs: [
+      {
+        clubId: campaign.managedClubId,
+        developed: 1,
+        renewed: 1,
+        released: 0,
+        retired: 0,
+        intake: 2,
+      },
+    ],
+    objectives: [
+      {
+        kind: 'league_title',
+        targetPosition: 1,
+        rewardCents: 50_000_000,
+        outcome: 'missed',
+      },
+      {
+        kind: 'top_half',
+        targetPosition: 9,
+        rewardCents: 20_000_000,
+        outcome: 'met',
+      },
+      {
+        kind: 'avoid_last',
+        targetPosition: 17,
+        rewardCents: 10_000_000,
+        outcome: 'met',
+      },
+    ],
+    managedPosition: 4,
+    prizeCents: 150_000_000,
+    objectiveBonusCents: 30_000_000,
+    carryoverCents: 10_000_000,
+    allocationCents: 500_000_000,
+    ...overrides,
   }
 }
 function show(api: GameClient) {
@@ -288,21 +392,227 @@ describe('native continue', () => {
     expect(await within(calendar).findByText('2026-09-08')).toBeInTheDocument()
   })
 
-  it('shows review copy without a simulate control', async () => {
-    const api = client({ ...kickoff, phase: 'review' })
+  it('opens the season review without a simulate control', async () => {
+    const api = client({
+      ...kickoff,
+      phase: 'review',
+      allowed: true,
+      reason: null,
+    })
     api.previewMatchday = vi.fn().mockResolvedValue({
       ...matchday,
       allowed: false,
-      blocker: 'Season rollover arrives in Phase 10.',
+      blocker: 'Finish every league fixture before the season can roll over.',
     })
     show(api)
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Review Season' }),
+    )
+    const review = await screen.findByRole('region', { name: 'Season review' })
+    expect(await within(review).findByText(/Top half: Met/)).toBeInTheDocument()
+    expect(within(review).getByText(/League title: Missed/)).toBeInTheDocument()
+    expect(within(review).getByText('€1,500,000.00')).toBeInTheDocument()
     expect(
-      await screen.findByText('Season rollover arrives in Phase 10.'),
-    ).toBeInTheDocument()
+      within(review).getByRole('button', { name: 'Start Next Season' }),
+    ).toBeEnabled()
     expect(
       screen.queryByRole('button', { name: /Sim Matchday|Continue/ }),
     ).toBeNull()
     expect(api.simMatchday).not.toHaveBeenCalled()
+  })
+
+  it('settles only after confirmation and ignores a second click while saving', async () => {
+    const api = client({
+      ...kickoff,
+      phase: 'review',
+      allowed: true,
+      reason: null,
+    })
+    let resolve!: (value: unknown) => void
+    api.settleSeason = vi.fn().mockReturnValue(
+      new Promise((r) => {
+        resolve = r
+      }),
+    )
+    show(api)
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Review Season' }),
+    )
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Start Next Season' }),
+    )
+    expect(api.settleSeason).not.toHaveBeenCalled()
+    const confirm = screen.getByRole('button', {
+      name: 'Confirm Start Next Season',
+    })
+    fireEvent.click(confirm)
+    fireEvent.click(confirm)
+    expect(
+      await screen.findByText('Calculating the new season.'),
+    ).toBeInTheDocument()
+    expect(api.settleSeason).toHaveBeenCalledOnce()
+    const input = vi.mocked(api.settleSeason).mock.calls[0]![0]
+    expect(input.ids.fixtures).toHaveLength(1224)
+    expect(input.ids.ledger).toHaveLength(77)
+    expect(input).toMatchObject({
+      inputFingerprint: 'native-lifecycle-test',
+      expectedRevision: campaign.revision,
+    })
+    resolve({})
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('button', { name: 'Start Next Season' }),
+      ).toBeNull(),
+    )
+  })
+  it('hides the rollover controls for a qualifying offer', async () => {
+    const reason =
+      'Accept the qualifying offer before the season can roll over.'
+    const api = client({ ...kickoff, phase: 'review', allowed: false, reason })
+    api.previewSeason = vi
+      .fn()
+      .mockResolvedValue(lifecycle({ allowed: false, reason }))
+    render(
+      <MemoryRouter initialEntries={[`/app/${campaign.id}/seasons`]}>
+        <NativeRoutes client={api} />
+      </MemoryRouter>,
+    )
+    expect(await screen.findByText(reason)).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Start Next Season' }),
+    ).toBeNull()
+    expect(api.settleSeason).not.toHaveBeenCalled()
+  })
+  it('shows saved settlement amounts without a second confirmation', async () => {
+    const p = lifecycle({
+      allowed: false,
+      settlement: {
+        id: 'settlement-1',
+        campaignId: campaign.id,
+        seasonId: campaign.activeSeasonId,
+        nextSeasonId: 'next-season',
+        engineVersion: '1',
+        settledOn: '2027-07-01',
+        managedPosition: 4,
+        prizeCents: 150_000_000,
+        objectiveBonusCents: 30_000_000,
+        carryoverCents: 10_000_000,
+        allocationCents: 500_000_000,
+        tableJson: '[]',
+      },
+    })
+    const api = client()
+    api.previewSeason = vi.fn().mockResolvedValue(p)
+    render(
+      <MemoryRouter initialEntries={[`/app/${campaign.id}/seasons`]}>
+        <NativeRoutes client={api} />
+      </MemoryRouter>,
+    )
+    expect(
+      await screen.findByText(/Season settled on 2027-07-01/),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Start Next Season' }),
+    ).toBeNull()
+  })
+  it('previews development after a click and confirms the attribute row once', async () => {
+    const api = client({
+      ...kickoff,
+      reason: 'Development is applied after the halfway matchday.',
+    })
+    let resolvePreview!: (p: LifecyclePreview) => void
+    const preview = lifecycle({
+      attributes: [
+        {
+          playerId: 'young-player',
+          name: 'Young Player',
+          before: { pace: 50 },
+          after: { pace: 52 },
+          beforeValueCents: 100_000,
+          afterValueCents: 120_000,
+        },
+      ],
+    })
+    api.previewDevelopment = vi.fn().mockReturnValue(
+      new Promise((r) => {
+        resolvePreview = r
+      }),
+    )
+    let resolveApply!: (value: unknown) => void
+    api.applyDevelopment = vi.fn().mockReturnValue(
+      new Promise((r) => {
+        resolveApply = r
+      }),
+    )
+    show(api)
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Apply Development' }),
+    )
+    expect(
+      await screen.findByText('Calculating player development.'),
+    ).toBeInTheDocument()
+    resolvePreview(preview)
+    expect(await screen.findByText('Young Player')).toBeInTheDocument()
+    expect(screen.getByText(/Pace 50 → 52/)).toBeInTheDocument()
+    const confirm = screen.getByRole('button', {
+      name: 'Confirm Apply Development',
+    })
+    fireEvent.click(confirm)
+    fireEvent.click(confirm)
+    expect(api.applyDevelopment).toHaveBeenCalledOnce()
+    expect(
+      vi.mocked(api.applyDevelopment).mock.calls[0]![0].ids.snapshots,
+    ).toHaveLength(1)
+    resolveApply({})
+    await waitFor(() => expect(api.screen).toHaveBeenCalledTimes(2))
+  })
+  it('shows the empty development history on the player profile', () => {
+    const data = model()
+    render(<NativeScreenTables model={data} screen="squad" />)
+    fireEvent.click(
+      screen.getByRole('button', { name: data.rows.players[0]!.name }),
+    )
+    expect(screen.getByText(developmentHistoryEmpty)).toBeInTheDocument()
+  })
+  it('lists the period, six rating pairs, and values in stored development history', () => {
+    render(
+      <NativeDevelopmentHistory
+        campaignId={campaign.id}
+        playerId="player-1"
+        revision={1}
+        fallback={[
+          {
+            id: 'snapshot-1',
+            campaignId: campaign.id,
+            seasonId: campaign.activeSeasonId,
+            playerId: 'player-1',
+            period: 'midseason',
+            beforePace: 50,
+            beforeFinishing: 50,
+            beforePassing: 50,
+            beforeDribbling: 50,
+            beforeDefending: 50,
+            beforePhysical: 50,
+            afterPace: 52,
+            afterFinishing: 50,
+            afterPassing: 50,
+            afterDribbling: 50,
+            afterDefending: 50,
+            afterPhysical: 50,
+            beforeValueCents: 100_000,
+            afterValueCents: 120_000,
+            beforeStatus: 'active',
+            afterStatus: 'active',
+            points: 2,
+            engineVersion: '1',
+          },
+        ]}
+      />,
+    )
+    const row = screen.getByRole('listitem')
+    expect(row).toHaveTextContent('Midseason: Pace 50 → 52')
+    expect(row).toHaveTextContent('Physical 50 → 50')
+    expect(row).toHaveTextContent('€1,000.00 → €1,200.00')
   })
 
   it('shows the stale-save remedy and reloads without repeating the advance', async () => {

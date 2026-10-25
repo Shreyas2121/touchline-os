@@ -2,6 +2,8 @@ import { useState, type ReactNode } from 'react'
 import type { ScreenModel } from '../../platform/generated/ScreenModel'
 import type { Screen } from '../../platform/generated/Screen'
 import type { SnapshotTables } from '../../platform/generated/SnapshotTables'
+import type { GameClient } from '../../platform/game-client'
+import { NativeDevelopmentHistory } from './NativeLifecycle'
 
 type TableName = keyof SnapshotTables
 const tables: Partial<Record<Screen, TableName[]>> = {
@@ -159,9 +161,11 @@ function Value({
 export function NativeScreenTables({
   model,
   screen,
+  client,
 }: {
   model: ScreenModel
   screen: Screen
+  client?: GameClient
 }) {
   const [selected, setSelected] = useState<string | null>(null)
   const player = model.rows.players.find((p) => p.id === selected)
@@ -245,6 +249,15 @@ export function NativeScreenTables({
             · {player.source}
           </p>
           <Value value={player} />
+          <NativeDevelopmentHistory
+            client={client}
+            campaignId={model.rows.campaigns[0]!.id}
+            playerId={player.id}
+            revision={model.revision}
+            fallback={(model.rows.developmentSnapshots ?? []).filter(
+              (s) => s.playerId === player.id,
+            )}
+          />
           <Value
             value={model.rows.playerSimulationStates.find(
               (p) => p.playerId === player.id,

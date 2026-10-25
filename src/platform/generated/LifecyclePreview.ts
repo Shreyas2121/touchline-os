@@ -7,5 +7,6 @@ import type { MoneyCents } from "./MoneyCents";
 import type { ObjectivePreview } from "./ObjectivePreview";
 import type { RosterPreview } from "./RosterPreview";
 import type { SafeInt } from "./SafeInt";
+import type { SeasonSettlementRow } from "./SeasonSettlementRow";
 
-export type LifecyclePreview = { campaignId: EntityId, seasonId: EntityId, revision: SafeInt, sourceDate: string, sourceBoundaryKey: string | null, inputFingerprint: string, closingLabel: string, idCounts: LifecycleIdCounts, attributes: Array<AttributePreview>, roster: Array<RosterPreview>, clubs: Array<ClubLifecycleCounts>, objectives: Array<ObjectivePreview>, managedPosition: SafeInt | null, prizeCents: MoneyCents, objectiveBonusCents: MoneyCents, carryoverCents: MoneyCents, allocationCents: MoneyCents, };
+export type LifecyclePreview = { hasDevelopmentHistory: boolean, allowed: boolean, reason: string | null, settlement: SeasonSettlementRow | null, campaignId: EntityId, seasonId: EntityId, revision: SafeInt, sourceDate: string, sourceBoundaryKey: string | null, inputFingerprint: string, closingLabel: string, idCounts: LifecycleIdCounts, attributes: Array<AttributePreview>, roster: Array<RosterPreview>, clubs: Array<ClubLifecycleCounts>, objectives: Array<ObjectivePreview>, managedPosition: SafeInt | null, prizeCents: MoneyCents, objectiveBonusCents: MoneyCents, carryoverCents: MoneyCents, allocationCents: MoneyCents, };

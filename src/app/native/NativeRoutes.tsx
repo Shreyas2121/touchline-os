@@ -57,8 +57,11 @@ export function NativeRoutes({ client }: { client: GameClient }) {
                   from July 1 to the summer deadline and then to league kickoff.
                   At kickoff, Sim Matchday previews the opponent and asks for
                   confirmation before saving all four leagues. Fixtures &
-                  Results shows saved reports and tables. Season rollover
-                  arrives in Phase 10.
+                  Results shows saved reports and tables. After the halfway
+                  matchday, Apply Development previews the changed ratings and
+                  asks for confirmation. In review, Review Season opens the
+                  awards and roster preview. A second season starts only after
+                  you confirm Start Next Season.
                 </p>
               </>
             }

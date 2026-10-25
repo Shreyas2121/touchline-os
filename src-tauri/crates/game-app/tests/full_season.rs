@@ -306,7 +306,27 @@ fn unchanged_except_matchday(kickoff: &SnapshotTables, finished: &SnapshotTables
     for player in &mut normalized.players {
         let before = original_players[player.id.as_str()];
         player.club_id.clone_from(&before.club_id);
+        if finished
+            .development_snapshots
+            .iter()
+            .any(|d| d.player_id == player.id && d.period == DevelopmentPeriod::Midseason)
+        {
+            player.attributes = before.attributes.clone();
+            player.market_value_cents = before.market_value_cents;
+        }
     }
+    for state in &mut normalized.player_simulation_states {
+        if finished
+            .development_snapshots
+            .iter()
+            .any(|d| d.player_id == state.player_id && d.period == DevelopmentPeriod::Midseason)
+        {
+            state.goalkeeping = original[state.id.as_str()].goalkeeping;
+        }
+    }
+    normalized
+        .development_snapshots
+        .clone_from(&kickoff.development_snapshots);
     // This includes every player/attribute, contract, ledger, offer, constitution,
     // registration, lineup, ownership, and planning row without a whitelist gap.
     assert_eq!(&normalized, kickoff);
@@ -557,6 +577,33 @@ fn full_season_reopens_replays_reconciles_and_exports_within_limit() {
     let kickoff_date = DateOnly::parse("2026-09-01").unwrap();
     for round in 1..=34 {
         let round_started = Instant::now();
+        if round == 18 {
+            let paused = preview_time(&store, campaign.clone()).unwrap();
+            assert!(!paused.allowed);
+            assert_eq!(paused.reason.as_deref(), Some(calendar::DEVELOPMENT_DUE));
+            let p = preview_development(&store, campaign.clone()).unwrap();
+            let counts = &p.id_counts;
+            apply_development(
+                &store,
+                LifecycleRequest {
+                    campaign_id: campaign.clone(),
+                    season_id: p.season_id,
+                    expected_revision: p.revision,
+                    source_date: p.source_date,
+                    source_boundary_key: p.source_boundary_key,
+                    input_fingerprint: p.input_fingerprint,
+                    ids: game_core::lifecycle_ops::LifecycleIds {
+                        snapshots: many(counts.snapshots as i64),
+                        ..Default::default()
+                    },
+                    receipt_id: fresh(),
+                    audit_id: fresh(),
+                    action_id: fresh(),
+                    now: NOW.into(),
+                },
+            )
+            .unwrap();
+        }
         if round == 19 || round == 23 {
             let before = tables(&store, &campaign).simulated_matches;
             let blocked = preview_matchday(&store, campaign.clone()).unwrap();
@@ -585,7 +632,12 @@ fn full_season_reopens_replays_reconciles_and_exports_within_limit() {
         assert!(p.emergency);
         assert_eq!(
             p.from_date,
-            add_days(&kickoff_date, (round - 1) * 7).unwrap().as_str()
+            add_days(
+                &kickoff_date,
+                (if round == 18 { 16 } else { round - 1 }) * 7
+            )
+            .unwrap()
+            .as_str()
         );
         if round == 19 {
             let winter = tables(&store, &campaign);
@@ -612,7 +664,12 @@ fn full_season_reopens_replays_reconciles_and_exports_within_limit() {
         );
         assert_eq!(
             outcome.current_date,
-            add_days(&kickoff_date, round.min(33) * 7).unwrap().as_str()
+            add_days(
+                &kickoff_date,
+                (if round == 17 { 16 } else { round.min(33) }) * 7
+            )
+            .unwrap()
+            .as_str()
         );
         if round == 1 {
             first_request = Some(req);
@@ -653,11 +710,11 @@ fn full_season_reopens_replays_reconciles_and_exports_within_limit() {
     let added = market_writes(&finished) - market_writes(&kickoff);
     assert_eq!(
         finished.audit_events.len(),
-        kickoff.audit_events.len() + 34 + added
+        kickoff.audit_events.len() + 35 + added
     );
     assert_eq!(
         finished.simulation_receipts.len(),
-        kickoff.simulation_receipts.len() + 34 + added
+        kickoff.simulation_receipts.len() + 35 + added
     );
     assert_eq!(
         finished
@@ -761,11 +818,8 @@ fn full_season_reopens_replays_reconciles_and_exports_within_limit() {
         Some(game_core::matchday::ROLLOVER_UNAVAILABLE)
     );
     let time = preview_time(&store, campaign.clone()).unwrap();
-    assert!(!time.allowed);
-    assert_eq!(
-        time.reason.as_deref(),
-        Some(game_core::matchday::ROLLOVER_UNAVAILABLE)
-    );
+    assert!(time.allowed);
+    assert!(time.reason.is_none());
     let refused = SimMatchdayRequest {
         campaign_id: campaign.clone(),
         expected_revision: review.revision,
@@ -831,7 +885,7 @@ fn full_season_reopens_replays_reconciles_and_exports_within_limit() {
     assert_eq!(tables(&store, &campaign), finished);
     eprintln!("full-season certification passed: 34 rounds, 1,224 matches, {} appearances, {} export bytes, {:.2}s runtime",finished.simulated_appearances.len(),bytes.len(),started.elapsed().as_secs_f64());
     // G04 must also export a real complete season plus the opening calendar,
-    // without requiring an explicit halfway development call in those 34 rounds.
+    // after the explicit halfway development call in those 34 rounds.
     let preview = preview_season(&restored, campaign.clone()).unwrap();
     let counts = &preview.id_counts;
     let rollover = LifecycleRequest {
@@ -869,7 +923,11 @@ fn full_season_reopens_replays_reconciles_and_exports_within_limit() {
     assert!(settled
         .development_snapshots
         .iter()
-        .all(|d| d.period == DevelopmentPeriod::SeasonEnd));
+        .any(|d| d.period == DevelopmentPeriod::Midseason));
+    assert!(settled
+        .development_snapshots
+        .iter()
+        .any(|d| d.period == DevelopmentPeriod::SeasonEnd));
     assert!(settle_season(&restored, rollover).unwrap().replayed);
     let settled_export = restored
         .export_snapshot(campaign.as_str(), "settled-season", NOW)

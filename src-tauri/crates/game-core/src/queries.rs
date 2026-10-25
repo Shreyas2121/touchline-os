@@ -64,6 +64,8 @@ pub struct PlayerFact {
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct PlayerPlanning {
+    #[serde(default)]
+    pub history: Vec<DevelopmentSnapshotRow>,
     pub player: PlayerRow,
     pub revision: SafeInt,
     pub note: Option<DevelopmentPlanRow>,

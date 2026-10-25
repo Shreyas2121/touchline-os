@@ -308,6 +308,12 @@ fn settlement_pays_the_new_season_once() {
     let (_d, store) = imported(baseline());
     let before = read(&store);
     let p = preview_season(&store, id("lifecycle-career")).unwrap();
+    assert!(p.allowed);
+    assert!(
+        preview_time(&store, id("lifecycle-career"))
+            .unwrap()
+            .allowed
+    );
     assert_eq!(read(&store), before);
     assert_eq!(p.clubs.len(), 72);
     assert!(p.attributes.len() <= 40 && p.roster.len() <= 80);
@@ -322,6 +328,13 @@ fn settlement_pays_the_new_season_once() {
     assert_eq!(out.current_date, "2027-07-01");
     assert_eq!(out.phase, CalendarPhase::Preseason);
     assert_eq!(out.last_boundary_key, None);
+    let market = preview_market(&store, id("lifecycle-career")).unwrap();
+    assert!(market.allowed);
+    assert_eq!(market.action, game_core::market_ops::MarketAction::Run);
+    let stored = preview_season(&store, id("lifecycle-career")).unwrap();
+    assert!(!stored.allowed);
+    assert!(stored.settlement.is_some());
+    assert!(stored.reason.is_none());
     let after = read(&store);
     let next = &after.campaigns[0].active_season_id;
     assert_eq!(after.season_settlements.len(), 1);
@@ -567,8 +580,9 @@ fn incomplete_calendar_and_bad_year_leave_the_review_untouched() {
     let (_d, store) = imported(t);
     let before = read(&store);
     assert!(preview_season(&store, id("lifecycle-career"))
-        .unwrap_err()
-        .to_string()
+        .unwrap()
+        .reason
+        .unwrap()
         .contains("Finish every league fixture"));
     assert_eq!(read(&store), before);
     let mut t = baseline();
@@ -578,8 +592,9 @@ fn incomplete_calendar_and_bad_year_leave_the_review_untouched() {
     let before = read(&store);
     assert_eq!(
         preview_season(&store, id("lifecycle-career"))
-            .unwrap_err()
-            .to_string(),
+            .unwrap()
+            .reason
+            .unwrap(),
         "The next season is outside the supported years."
     );
     assert_eq!(read(&store), before);
@@ -693,9 +708,24 @@ fn with_offer(qualifying: bool) -> SnapshotTables {
 fn qualifying_offer_blocks_settlement() {
     let (_d, store) = imported(with_offer(true));
     let before = read(&store);
+    let review = preview_season(&store, id("lifecycle-career")).unwrap();
+    assert!(!review.allowed);
+    assert_eq!(review.managed_position, Some(n(1)));
+    assert_eq!(review.prize_cents, m(180_000_000));
+    assert!(review
+        .objectives
+        .iter()
+        .all(|o| o.outcome == ObjectiveOutcome::Met));
+    let time = preview_time(&store, id("lifecycle-career")).unwrap();
+    assert!(!time.allowed);
+    assert_eq!(
+        time.reason.as_deref(),
+        Some("Accept the qualifying offer before the season can roll over.")
+    );
     assert!(preview_season(&store, id("lifecycle-career"))
-        .unwrap_err()
-        .to_string()
+        .unwrap()
+        .reason
+        .unwrap()
         .contains("Accept the qualifying offer"));
     // A previously computed confirmation also must not expire the reserved offer.
     let (_other, clean) = imported(baseline());
@@ -718,4 +748,103 @@ fn qualifying_offer_blocks_settlement() {
     );
     assert!(settle_season(&store, r).unwrap().replayed);
     assert_eq!(read(&store), after);
+}
+
+fn play(store: &NativeStore, p: MatchdayPreview) -> AdvanceOutcome {
+    assert!(p.allowed, "{:?}", p.blocker);
+    sim_matchday(
+        store,
+        SimMatchdayRequest {
+            campaign_id: p.campaign_id,
+            expected_revision: p.revision,
+            source_date: p.from_date,
+            source_boundary_key: p.source_boundary_key,
+            target_date: p.target_date.unwrap(),
+            action_id: fresh(),
+            audit_id: fresh(),
+            receipt_id: fresh(),
+            now: NOW.into(),
+            fixture_ids: many(p.fixture_count.get() as usize),
+            match_ids: many(p.match_count.get() as usize),
+            appearance_ids: many(p.appearance_count.get() as usize),
+        },
+    )
+    .unwrap()
+}
+#[test]
+fn halfway_matchday_waits_for_development_then_plays_round_18() {
+    let mut t = baseline();
+    let date = t
+        .fixtures
+        .iter()
+        .find(|f| f.round == n(17))
+        .unwrap()
+        .match_date
+        .clone();
+    for f in &mut t.fixtures {
+        if f.round.get() >= 17 {
+            f.status = FixtureStatus::Scheduled;
+        }
+    }
+    let played = t
+        .fixtures
+        .iter()
+        .filter(|f| f.status == FixtureStatus::Played)
+        .map(|f| f.id.clone())
+        .collect::<Vec<_>>();
+    t.simulated_matches
+        .retain(|m| played.contains(&m.fixture_id));
+    t.simulated_appearances
+        .retain(|a| played.contains(&a.fixture_id));
+    t.simulation_states[0].phase = CalendarPhase::League;
+    t.simulation_states[0].current_date = date.clone();
+    let previous = dates::add_days(&dates::DateOnly::parse(&date).unwrap(), -7).unwrap();
+    t.simulation_states[0].last_boundary_key = Some(format!(
+        "season:closing-season:matchday:{}",
+        previous.as_str()
+    ));
+    let (_d, store) = imported(t);
+    let outcome = play(
+        &store,
+        preview_matchday(&store, id("lifecycle-career")).unwrap(),
+    );
+    assert_eq!(outcome.current_date, date);
+    assert_eq!(outcome.phase, CalendarPhase::League);
+    let time = preview_time(&store, id("lifecycle-career")).unwrap();
+    assert!(!time.allowed);
+    assert_eq!(time.reason.as_deref(), Some(calendar::DEVELOPMENT_DUE));
+    let blocked = preview_matchday(&store, id("lifecycle-career")).unwrap();
+    assert!(!blocked.allowed);
+    assert_eq!(blocked.blocker.as_deref(), Some(calendar::DEVELOPMENT_DUE));
+    let r = request(preview_development(&store, id("lifecycle-career")).unwrap());
+    apply_development(&store, r.clone()).unwrap();
+    let time = preview_time(&store, id("lifecycle-career")).unwrap();
+    assert!(!time.allowed);
+    assert_eq!(
+        time.reason.as_deref(),
+        Some(calendar::MATCH_SIMULATION_UNAVAILABLE)
+    );
+    let next = preview_matchday(&store, id("lifecycle-career")).unwrap();
+    assert!(next.allowed);
+    assert_eq!(next.round, Some(n(18)));
+    assert_eq!(next.from_date, date);
+    assert_eq!(
+        next.target_date.as_deref(),
+        Some(
+            dates::add_days(&dates::DateOnly::parse(&date).unwrap(), 7)
+                .unwrap()
+                .as_str()
+        )
+    );
+    play(&store, next);
+    let after = read(&store);
+    assert_eq!(after.simulated_matches.len(), 18 * 36);
+    assert!(apply_development(&store, r).unwrap().replayed);
+    assert_eq!(read(&store), after);
+    let changed = after.development_snapshots.first().unwrap();
+    let planning = store
+        .planning(id("lifecycle-career"), changed.player_id.clone())
+        .unwrap();
+    assert_eq!(planning.history.len(), 1);
+    assert_eq!(planning.history[0], *changed);
 }

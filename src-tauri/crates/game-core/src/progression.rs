@@ -229,6 +229,11 @@ pub fn preview_saved(
         view.next_event = None;
         view.event_seed = None;
         view.reason = Some("Restore this archived campaign before editing.".into());
+    } else if loaded.clock.phase == CalendarPhase::Review {
+        let review = crate::lifecycle_ops::preview(tables, campaign_id, true)?;
+        view.allowed = review.allowed;
+        view.reason = review.reason;
+        view.next_event = review.allowed.then(|| "Review Season".into());
     }
     Ok(view)
 }

@@ -20,7 +20,8 @@ use serde_json::{json, Value};
 use std::collections::{BTreeMap, BTreeSet};
 use ts_rs::TS;
 
-pub const ROLLOVER_UNAVAILABLE: &str = "Season rollover arrives in Phase 10.";
+pub const ROLLOVER_UNAVAILABLE: &str =
+    "Finish every league fixture before the season can roll over.";
 fn invalid(message: impl ToString) -> CommandError {
     CommandError::Validation {
         message: message.to_string(),
@@ -392,6 +393,10 @@ fn round_plan(
     if clock.phase == CalendarPhase::Review {
         return Err(invalid(ROLLOVER_UNAVAILABLE));
     }
+    if crate::calendar::awaiting_development(clock, season).map_err(invalid)? {
+        return Err(invalid(crate::calendar::DEVELOPMENT_DUE));
+    }
+    let target_date = crate::calendar::matchday_date(clock, season).map_err(invalid)?;
     let all = calendar(tables, campaign, season)?;
     let round = all
         .iter()
@@ -403,7 +408,7 @@ fn round_plan(
     if fixtures.len() != 36
         || fixtures
             .iter()
-            .any(|f| f.match_date != clock.current_date || f.status != FixtureStatus::Scheduled)
+            .any(|f| f.match_date != target_date.as_str() || f.status != FixtureStatus::Scheduled)
         || clock.phase != CalendarPhase::League
     {
         return Err(invalid("Continue to the next league matchday first."));
@@ -423,6 +428,11 @@ fn round_plan(
         market_cursor
     } else if clock.last_boundary_key.as_deref() == Some(&close_cursor) {
         close_cursor
+    } else if round.get() == 18
+        && clock.last_boundary_key.as_deref()
+            == Some(crate::calendar::development_key(season.id.as_str()).as_str())
+    {
+        crate::calendar::development_key(season.id.as_str())
     } else if round.get() == 1 {
         format!(
             "season:{}:league-kickoff",
@@ -627,7 +637,10 @@ pub fn commit(
     }
     if request.source_date != clock.current_date
         || request.source_boundary_key != clock.last_boundary_key
-        || request.target_date != clock.current_date
+        || request.target_date
+            != crate::calendar::matchday_date(&clock, &season)
+                .map_err(invalid)?
+                .as_str()
     {
         return Err(conflict(
             "Source date, cursor or target does not match the saved matchday.",
@@ -799,7 +812,7 @@ pub fn commit(
         }
     }
     let revision = next_revision(campaign.revision).map_err(invalid)?;
-    let next_date = if round.get() == 34 {
+    let next_date = if round.get() == 34 || round.get() == 17 {
         request.target_date.clone()
     } else {
         add_days(&DateOnly::parse(&request.target_date).map_err(invalid)?, 7)

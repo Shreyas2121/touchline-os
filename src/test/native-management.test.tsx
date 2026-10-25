@@ -136,6 +136,7 @@ describe('native management forms', () => {
     let saved = model()
     api.screen = vi.fn(async () => saved)
     api.planning = vi.fn(async () => ({
+      history: [],
       player: saved.rows.players[0]!,
       revision: saved.revision,
       note: saved.rows.developmentPlans[0] ?? null,
@@ -585,6 +586,7 @@ describe('native planning editor read identity', () => {
     await act(async () =>
       resolve({
         ...latest,
+        history: [],
         revision: initial.model.revision,
         note: { ...note, notes: 'Obsolete response' },
       }),

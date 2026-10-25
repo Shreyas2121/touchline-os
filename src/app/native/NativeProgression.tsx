@@ -4,6 +4,8 @@ import { mapInvokeError } from '../../platform/errors'
 import { staleSave } from '../copy'
 import { useNativeRead } from './useNativeRead'
 import { Button } from '../../components/ui/Button'
+import { useNavigate } from 'react-router'
+import { NativeDevelopment } from './NativeLifecycle'
 
 export function NativeProgression({
   client,
@@ -20,6 +22,8 @@ export function NativeProgression({
   onAdvanced: () => void
   onReload: () => void
 }) {
+  const navigate = useNavigate()
+  const [developmentOpen, setDevelopmentOpen] = useState(false)
   const requestKey = `${campaignId}:${revision}:${refresh}`
   const [error, setError] = useState<{ key: string; message: string } | null>(
     null,
@@ -69,6 +73,9 @@ export function NativeProgression({
     (marketShown?.action === 'close' && !marketShown.allowed) ||
     shown?.reason === 'Accept the qualifying offer before the window can close.'
   const marketFirst = runMarket || closeWindow || holdForOffer
+  const developmentDue =
+    shown?.reason === 'Development is applied after the halfway matchday.'
+  const reviewMode = shown?.phase === 'review'
   async function simulateRound() {
     if (
       submitting.current ||
@@ -191,26 +198,58 @@ export function NativeProgression({
     }
   }
   const nextEvent =
-    marketShown?.reason &&
-    (marketShown.action === 'run' || marketShown.action === 'close')
-      ? marketShown.reason
-      : matchdayMode
-        ? round === null
-          ? 'Calculating the next matchday.'
-          : round.allowed
-            ? `${round.nextEvent} on ${round.targetDate}`
-            : round.blocker
-        : shown === null
-          ? 'Loading the next event.'
-          : shown.allowed
-            ? `${shown.nextEvent} on ${shown.targetDate}`
-            : shown.reason
+    developmentDue || reviewMode
+      ? (shown?.reason ?? 'Review the completed season.')
+      : marketShown?.reason &&
+          (marketShown.action === 'run' || marketShown.action === 'close')
+        ? marketShown.reason
+        : matchdayMode
+          ? round === null
+            ? 'Calculating the next matchday.'
+            : round.allowed
+              ? `${round.nextEvent} on ${round.targetDate}`
+              : round.blocker
+          : shown === null
+            ? 'Loading the next event.'
+            : shown.allowed
+              ? `${shown.nextEvent} on ${shown.targetDate}`
+              : shown.reason
   return (
     <section aria-label="Game calendar" className="space-y-3">
       <h2>Game date</h2>
       <p>{shown?.fromDate ?? 'Loading the game date.'}</p>
       <h2>Next event</h2>
       <p>{nextEvent}</p>
+      {developmentDue && !developmentOpen && !marketFirst && (
+        <Button
+          disabled={busyKind !== null}
+          onClick={() => setDevelopmentOpen(true)}
+        >
+          Apply Development
+        </Button>
+      )}
+      {developmentDue && developmentOpen && (
+        <NativeDevelopment
+          key={requestKey}
+          client={client}
+          campaignId={campaignId}
+          onSaved={() => {
+            setDevelopmentOpen(false)
+            onAdvanced()
+          }}
+          onCancel={() => setDevelopmentOpen(false)}
+        />
+      )}
+      {reviewMode && shown?.allowed && !marketFirst && (
+        <Button
+          disabled={busyKind !== null}
+          onClick={() => {
+            void navigate(`/app/${campaignId}/seasons`)
+          }}
+        >
+          Review Season
+        </Button>
+      )}
       {runMarket && (
         <Button
           disabled={busyKind !== null}
@@ -245,36 +284,44 @@ export function NativeProgression({
           </Button>
         )}
       {round?.emergency && <p>Emergency selection</p>}
-      {round?.allowed && !marketFirst && !confirming && (
-        <Button
-          disabled={busyKind !== null}
-          onClick={() => setConfirming(true)}
-        >
-          Sim Matchday
-        </Button>
-      )}
-      {round?.allowed && !marketFirst && confirming && (
-        <section aria-label="Confirm matchday" className="space-y-3">
-          <p>
-            Play round {round.round} on {round.targetDate}? All four leagues
-            will be simulated and saved.
-          </p>
+      {round?.allowed &&
+        !reviewMode &&
+        !developmentDue &&
+        !marketFirst &&
+        !confirming && (
           <Button
             disabled={busyKind !== null}
-            onClick={() => {
-              void simulateRound()
-            }}
+            onClick={() => setConfirming(true)}
           >
-            Confirm Sim Matchday
+            Sim Matchday
           </Button>
-          <Button
-            disabled={busyKind !== null}
-            onClick={() => setConfirming(false)}
-          >
-            Cancel
-          </Button>
-        </section>
-      )}
+        )}
+      {round?.allowed &&
+        !reviewMode &&
+        !developmentDue &&
+        !marketFirst &&
+        confirming && (
+          <section aria-label="Confirm matchday" className="space-y-3">
+            <p>
+              Play round {round.round} on {round.targetDate}? All four leagues
+              will be simulated and saved.
+            </p>
+            <Button
+              disabled={busyKind !== null}
+              onClick={() => {
+                void simulateRound()
+              }}
+            >
+              Confirm Sim Matchday
+            </Button>
+            <Button
+              disabled={busyKind !== null}
+              onClick={() => setConfirming(false)}
+            >
+              Cancel
+            </Button>
+          </section>
+        )}
       {busyKind !== null && (
         <p role="status">
           {busyKind === 'market'

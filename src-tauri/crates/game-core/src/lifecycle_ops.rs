@@ -129,6 +129,10 @@ pub struct ObjectivePreview {
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct LifecyclePreview {
+    pub has_development_history: bool,
+    pub allowed: bool,
+    pub reason: Option<String>,
+    pub settlement: Option<SeasonSettlementRow>,
     pub campaign_id: EntityId,
     pub season_id: EntityId,
     pub revision: SafeInt,
@@ -422,6 +426,7 @@ fn plan(t: &SnapshotTables, id: &EntityId, season_end: bool) -> Result<Plan, Com
         .iter()
         .find(|x| x.campaign_id == c.id)
         .ok_or_else(|| invalid("Constitution not found."))?;
+    let mut season_blocker = None;
     if season_end {
         let count = qualifying(t, &c.id, &s.id)?;
         let report = evaluate_action(
@@ -437,9 +442,8 @@ fn plan(t: &SnapshotTables, id: &EntityId, season_end: bool) -> Result<Plan, Com
         )
         .map_err(invalid)?;
         if !report.allowed {
-            return Err(invalid(
-                "Accept the qualifying offer before the season can roll over.",
-            ));
+            season_blocker =
+                Some("Accept the qualifying offer before the season can roll over.".into());
         }
     }
     let period = if season_end {
@@ -526,6 +530,10 @@ fn plan(t: &SnapshotTables, id: &EntityId, season_end: bool) -> Result<Plan, Com
         }
     }
     let mut preview = LifecyclePreview {
+        has_development_history: !t.development_snapshots.is_empty(),
+        allowed: season_blocker.is_none(),
+        reason: season_blocker,
+        settlement: None,
         campaign_id: c.id.clone(),
         season_id: s.id.clone(),
         revision: c.revision,
@@ -867,7 +875,83 @@ pub fn preview(
     id: &EntityId,
     season_end: bool,
 ) -> Result<LifecyclePreview, CommandError> {
-    Ok(plan(t, id, season_end)?.preview)
+    if !season_end {
+        return Ok(plan(t, id, false)?.preview);
+    }
+    match plan(t, id, true) {
+        Ok(plan) => Ok(plan.preview),
+        Err(CommandError::Validation { message }) => {
+            let (c, s, clock) = loaded(t, id)?;
+            let settlement = if clock.phase != CalendarPhase::Review {
+                t.season_settlements
+                    .iter()
+                    .find(|r| r.next_season_id == s.id)
+                    .cloned()
+            } else {
+                None
+            };
+            let closing = settlement
+                .as_ref()
+                .and_then(|r| t.seasons.iter().find(|s| s.id == r.season_id));
+            let objectives = settlement
+                .as_ref()
+                .map(|r| {
+                    t.board_objectives
+                        .iter()
+                        .filter(|o| o.season_id == r.season_id)
+                        .map(|o| ObjectivePreview {
+                            kind: o.kind,
+                            target_position: o.target_position,
+                            reward_cents: o.reward_cents,
+                            outcome: o.outcome,
+                        })
+                        .collect()
+                })
+                .unwrap_or_else(|| {
+                    objective_awards()
+                        .iter()
+                        .map(|(kind, target, reward, _)| ObjectivePreview {
+                            kind: *kind,
+                            target_position: n(*target).expect("objective position"),
+                            reward_cents: money(*reward).expect("objective reward"),
+                            outcome: ObjectiveOutcome::Pending,
+                        })
+                        .collect()
+                });
+            Ok(LifecyclePreview {
+                has_development_history: !t.development_snapshots.is_empty(),
+                allowed: false,
+                reason: if settlement.is_some() {
+                    None
+                } else {
+                    Some(message)
+                },
+                campaign_id: c.id.clone(),
+                season_id: s.id.clone(),
+                revision: c.revision,
+                source_date: clock.current_date.clone(),
+                source_boundary_key: clock.last_boundary_key.clone(),
+                input_fingerprint: String::new(),
+                closing_label: closing.unwrap_or(s).label.clone(),
+                id_counts: LifecycleIdCounts::default(),
+                attributes: Vec::new(),
+                roster: Vec::new(),
+                clubs: Vec::new(),
+                objectives,
+                managed_position: settlement.as_ref().map(|r| r.managed_position),
+                prize_cents: settlement.as_ref().map_or(money(0)?, |r| r.prize_cents),
+                objective_bonus_cents: settlement
+                    .as_ref()
+                    .map_or(money(0)?, |r| r.objective_bonus_cents),
+                carryover_cents: settlement.as_ref().map_or(money(0)?, |r| r.carryover_cents),
+                allocation_cents: settlement
+                    .as_ref()
+                    .map_or(money(0)?, |r| r.allocation_cents),
+                settlement,
+            })
+        }
+        Err(error) => Err(error),
+    }
 }
 
 pub fn preview_material(
@@ -1435,6 +1519,14 @@ pub fn prepare(
         }];
     }
     let revision = guards::next_revision(c.revision).map_err(invalid)?;
+    if !end {
+        after
+            .simulation_states
+            .iter_mut()
+            .find(|clock| clock.campaign_id == c.id)
+            .expect("clock")
+            .last_boundary_key = Some(calendar::development_key(s.id.as_str()));
+    }
     let campaign = after
         .campaigns
         .iter_mut()

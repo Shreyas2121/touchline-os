@@ -12,6 +12,41 @@ pub const CLOSE_WINDOW_BEFORE_MATCHDAY: &str = "Close the winter window before t
 pub const ACCEPT_QUALIFYING_OFFER: &str =
     "Accept the qualifying offer before the window can close.";
 pub const TRANSFER_WINDOW_CLOSED: &str = "The transfer window is closed.";
+pub const DEVELOPMENT_DUE: &str = "Development is applied after the halfway matchday.";
+pub fn development_key(season_id: &str) -> String {
+    format!("season:{season_id}:development:midseason")
+}
+pub fn awaiting_development(state: &SimulationStateRow, season: &SeasonRow) -> CoreResult<bool> {
+    let start = DateOnly::parse(
+        season
+            .start_date
+            .as_deref()
+            .ok_or(CoreError::Invalid("Missing season start."))?,
+    )?;
+    let halfway = add_days(
+        &DateOnly::parse(&format!("{}-09-01", start.year()))?,
+        16 * 7,
+    )?;
+    Ok(state.phase == CalendarPhase::League
+        && state.current_date == halfway.as_str()
+        && state.last_boundary_key.as_deref()
+            == Some(
+                format!(
+                    "season:{}:matchday:{}",
+                    season.id.as_str(),
+                    halfway.as_str()
+                )
+                .as_str(),
+            ))
+}
+pub fn matchday_date(state: &SimulationStateRow, season: &SeasonRow) -> CoreResult<DateOnly> {
+    let date = DateOnly::parse(&state.current_date)?;
+    if state.last_boundary_key.as_deref() == Some(development_key(season.id.as_str()).as_str()) {
+        add_days(&date, 7)
+    } else {
+        Ok(date)
+    }
+}
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum TransferWindow {
@@ -183,12 +218,17 @@ fn foundation_clock(state: &SimulationStateRow, season: &SeasonRow) -> CoreResul
         if state.last_boundary_key.as_deref() == Some(&key) {
             matchday = if round == 34 {
                 state.phase == CalendarPhase::Review && current == played_date
+            } else if round == 17 && current == played_date {
+                state.phase == CalendarPhase::League
             } else {
                 state.phase == CalendarPhase::League && current == add_days(&played_date, 7)?
             };
             break;
         }
     }
+    let consumed_development = state.phase == CalendarPhase::League
+        && current == add_days(&kickoff.date, 16 * 7)?
+        && cursor == Some(development_key(&season_id).as_str());
     if !awaiting_tick
         && !consumed_tick
         && !consumed_january
@@ -196,6 +236,7 @@ fn foundation_clock(state: &SimulationStateRow, season: &SeasonRow) -> CoreResul
         && !consumed_deadline
         && !consumed_kickoff
         && !matchday
+        && !consumed_development
     {
         return Err(CoreError::Invalid(
             "Game date, phase and consumed boundary are inconsistent.",
@@ -300,6 +341,8 @@ pub fn preview_time_advance(
         event_seed,
         reason: if target.is_some() || awaiting_tick {
             None
+        } else if awaiting_development(state, season)? {
+            Some(DEVELOPMENT_DUE.into())
         } else if state.phase == CalendarPhase::Review {
             Some(crate::matchday::ROLLOVER_UNAVAILABLE.into())
         } else {

@@ -12,6 +12,7 @@ import { NativeScreenTables } from './NativeScreenTables'
 import { NativeMatches } from './NativeMatches'
 import { NativeManagementPanel } from './NativeManagementPanel'
 import { NativeProgression } from './NativeProgression'
+import { NativeSeasons } from './NativeLifecycle'
 import { NativeTransfers } from './NativeTransfers'
 import { NativeTransferPlayers } from './NativeTransferPlayers'
 import { Paging } from './NativePaging'
@@ -193,8 +194,24 @@ function ScreenContent({
                 }}
               />
             )}
-            {screen !== 'transfers' && (
-              <NativeScreenTables model={data} screen={screen} />
+            {screen === 'seasons' && (
+              <NativeSeasons
+                key={data.revision}
+                client={client}
+                campaignId={campaignId}
+                revision={data.revision}
+                onSaved={() => {
+                  setNotice('Started the next season.')
+                  setRetry((v) => v + 1)
+                }}
+              />
+            )}
+            {screen !== 'transfers' && screen !== 'seasons' && (
+              <NativeScreenTables
+                client={client}
+                model={data}
+                screen={screen}
+              />
             )}
             {screen === 'matches' && (
               <NativeMatches client={client} campaignId={campaignId} />
@@ -242,13 +259,15 @@ function ScreenContent({
                 campaignId={campaignId}
               />
             )}
-            {screen !== 'matches' && screen !== 'transfers' && (
-              <Paging
-                page={page}
-                total={Math.max(0, ...Object.values(data.totals))}
-                onPage={setPage}
-              />
-            )}
+            {screen !== 'matches' &&
+              screen !== 'transfers' &&
+              screen !== 'seasons' && (
+                <Paging
+                  page={page}
+                  total={Math.max(0, ...Object.values(data.totals))}
+                  onPage={setPage}
+                />
+              )}
           </>
         )
       )}

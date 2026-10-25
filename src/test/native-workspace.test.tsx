@@ -505,6 +505,7 @@ function pagedTransferClient() {
     async (_campaignId, playerId) => {
       const player = pagedRoster.find((p) => p.id === playerId)!
       return {
+        history: [],
         player,
         revision: campaign.revision,
         shortlist: null,

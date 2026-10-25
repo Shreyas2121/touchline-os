@@ -248,6 +248,34 @@ fn accept_offer(
     request
 }
 fn sim(store: &NativeStore, campaign: &EntityId) {
+    if preview_time(store, campaign.clone())
+        .unwrap()
+        .reason
+        .as_deref()
+        == Some(game_core::calendar::DEVELOPMENT_DUE)
+    {
+        let p = preview_development(store, campaign.clone()).unwrap();
+        apply_development(
+            store,
+            LifecycleRequest {
+                campaign_id: campaign.clone(),
+                season_id: p.season_id,
+                expected_revision: p.revision,
+                source_date: p.source_date,
+                source_boundary_key: p.source_boundary_key,
+                input_fingerprint: p.input_fingerprint,
+                ids: game_core::lifecycle_ops::LifecycleIds {
+                    snapshots: (0..p.id_counts.snapshots).map(|_| fresh()).collect(),
+                    ..Default::default()
+                },
+                receipt_id: fresh(),
+                audit_id: fresh(),
+                action_id: fresh(),
+                now: NOW.into(),
+            },
+        )
+        .unwrap();
+    }
     let preview = preview_matchday(store, campaign.clone()).unwrap();
     assert!(
         preview.allowed,

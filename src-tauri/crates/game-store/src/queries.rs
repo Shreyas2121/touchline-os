@@ -368,8 +368,17 @@ pub(super) fn planning(
         .next()
         .map(serde_json::from_value)
         .transpose()?;
+    let history = serde_json::from_value(Value::Array(select(
+        &tx,
+        "developmentSnapshots",
+        "campaignId=?1 AND playerId=?2",
+        &scope,
+        128,
+        0,
+    )?))?;
     tx.commit()?;
     Ok(PlayerPlanning {
+        history,
         player,
         revision: header.revision,
         note,
