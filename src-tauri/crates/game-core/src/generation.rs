@@ -102,7 +102,7 @@ pub fn weekly_wage_cents(age: i64, ability: i64, tier: SquadTier) -> CoreResult<
 fn draw(rng: &mut Mulberry32, span: usize) -> CoreResult<usize> {
     Ok(rng.next_int(span as i64)? as usize)
 }
-fn draw_name(rng: &mut Mulberry32) -> CoreResult<String> {
+pub(crate) fn draw_name(rng: &mut Mulberry32) -> CoreResult<String> {
     let syllables = 2 + draw(rng, 2)?;
     let mut given = String::new();
     for _ in 0..syllables {
