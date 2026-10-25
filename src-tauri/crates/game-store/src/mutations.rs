@@ -131,6 +131,66 @@ pub(super) fn market(
     tx.commit()?;
     Ok(outcome)
 }
+pub(super) fn lifecycle(
+    db: &mut Connection,
+    request: game_core::lifecycle_ops::LifecycleRequest,
+    end: bool,
+    prepared: game_core::lifecycle_ops::PreparedLifecycle,
+) -> Result<AdvanceOutcome> {
+    use game_core::lifecycle_ops;
+    let tx = db.transaction_with_behavior(TransactionBehavior::Immediate)?;
+    let mut before = snapshots::read_from(&tx, request.campaign_id.as_str())?;
+    let tables: SnapshotTables = serde_json::from_value(before.clone())?;
+    let material = lifecycle_ops::material(&tables, &request, end).map_err(StoreError::Command)?;
+    if material != prepared.fingerprint_material
+        || super::lifecycle_fingerprint(&material) != request.input_fingerprint
+    {
+        return Err(reject(
+            "The saved lifecycle preview changed. Refresh and try again.",
+        ));
+    }
+    if let Some(outcome) =
+        lifecycle_ops::replay(&tables, &request, end).map_err(StoreError::Command)?
+    {
+        return Ok(outcome);
+    }
+    lifecycle_ops::recheck(&tables, &request, end).map_err(StoreError::Command)?;
+    let after = serde_json::to_value(&prepared.after)?;
+    snapshots::validate_state(&prepared.after, &after, "native-lifecycle", &request.now)?;
+    // Release reservations before the first player/contract insert, while
+    // keeping all expiry writes in the same rollback boundary as the audit.
+    if end {
+        let mut old_expiry = empty();
+        let mut new_expiry = empty();
+        for name in ["negotiations", "offers"] {
+            old_expiry[name] = before[name].clone();
+            new_expiry[name] = after[name].clone();
+        }
+        write_diff(&tx, &old_expiry, &new_expiry, request.campaign_id.as_str())?;
+        for name in ["negotiations", "offers"] {
+            before[name] = after[name].clone();
+        }
+    }
+    write_diff(&tx, &before, &after, request.campaign_id.as_str())?;
+    tx.commit()?;
+    let campaign = &prepared.after.campaigns[0];
+    let clock = &prepared.after.simulation_states[0];
+    let receipt = prepared
+        .after
+        .simulation_receipts
+        .last()
+        .expect("prepared receipt");
+    Ok(AdvanceOutcome {
+        campaign_id: campaign.id.clone(),
+        revision: campaign.revision,
+        replayed: false,
+        receipt_id: receipt.id.clone(),
+        operation_key: receipt.operation_key.clone(),
+        current_date: clock.current_date.clone(),
+        phase: clock.phase,
+        last_boundary_key: clock.last_boundary_key.clone(),
+    })
+}
 pub(super) fn settle(
     db: &mut Connection,
     request: game_core::settlement::SettleTransferRequest,

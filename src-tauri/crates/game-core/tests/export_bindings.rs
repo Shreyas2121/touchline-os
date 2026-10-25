@@ -12,6 +12,10 @@ fn export_bindings() {
     CampaignSnapshot::export_all(&config).expect("snapshot bindings");
     HealthReport::export_all(&config).expect("health bindings");
     CommandError::export_all(&config).expect("error bindings");
+    game_core::lifecycle_ops::LifecyclePreview::export_all(&config)
+        .expect("lifecycle preview bindings");
+    game_core::lifecycle_ops::LifecycleRequest::export_all(&config)
+        .expect("lifecycle request bindings");
     game_core::matchday::MatchdayPreview::export_all(&config).expect("matchday preview bindings");
     game_core::matchday::SimMatchdayRequest::export_all(&config)
         .expect("matchday request bindings");

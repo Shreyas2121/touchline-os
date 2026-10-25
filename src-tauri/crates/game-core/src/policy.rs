@@ -530,7 +530,7 @@ pub fn evaluate_action(
                 verdicts.push(verdict(
                     "PRESTIGE_BID_SALE",
                     "UNRESOLVED_QUALIFYING_OFFER",
-                    "A qualifying offer is still unresolved.",
+                    "Accept the qualifying offer before the season can roll over.",
                     json!({"unresolvedQualifyingOffers":unresolved_qualifying_offers}),
                     "Accept the qualifying offer, or change the constitution in an audited update.",
                 ));

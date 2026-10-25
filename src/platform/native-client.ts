@@ -3,6 +3,11 @@ import { type GameClient } from './game-client'
 
 export function createNativeClient(): GameClient {
   return {
+    previewDevelopment: (campaignId) =>
+      call('preview_development', { campaignId }),
+    applyDevelopment: (request) => call('apply_development', { request }),
+    previewSeason: (campaignId) => call('preview_season', { campaignId }),
+    settleSeason: (request) => call('settle_season', { request }),
     health: () => call('health'),
     campaigns: (page) => call('list_campaigns', { page }),
     screen: (query) => call('read_screen', { query }),

@@ -2,6 +2,7 @@
 
 #![forbid(unsafe_code)]
 pub mod diagnostics;
+mod lifecycle;
 mod management;
 mod market;
 mod matchday;
@@ -9,6 +10,7 @@ mod migration;
 mod progression;
 mod reads;
 mod settlement;
+pub use game_core::lifecycle_ops::{LifecyclePreview, LifecycleRequest};
 pub use game_core::management::ClubChoices;
 pub use game_core::management::{CreationRequest, ManagementCommand, ManagementOutcome};
 pub use game_core::market_ops::{
@@ -19,6 +21,7 @@ pub use game_core::matchday::{MatchdayPreview, MatchdayView, SimMatchdayRequest}
 pub use game_core::progression::{AdvanceOutcome, AdvanceRequest, TimePreview};
 pub use game_core::settlement::SettleTransferRequest;
 pub use game_core::{queries::*, EntityId, PlayerRow, SafeInt};
+pub use lifecycle::{apply_development, preview_development, preview_season, settle_season};
 pub use management::{create_career, manage, preview_creation};
 pub use market::{
     close_window, preview_market, propose_transfer, respond_negotiation, respond_offer, run_market,

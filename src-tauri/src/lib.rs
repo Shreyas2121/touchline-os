@@ -8,6 +8,50 @@ use tauri_plugin_dialog::DialogExt;
 type Store = Arc<game_app::NativeStore>;
 type Imports = Arc<game_app::MigrationSession>;
 #[tauri::command]
+async fn preview_development(
+    store: tauri::State<'_, Store>,
+    campaign_id: game_app::EntityId,
+) -> Result<game_app::LifecyclePreview, CommandError> {
+    let store = store.inner().clone();
+    blocking("preview_development", move || {
+        game_app::preview_development(&store, campaign_id)
+    })
+    .await
+}
+#[tauri::command]
+async fn preview_season(
+    store: tauri::State<'_, Store>,
+    campaign_id: game_app::EntityId,
+) -> Result<game_app::LifecyclePreview, CommandError> {
+    let store = store.inner().clone();
+    blocking("preview_season", move || {
+        game_app::preview_season(&store, campaign_id)
+    })
+    .await
+}
+#[tauri::command]
+async fn apply_development(
+    store: tauri::State<'_, Store>,
+    request: game_app::LifecycleRequest,
+) -> Result<game_app::AdvanceOutcome, CommandError> {
+    let store = store.inner().clone();
+    blocking("apply_development", move || {
+        game_app::apply_development(&store, request)
+    })
+    .await
+}
+#[tauri::command]
+async fn settle_season(
+    store: tauri::State<'_, Store>,
+    request: game_app::LifecycleRequest,
+) -> Result<game_app::AdvanceOutcome, CommandError> {
+    let store = store.inner().clone();
+    blocking("settle_season", move || {
+        game_app::settle_season(&store, request)
+    })
+    .await
+}
+#[tauri::command]
 async fn preview_matchday(
     store: tauri::State<'_, Store>,
     campaign_id: game_app::EntityId,
@@ -412,6 +456,10 @@ pub fn run() {
             respond_offer,
             sim_matchday,
             settle_transfer,
+            preview_development,
+            apply_development,
+            preview_season,
+            settle_season,
             matchday_view,
             advance_time,
             create_career,

@@ -121,12 +121,19 @@ pub fn validate_campaign_tables(tables: &SnapshotTables) -> Result<(), SnapshotE
         256,
         "simulationReceipts",
     )?;
-    require_len(tables.fixtures.len(), 0, 2_048, "fixtures")?;
-    require_len(tables.simulated_matches.len(), 0, 2_048, "simulatedMatches")?;
+    // Retain historical seasons alongside the opening calendar. The transport
+    // byte ceiling still bounds exports before these per-table maxima apply.
+    require_len(tables.fixtures.len(), 0, 64 * 1_224, "fixtures")?;
+    require_len(
+        tables.simulated_matches.len(),
+        0,
+        64 * 1_224,
+        "simulatedMatches",
+    )?;
     require_len(
         tables.simulated_appearances.len(),
         0,
-        80_000,
+        64 * 1_224 * 32,
         "simulatedAppearances",
     )?;
     validate_tables(tables)

@@ -1,3 +1,5 @@
+import type { LifecyclePreview } from './generated/LifecyclePreview'
+import type { LifecycleRequest } from './generated/LifecycleRequest'
 import type { HealthReport } from './generated/HealthReport'
 import type { CampaignPage } from './generated/CampaignPage'
 import type { ScreenQuery } from './generated/ScreenQuery'
@@ -36,6 +38,10 @@ type Command<Args, Result> = { args: Args; result: Result }
 // Mirrors the Tauri handlers in src-tauri/src/lib.rs. State/AppHandle
 // parameters are injected by Tauri; wire argument names use camelCase.
 export type NativeCommands = {
+  preview_development: Command<{ campaignId: EntityId }, LifecyclePreview>
+  apply_development: Command<{ request: LifecycleRequest }, AdvanceOutcome>
+  preview_season: Command<{ campaignId: EntityId }, LifecyclePreview>
+  settle_season: Command<{ request: LifecycleRequest }, AdvanceOutcome>
   health: Command<undefined, HealthReport>
   list_campaigns: Command<{ page: SafeInt }, CampaignPage>
   read_screen: Command<{ query: ScreenQuery }, ScreenModel>

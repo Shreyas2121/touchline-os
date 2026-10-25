@@ -15,6 +15,7 @@ mod generation_settings;
 pub mod guards;
 mod ids;
 pub mod lifecycle;
+pub mod lifecycle_ops;
 pub mod management;
 pub mod market;
 pub mod market_ops;

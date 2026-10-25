@@ -15,6 +15,23 @@ use std::collections::BTreeSet;
 
 pub const DEVELOPMENT_ENGINE_VERSION: &str = "1";
 
+/// Award definitions are shared by preview and settlement; all amounts are cents.
+pub fn league_prize(position: i64) -> CoreResult<i64> {
+    if !(1..=18).contains(&position) {
+        return Err(CoreError::Invalid("Invalid league position."));
+    }
+    Ok((19 - position) * 10_000_000)
+}
+
+pub fn objective_awards() -> [(crate::ObjectiveKind, i64, i64, crate::AwardKind); 3] {
+    use crate::{AwardKind as A, ObjectiveKind as O};
+    [
+        (O::LeagueTitle, 1, 50_000_000, A::LeagueTitle),
+        (O::TopHalf, 9, 20_000_000, A::TopHalf),
+        (O::AvoidLast, 17, 10_000_000, A::AvoidLast),
+    ]
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct DevelopmentInput {
     pub age: Option<i64>,

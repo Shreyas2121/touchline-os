@@ -103,6 +103,20 @@ const mutation = {
   wageCents: 50,
   squadTier: 'rotation' as const,
   decision: 'accept' as const,
+  seasonId: 'season-1',
+  inputFingerprint: 'lifecycle-v1-test',
+  ids: {
+    players: [],
+    playerStates: [],
+    contracts: [],
+    registrations: [],
+    ledger: [],
+    fixtures: [],
+    seasons: [],
+    settlements: [],
+    objectives: [],
+    snapshots: [],
+  },
 }
 
 type Mapping = {
@@ -191,6 +205,26 @@ const mappings = {
   settleTransfer: {
     run: (c) => c.settleTransfer(mutation),
     command: 'settle_transfer',
+    args: { request: mutation },
+  },
+  previewDevelopment: {
+    run: (c) => c.previewDevelopment(campaignId),
+    command: 'preview_development',
+    args: { campaignId },
+  },
+  applyDevelopment: {
+    run: (c) => c.applyDevelopment(mutation),
+    command: 'apply_development',
+    args: { request: mutation },
+  },
+  previewSeason: {
+    run: (c) => c.previewSeason(campaignId),
+    command: 'preview_season',
+    args: { campaignId },
+  },
+  settleSeason: {
+    run: (c) => c.settleSeason(mutation),
+    command: 'settle_season',
     args: { request: mutation },
   },
   matchdayView: {

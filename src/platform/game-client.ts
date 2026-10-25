@@ -1,3 +1,5 @@
+import type { LifecyclePreview } from './generated/LifecyclePreview'
+import type { LifecycleRequest } from './generated/LifecycleRequest'
 import type { HealthReport } from './generated/HealthReport'
 import type { CampaignPage } from './generated/CampaignPage'
 import type { ScreenQuery } from './generated/ScreenQuery'
@@ -27,6 +29,10 @@ import type { RespondNegotiationRequest } from './generated/RespondNegotiationRe
 import type { RespondOfferRequest } from './generated/RespondOfferRequest'
 import type { TransferBoard } from './generated/TransferBoard'
 export type GameClient = {
+  previewDevelopment(campaignId: string): Promise<LifecyclePreview>
+  applyDevelopment(request: LifecycleRequest): Promise<AdvanceOutcome>
+  previewSeason(campaignId: string): Promise<LifecyclePreview>
+  settleSeason(request: LifecycleRequest): Promise<AdvanceOutcome>
   health(): Promise<HealthReport>
   campaigns(page: number): Promise<CampaignPage>
   screen(query: ScreenQuery): Promise<ScreenModel>
@@ -65,6 +71,10 @@ export function unavailableNativeReads() {
       message: 'Native services require the desktop application.',
     })
   return {
+    previewDevelopment: reject,
+    applyDevelopment: reject,
+    previewSeason: reject,
+    settleSeason: reject,
     campaigns: reject,
     screen: reject,
     player: reject,

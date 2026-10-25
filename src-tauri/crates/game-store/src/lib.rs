@@ -22,6 +22,9 @@ pub fn settlement_fingerprint(canonical: &str) -> String {
 pub fn market_fingerprint(canonical: &str) -> String {
     hashed_fingerprint("native-market:1:", canonical)
 }
+pub fn lifecycle_fingerprint(canonical: &str) -> String {
+    hashed_fingerprint("lifecycle-v1", canonical)
+}
 fn hashed_fingerprint(prefix: &str, canonical: &str) -> String {
     use sha2::{Digest, Sha256};
     format!(
@@ -134,6 +137,12 @@ pub struct ImportOutcome {
 
 type Reply<T> = mpsc::Sender<Result<T>>;
 enum Request {
+    Lifecycle(
+        game_core::lifecycle_ops::LifecycleRequest,
+        bool,
+        Box<game_core::lifecycle_ops::PreparedLifecycle>,
+        Reply<game_core::progression::AdvanceOutcome>,
+    ),
     Market(
         game_core::market_ops::MarketCommand,
         Reply<game_core::progression::AdvanceOutcome>,
@@ -192,6 +201,14 @@ pub struct Store {
     worker: Option<JoinHandle<()>>,
 }
 impl Store {
+    pub fn lifecycle(
+        &self,
+        request: game_core::lifecycle_ops::LifecycleRequest,
+        season_end: bool,
+        prepared: game_core::lifecycle_ops::PreparedLifecycle,
+    ) -> Result<game_core::progression::AdvanceOutcome> {
+        self.call(|reply| Request::Lifecycle(request, season_end, Box::new(prepared), reply))
+    }
     pub fn market(
         &self,
         command: game_core::market_ops::MarketCommand,
@@ -294,6 +311,14 @@ impl Store {
                 };
                 while let Ok(request) = receiver.recv() {
                     match request {
+                        Request::Lifecycle(request, end, prepared, reply) => {
+                            let _ = reply.send(mutations::lifecycle(
+                                &mut connection,
+                                request,
+                                end,
+                                *prepared,
+                            ));
+                        }
                         Request::Market(command, reply) => {
                             let _ = reply.send(mutations::market(&mut connection, command));
                         }

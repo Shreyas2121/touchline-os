@@ -830,4 +830,51 @@ fn full_season_reopens_replays_reconciles_and_exports_within_limit() {
     );
     assert_eq!(tables(&store, &campaign), finished);
     eprintln!("full-season certification passed: 34 rounds, 1,224 matches, {} appearances, {} export bytes, {:.2}s runtime",finished.simulated_appearances.len(),bytes.len(),started.elapsed().as_secs_f64());
+    // G04 must also export a real complete season plus the opening calendar,
+    // without requiring an explicit halfway development call in those 34 rounds.
+    let preview = preview_season(&restored, campaign.clone()).unwrap();
+    let counts = &preview.id_counts;
+    let rollover = LifecycleRequest {
+        campaign_id: campaign.clone(),
+        season_id: preview.season_id,
+        expected_revision: preview.revision,
+        source_date: preview.source_date,
+        source_boundary_key: preview.source_boundary_key,
+        input_fingerprint: preview.input_fingerprint,
+        ids: game_core::lifecycle_ops::LifecycleIds {
+            players: many(counts.players as i64),
+            player_states: many(counts.player_states as i64),
+            contracts: many(counts.contracts as i64),
+            registrations: many(counts.registrations as i64),
+            ledger: many(counts.ledger as i64),
+            fixtures: many(counts.fixtures as i64),
+            seasons: many(counts.seasons as i64),
+            settlements: many(counts.settlements as i64),
+            objectives: many(counts.objectives as i64),
+            snapshots: many(counts.snapshots as i64),
+        },
+        receipt_id: fresh(),
+        audit_id: fresh(),
+        action_id: fresh(),
+        now: NOW.into(),
+    };
+    settle_season(&restored, rollover.clone()).unwrap();
+    let settled = tables(&restored, &campaign);
+    assert_eq!(settled.fixtures.len(), 2448);
+    assert_eq!(settled.simulated_matches, finished.simulated_matches);
+    assert_eq!(
+        settled.simulated_appearances,
+        finished.simulated_appearances
+    );
+    assert!(settled
+        .development_snapshots
+        .iter()
+        .all(|d| d.period == DevelopmentPeriod::SeasonEnd));
+    assert!(settle_season(&restored, rollover).unwrap().replayed);
+    let settled_export = restored
+        .export_snapshot(campaign.as_str(), "settled-season", NOW)
+        .unwrap();
+    let settled_bytes = serde_json::to_vec(&settled_export).unwrap();
+    assert!(settled_bytes.len() <= EXPORT_LIMIT);
+    eprintln!("settled-season export: {} bytes", settled_bytes.len());
 }
